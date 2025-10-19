@@ -796,7 +796,7 @@ function addPollOption(value = '') {
     const input = document.createElement('input');
     input.type = 'text';
     input.className = 'poll-option-input';
-    input.placeholder = Вариант ;
+    input.placeholder = `Вариант ${rows.length + 1}`;
     input.maxLength = 100;
     input.value = value;
     input.addEventListener('input', updatePollPreview);
@@ -906,7 +906,7 @@ function refreshPollOptionPlaceholders() {
 
     const inputs = container.querySelectorAll('.poll-option-input');
     inputs.forEach((input, index) => {
-        input.placeholder = Вариант ;
+        input.placeholder = `Вариант ${index + 1}`;
     });
 }
 
@@ -929,15 +929,6 @@ function updatePollPreview() {
         return;
     }
 
-    const optionsHtml = options.map((option) => `
-        <div class="poll-preview-option">
-            <span></span>
-            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M9 6l6 6-6 6" stroke-linecap="round" stroke-linejoin="round"></path>
-            </svg>
-        </div>
-    `).join('');
-
     const footerParts = [];
     footerParts.push(multiple ? 'Можно выбрать несколько вариантов' : 'Один голос на участника');
     if (anonymous) footerParts.push('Голоса анонимные');
@@ -947,6 +938,33 @@ function updatePollPreview() {
         <div class="poll-preview-options"></div>
         <div class="poll-preview-footer"></div>
     `;
+
+    const questionElement = preview.querySelector('.poll-preview-question');
+    if (questionElement) {
+        questionElement.textContent = question || 'Без названия';
+    }
+
+    const optionsContainer = preview.querySelector('.poll-preview-options');
+    if (optionsContainer) {
+        optionsContainer.innerHTML = options.map(() => `
+            <div class="poll-preview-option">
+                <span></span>
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M9 6l6 6-6 6" stroke-linecap="round" stroke-linejoin="round"></path>
+                </svg>
+            </div>
+        `).join('');
+
+        const labelElements = optionsContainer.querySelectorAll('.poll-preview-option span');
+        labelElements.forEach((span, index) => {
+            span.textContent = options[index];
+        });
+    }
+
+    const footerElement = preview.querySelector('.poll-preview-footer');
+    if (footerElement) {
+        footerElement.textContent = footerParts.join(' • ');
+    }
 }
 
 function closePollBuilder() {
