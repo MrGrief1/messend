@@ -1,0 +1,27 @@
+version: "3.8"
+services:
+  sfu:
+    build: ./sfu_server
+    container_name: glasschat-sfu
+    environment:
+      - LISTEN_IP=0.0.0.0
+      - ANNOUNCED_IP=${SFU_PUBLIC_IP}
+      - RTC_MIN_PORT=40000
+      - RTC_MAX_PORT=49999
+      - PORT=4000
+    network_mode: host
+    restart: unless-stopped
+
+  coturn:
+    image: coturn/coturn:latest
+    container_name: glasschat-turn
+    command: ["-c", "/etc/turnserver.conf"]
+    volumes:
+      - ./infra/coturn/turnserver.conf:/etc/turnserver.conf:ro
+      - ./infra/coturn/certs:/etc/letsencrypt:ro
+    network_mode: host
+    restart: unless-stopped
+
+# Примечание: network_mode: host облегчает работу UDP портов для WebRTC.
+# Перед запуском установите переменную SFU_PUBLIC_IP (в .env рядом с compose).
+

@@ -1,0 +1,2809 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#000000">
+    <title>GlassChat</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <!-- Fonts and Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.5/socket.io.min.js"></script>
+    
+    <style>
+        /* Дополнительные стили для жидкого фона и мобильной оптимизации */
+        
+        /* Жидкий анимированный фон */
+        .liquid-bg {
+            position: fixed;
+            top: 0; 
+            left: 0; 
+            width: 100%; 
+            height: 100%;
+            z-index: -2;
+            overflow: hidden;
+            background: linear-gradient(45deg, #f6d5f7, #fbe9d7);
+        }
+        
+        [data-theme="dark"] .liquid-bg {
+            background: linear-gradient(45deg, #2c3e50, #34495e);
+        }
+        
+        [data-theme="ocean"] .liquid-bg {
+            background: linear-gradient(45deg, #001f3f, #003366);
+        }
+        
+        [data-theme="amoled"] .liquid-bg {
+            background: linear-gradient(45deg, #000000, #0b0b0b);
+        }
+        
+        .blob {
+            position: absolute;
+            filter: blur(60px);
+            border-radius: 50%;
+            animation: liquidMove 20s infinite alternate;
+            will-change: transform;
+        }
+        
+        .blob-1 { 
+            height: 300px; 
+            width: 300px; 
+            background: linear-gradient(135deg, #a29bfe, #6c5ce7); 
+            top: 10%; 
+            left: 10%; 
+        }
+        
+        .blob-2 { 
+            height: 400px; 
+            width: 400px; 
+            background: linear-gradient(135deg, #74b9ff, #0984e3); 
+            bottom: 10%; 
+            right: 10%; 
+            animation-duration: 25s; 
+        }
+        
+        .blob-3 { 
+            height: 250px; 
+            width: 250px; 
+            background: linear-gradient(135deg, #ff7675, #e17055); 
+            bottom: 30%; 
+            left: 40%; 
+            animation-duration: 15s; 
+        }
+        
+        @keyframes liquidMove {
+            0% { 
+                transform: translate(0, 0) scale(1) rotate(0deg); 
+            }
+            25% {
+                transform: translate(50px, -30px) scale(1.1) rotate(90deg);
+            }
+            50% {
+                transform: translate(80px, 40px) scale(0.9) rotate(180deg);
+            }
+            75% {
+                transform: translate(-20px, 60px) scale(1.05) rotate(270deg);
+            }
+            100% { 
+                transform: translate(30px, 20px) scale(1.15) rotate(360deg); 
+            }
+        }
+        
+        /* Темные темы для блобов */
+        [data-theme="dark"] .blob-1 { 
+            background: linear-gradient(135deg, #8e44ad, #9b59b6); 
+        }
+        [data-theme="dark"] .blob-2 { 
+            background: linear-gradient(135deg, #2980b9, #3498db); 
+        }
+        [data-theme="dark"] .blob-3 { 
+            background: linear-gradient(135deg, #c0392b, #e74c3c); 
+        }
+        
+        [data-theme="ocean"] .blob-1 { 
+            background: linear-gradient(135deg, #00cec9, #81ecec); 
+        }
+        [data-theme="ocean"] .blob-2 { 
+            background: linear-gradient(135deg, #0984e3, #74b9ff); 
+        }
+        [data-theme="ocean"] .blob-3 { 
+            background: linear-gradient(135deg, #00b894, #00cec9); 
+        }
+        
+        /* Плавающая (левитирующая) навигация в стиле Telegram */
+        .telegram-mobile-nav {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 95vw;
+            max-width: 420px;
+            height: auto;
+            background: var(--glass-bg);
+            backdrop-filter: blur(var(--glass-blur)) saturate(180%);
+            -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(180%);
+            border: 1px solid var(--glass-border);
+            border-radius: 50px;
+            display: none;
+            z-index: 1002;
+            padding: 8px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3),
+                        0 0 0 1px rgba(255, 255, 255, 0.1) inset;
+            opacity: 1;
+            transition: transform 0.4s var(--easing-bounce), 
+                        opacity 0.3s var(--easing-swift),
+                        box-shadow 0.3s ease;
+        }
+        
+        /* Анимация появления */
+        @keyframes navBounceIn {
+            0% {
+                transform: translateX(-50%) translateY(100px) scale(0.8);
+                opacity: 0;
+            }
+            60% {
+                transform: translateX(-50%) translateY(-10px) scale(1.05);
+            }
+            100% {
+                transform: translateX(-50%) translateY(0) scale(1);
+                opacity: 1;
+            }
+        }
+        
+        /* Скрытие навигации с анимацией */
+        .telegram-mobile-nav.hidden {
+            transform: translateX(-50%) translateY(120px);
+            opacity: 0;
+            pointer-events: none;
+        }
+        
+        /* Скрываем старые мобильные табы */
+        @media (max-width: 768px) {
+            .mobile-tabs {
+                display: none !important;
+            }
+            
+            /* Скрываем кнопки в шапке на мобильных - используем нижнюю навигацию */
+            .sidebar-header > div {
+                display: none !important;
+            }
+            
+            /* Показываем Telegram навигацию */
+            .telegram-mobile-nav {
+                display: block;
+            }
+            
+            /* Корректируем высоту сайдбара с учетом плавающей навигации */
+            .sidebar {
+                padding-bottom: 0;
+                height: 100vh; /* На всю высоту экрана */
+                padding-bottom: env(safe-area-inset-bottom, 0); /* Контакты тянутся до низа */
+                padding-top: env(safe-area-inset-top, 0); /* Поддержка вырезов PWA */
+            }
+            
+            .sidebar-header {
+                flex-shrink: 0;
+                padding: 16px;
+            }
+            
+            .sidebar-content {
+                flex: 1;
+                overflow-y: auto;
+                overflow-x: hidden;
+                padding-bottom: 0;
+                height: 0; /* Позволяет flex растянуться */
+            }
+            
+            .user-panel {
+                display: none !important; /* Скрываем панель пользователя - используем настройки */
+            }
+            
+            .main-content {
+                padding-bottom: 0;
+                height: 100vh; /* На всю высоту */
+                padding-top: env(safe-area-inset-top, 0); /* Поддержка вырезов PWA */
+            }
+            
+            /* Чат-хедер компактнее как в Telegram */
+            .chat-header {
+                margin-top: env(safe-area-inset-top, 0);
+                padding-top: calc(4px + env(safe-area-inset-top, 0));
+                padding-bottom: 6px;
+            }
+            
+            /* Убеждаемся что список чатов виден и на всю высоту */
+            .room-list {
+                display: flex !important;
+                flex-direction: column;
+                overflow-y: auto;
+                overflow-x: hidden;
+                padding: 8px 12px;
+                margin: 0;
+                flex: 1; /* Занимает всю доступную высоту */
+                -webkit-overflow-scrolling: touch;
+            }
+            
+            /* Делаем пустое состояние видимым */
+            .empty-state {
+                display: block !important;
+                padding: 60px 20px;
+                text-align: center;
+                color: var(--text-color-muted);
+                font-size: 15px;
+                line-height: 1.5;
+            }
+        }
+        
+        .telegram-nav-container {
+            display: flex;
+            width: 100%;
+            align-items: center;
+            justify-content: space-around;
+            padding: 0;
+            gap: 4px;
+        }
+        
+        .telegram-nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 3px;
+            padding: 12px 8px;
+            border-radius: 50%;
+            transition: all 0.4s var(--easing-bounce);
+            cursor: pointer;
+            position: relative;
+            min-width: 64px;
+            min-height: 64px;
+            background: transparent;
+            border: none;
+            color: var(--text-color-muted);
+            outline: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        .telegram-nav-item .material-icons-round {
+            font-size: 26px;
+            transition: all 0.4s var(--easing-bounce);
+            will-change: transform;
+        }
+        
+        .telegram-nav-item span:last-child {
+            font-size: 10px;
+            font-weight: 600;
+            font-family: 'Inter', -apple-system, sans-serif;
+            transition: all 0.3s ease;
+        }
+        
+        /* Активная кнопка - поднимается вверх и меняет цвет */
+        .telegram-nav-item.active {
+            color: white;
+            background: var(--color-primary);
+            transform: translateY(-8px) scale(1.05);
+            box-shadow: 0 8px 20px rgba(0, 122, 255, 0.4),
+                        0 0 0 4px rgba(0, 122, 255, 0.1);
+            animation: buttonBounce 0.5s var(--easing-bounce);
+        }
+        
+        @keyframes buttonBounce {
+            0% {
+                transform: translateY(0) scale(1);
+            }
+            40% {
+                transform: translateY(-12px) scale(1.1);
+            }
+            60% {
+                transform: translateY(-6px) scale(1.03);
+            }
+            100% {
+                transform: translateY(-8px) scale(1.05);
+            }
+        }
+        
+        .telegram-nav-item.active .material-icons-round {
+            transform: scale(1.15) rotate(5deg);
+        }
+        
+        /* Анимация нажатия */
+        .telegram-nav-item:active {
+            transform: translateY(0) scale(0.92);
+            transition: all 0.1s ease;
+        }
+        
+        .telegram-nav-item.active:active {
+            transform: translateY(-4px) scale(0.98);
+        }
+        
+        /* Эффект волны при нажатии */
+        .telegram-nav-item::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.3);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s ease, height 0.6s ease;
+        }
+        
+        .telegram-nav-item:active::before {
+            width: 100px;
+            height: 100px;
+        }
+        
+        /* Индикатор непрочитанных в навигации */
+        .nav-badge {
+            position: absolute;
+            top: 6px;
+            right: 8px;
+            background: var(--color-danger);
+            color: white;
+            font-size: 10px;
+            font-weight: bold;
+            padding: 2px 6px;
+            border-radius: var(--radius-full);
+            min-width: 18px;
+            text-align: center;
+            line-height: 14px;
+            box-shadow: 0 2px 6px rgba(255, 59, 48, 0.4);
+            animation: scaleIn 0.3s var(--easing-bounce);
+        }
+        
+        /* Улучшенный glassmorphism */
+        .enhanced-glass {
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            box-shadow: 
+                0 8px 32px rgba(0, 0, 0, 0.12),
+                inset 0 1px 0 rgba(255, 255, 255, 0.15);
+        }
+        
+        /* Улучшенная мобильная адаптация */
+        @media (max-width: 768px) {
+            body {
+                font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+                padding-bottom: 0; /* без отступа — список контактов на всю высоту */
+            }
+            
+            .telegram-mobile-nav {
+                display: block;
+            }
+            
+            .app-layout {
+                padding-bottom: 0;
+                margin-bottom: 0;
+            }
+            
+            /* Полноэкранный режим для мобильных */
+            .main-content.mobile-chat-open {
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 70px;
+                z-index: 999;
+                background: var(--chat-area-bg);
+                border-radius: 0;
+            }
+            
+            .sidebar.mobile-hidden {
+                transform: translateX(-100%);
+                opacity: 0;
+                pointer-events: none;
+            }
+            
+            /* Анимация появления чата */
+            @keyframes slideInFromRight {
+                from {
+                    transform: translateX(100%);
+                    opacity: 0;
+                }
+                to {
+                    transform: translateX(0);
+                    opacity: 1;
+                }
+            }
+            
+            .main-content.mobile-chat-open {
+                animation: slideInFromRight 0.3s var(--easing-swift);
+            }
+        }
+        
+        /* Улучшенные hover эффекты только для не-тач устройств */
+        @media (hover: hover) and (pointer: fine) {
+            .room-item:hover {
+                transform: translateX(6px) scale(1.02);
+                box-shadow: 0 8px 32px rgba(0, 122, 255, 0.15);
+            }
+            
+            .icon-btn:hover {
+                transform: translateY(-2px) scale(1.05);
+                box-shadow: 0 8px 24px rgba(0, 122, 255, 0.2);
+            }
+        }
+        
+        /* Тактильная обратная связь для мобильных */
+        @media (hover: none) and (pointer: coarse) {
+            .room-item:active,
+            .icon-btn:active,
+            button:active {
+                transform: scale(0.95);
+                opacity: 0.8;
+                transition: all 0.1s ease;
+            }
+        }
+        
+        /* Улучшенная типографика для мобильных */
+        @media (max-width: 768px) {
+            h1, h2, h3 {
+                font-family: 'Inter', -apple-system, sans-serif;
+                font-weight: 600;
+                letter-spacing: -0.02em;
+            }
+            
+            .message {
+                font-family: 'Inter', -apple-system, sans-serif;
+                font-size: 16px; /* Увеличиваем для лучшей читаемости */
+                line-height: 1.4;
+            }
+            
+            .room-name-text {
+                font-family: 'Inter', -apple-system, sans-serif;
+                font-weight: 500;
+                font-size: 16px;
+                letter-spacing: -0.01em;
+            }
+        }
+        
+        /* Выпадающее меню кнопки звонка */
+        .call-button-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+            gap: 2px;
+        }
+        
+        .call-dropdown-btn {
+            background: var(--color-success);
+            color: white;
+            border: none;
+            border-left: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 0 8px;
+            border-radius: 0 var(--radius-lg) var(--radius-lg) 0;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0;
+            height: 100%;
+        }
+        
+        .call-dropdown-btn:hover {
+            background: rgba(52, 199, 89, 0.9);
+        }
+        
+        /* Меню вложений */
+        .attach-menu {
+            position: absolute;
+            bottom: calc(100% + 8px);
+            right: 0;
+            background: var(--glass-bg);
+            backdrop-filter: blur(var(--glass-blur)) saturate(180%);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius-lg);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            min-width: 200px;
+            z-index: 1000;
+            overflow: hidden;
+            animation: slideUp 0.2s ease;
+        }
+        
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .attach-menu-item {
+            padding: 12px 16px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: var(--text-color);
+            font-size: 14px;
+        }
+        
+        .attach-menu-item:hover {
+            background: var(--glass-bg-hover);
+        }
+        
+        .attach-menu-item svg {
+            flex-shrink: 0;
+            opacity: 0.8;
+        }
+        
+        .call-dropdown-menu {
+            position: absolute;
+            z-index: 1200;
+            top: calc(100% + 8px);
+            right: 0;
+            background: var(--glass-bg);
+            backdrop-filter: blur(var(--glass-blur)) saturate(180%);
+            -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(180%);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius-lg);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            min-width: 200px;
+            z-index: 1000;
+            display: none;
+            overflow: hidden;
+        }
+        
+        .call-dropdown-menu.show {
+            display: block;
+            animation: slideDown 0.2s ease;
+        }
+        
+        .call-dropdown-menu.show {
+            display: block;
+        }
+        
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .call-dropdown-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            color: var(--text-color);
+        }
+        
+        .call-dropdown-item:hover {
+            background: var(--glass-bg-hover);
+        }
+        
+        .call-dropdown-item svg {
+            flex-shrink: 0;
+            opacity: 0.8;
+        }
+        
+        .call-dropdown-item span {
+            font-size: 14px;
+            font-weight: 500;
+        }
+        
+        /* Индикатор активного звонка в чате */
+        .active-call-indicator {
+            position: sticky;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(135deg, var(--color-success) 0%, #00c853 100%);
+            color: white;
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 4px 12px rgba(0, 200, 83, 0.3);
+            z-index: 10;
+            animation: slideInFromTop 0.3s ease;
+            cursor: pointer;
+        }
+        
+        @keyframes slideInFromTop {
+            from {
+                transform: translateY(-100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+        
+        .active-call-indicator:hover {
+            background: linear-gradient(135deg, #00e676 0%, #00c853 100%);
+        }
+        
+        .call-indicator-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .call-indicator-icon {
+            width: 32px;
+            height: 32px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+            50% {
+                transform: scale(1.05);
+                opacity: 0.9;
+            }
+        }
+        
+        .call-indicator-info h4 {
+            margin: 0;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        
+        .call-indicator-info p {
+            margin: 2px 0 0 0;
+            font-size: 12px;
+            opacity: 0.9;
+        }
+        
+        .call-indicator-timer {
+            font-size: 16px;
+            font-weight: 600;
+            font-family: 'Courier New', monospace;
+        }
+        
+        .call-indicator-actions {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .call-indicator-btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            padding: 8px 16px;
+            border-radius: var(--radius-lg);
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 13px;
+        }
+        
+        .call-indicator-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-1px);
+        }
+        
+        .call-indicator-btn.danger {
+            background: rgba(255, 59, 48, 0.9);
+        }
+        
+        .call-indicator-btn.danger:hover {
+            background: rgba(255, 59, 48, 1);
+        }
+        
+        /* Обертка для кнопок управления с настройками */
+        .control-btn-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+            gap: 0;
+        }
+        
+        /* Новый стиль для кнопки с встроенной стрелкой */
+        .control-btn-with-settings {
+            display: flex;
+            align-items: center;
+            gap: 0;
+            position: relative;
+        }
+        
+        .control-btn-with-settings .control-btn {
+            border-top-right-radius: 0 !important;
+            border-bottom-right-radius: 0 !important;
+            min-width: 50px !important;
+            max-width: 58px !important;
+        }
+        
+        .device-settings-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-left: none !important;
+            color: white;
+            padding: 0 5px;
+            border-radius: 0 var(--radius-lg) var(--radius-lg) 0;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0.7;
+            min-height: 50px;
+            max-height: 50px;
+            min-width: 18px;
+            max-width: 18px;
+            margin: 0;
+        }
+        
+        .device-settings-btn:hover {
+            background: rgba(255, 255, 255, 0.15);
+            opacity: 1;
+        }
+        
+        .device-menu {
+            position: absolute;
+            bottom: calc(100% + 50px);
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--glass-bg);
+            backdrop-filter: blur(var(--glass-blur)) saturate(180%);
+            -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(180%);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            min-width: 250px;
+            max-width: 320px;
+            max-height: 400px;
+            overflow-y: auto;
+            z-index: 1100;
+            display: none;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3),
+                        0 0 0 1px rgba(255, 255, 255, 0.1) inset;
+            animation: deviceMenuSlideUp 0.2s ease;
+        }
+        
+        /* Адаптивные размеры для мобильных */
+        @media (max-width: 768px) {
+            .device-menu {
+                min-width: 200px;
+                max-width: 280px;
+                max-height: 350px;
+                font-size: 12px;
+            }
+        }
+        
+        /* Стили для скроллбара в меню */
+        .device-menu::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        .device-menu::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        
+        .device-menu::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 3px;
+        }
+        
+        .device-menu::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.5);
+        }
+        
+        .device-menu.show {
+            display: block;
+        }
+        
+        @keyframes deviceMenuSlideUp {
+            from {
+                opacity: 0;
+                transform: translateX(-50%) translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(-50%) translateY(0);
+            }
+        }
+        
+        .device-menu-header {
+            padding: 10px 14px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            font-size: 12px;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.8);
+        }
+        
+        .device-menu-item {
+            padding: 8px 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: white;
+            font-size: 12px;
+            min-height: 36px;
+            word-wrap: break-word;
+            line-height: 1.3;
+        }
+        
+        .device-menu-item span {
+            flex: 1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            line-clamp: 2;
+            -webkit-box-orient: vertical;
+        }
+        
+        @media (max-width: 768px) {
+            .device-menu-item {
+                padding: 6px 10px;
+                font-size: 11px;
+                min-height: 32px;
+            }
+        }
+        
+        /* Компактные кнопки */
+        .control-btn-compact {
+            min-width: 50px !important;
+            max-width: 62px !important;
+            padding: 8px 8px !important;
+            gap: 2px !important;
+        }
+        
+        .control-btn-compact .control-icon {
+            width: 14px !important;
+            height: 14px !important;
+        }
+        
+        .control-btn-compact .control-label {
+            font-size: 8px !important;
+        }
+        
+        .end-call-compact {
+            padding: 8px 10px !important;
+            font-size: 10px !important;
+            min-width: 55px !important;
+            max-width: 75px !important;
+        }
+        
+        /* Унифицируем все кнопки в call-controls */
+        .call-controls .control-btn,
+        .call-controls .control-btn-compact,
+        .call-controls .end-call,
+        .call-controls .end-call-compact {
+            min-height: 50px;
+            max-height: 50px;
+        }
+        
+        .end-call-compact svg {
+            width: 12px !important;
+            height: 12px !important;
+        }
+        
+        .device-menu-item:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+        
+        .device-menu-item.active {
+            background: rgba(0, 122, 255, 0.3);
+            color: #007AFF;
+        }
+        
+        .device-menu-item.active::before {
+            content: '✓';
+            font-size: 16px;
+            font-weight: bold;
+            margin-right: 4px;
+        }
+        
+        .device-menu-item-icon {
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0.7;
+        }
+        
+        /* Системные сообщения в чате */
+        .system-message {
+            text-align: center;
+            padding: 12px;
+            margin: 16px auto;
+            max-width: 80%;
+            color: var(--text-color-muted);
+            font-size: 13px;
+            font-style: italic;
+            opacity: 0.8;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            animation: fadeIn 0.3s ease;
+        }
+        
+        /* Placeholder для выключенной камеры */
+        .video-placeholder {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 100%);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            gap: 12px;
+            z-index: 2;
+        }
+        
+        .video-placeholder.active {
+            display: flex;
+        }
+        
+        .video-placeholder-avatar {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.1);
+            border: 3px solid rgba(255, 255, 255, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+        
+        .video-placeholder-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .video-placeholder-avatar svg {
+            width: 40px;
+            height: 40px;
+            opacity: 0.5;
+        }
+        
+        .video-placeholder-text {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 13px;
+            font-weight: 500;
+        }
+        
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 0.8;
+                transform: translateY(0);
+            }
+        }
+        
+        /* Карточка звонка в чате */
+        .call-card {
+            max-width: 320px;
+            margin: 12px auto;
+            padding: 16px;
+            background: linear-gradient(135deg, rgba(0, 122, 255, 0.15), rgba(0, 122, 255, 0.05));
+            border: 1px solid rgba(0, 122, 255, 0.3);
+            border-radius: 16px;
+            backdrop-filter: blur(10px);
+            animation: slideIn 0.3s ease;
+        }
+        
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+        
+        .call-card-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+        
+        .call-card-icon {
+            width: 48px;
+            height: 48px;
+            background: rgba(0, 122, 255, 0.2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        
+        .call-card-info {
+            flex: 1;
+        }
+        
+        .call-card-title {
+            font-size: 15px;
+            font-weight: 600;
+            margin: 0 0 4px 0;
+            color: var(--text-color);
+        }
+        
+        .call-card-subtitle {
+            font-size: 13px;
+            margin: 0;
+            color: var(--text-color-muted);
+        }
+        
+        .call-card-duration {
+            font-size: 12px;
+            color: var(--text-color-muted);
+            margin-top: 8px;
+            padding-top: 8px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .call-card-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+        }
+        
+        .call-card-btn {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .call-card-btn.primary {
+            background: var(--color-success);
+            color: white;
+        }
+        
+        .call-card-btn.primary:hover {
+            background: #00c853;
+            transform: translateY(-1px);
+        }
+        
+        .call-card-btn.secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-color);
+        }
+        
+        .call-card-btn.secondary:hover {
+            background: rgba(255, 255, 255, 0.15);
+        }
+        
+        /* Стили для эффектов видео */
+        .effects-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+        }
+        
+        .effect-card {
+            cursor: pointer;
+            border-radius: 12px;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+        
+        .effect-card:hover {
+            transform: translateY(-4px);
+            border-color: var(--color-primary);
+            box-shadow: 0 8px 24px rgba(0, 122, 255, 0.3);
+        }
+        
+        .effect-card.active {
+            border-color: var(--color-success);
+            box-shadow: 0 8px 24px rgba(52, 199, 89, 0.4);
+        }
+        
+        .effect-preview {
+            height: 120px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+        }
+        
+        .effect-name {
+            padding: 12px;
+            text-align: center;
+            font-weight: 600;
+            font-size: 14px;
+            background: rgba(255,255,255,0.05);
+        }
+        
+        /* Стили для презентации */
+        .presentation-slide {
+            transition: opacity 0.3s ease, transform 0.3s ease;
+            background: white;
+        }
+        
+        .presentation-slide:not(.active) {
+            opacity: 0;
+            transform: translateX(100%);
+            pointer-events: none;
+        }
+        
+        .presentation-slide.active {
+            opacity: 1;
+            transform: translateX(0);
+        }
+    </style>
+</head>
+<body data-theme="{{ user.theme }}">
+    <!-- Жидкий анимированный фон -->
+    <div class="liquid-bg">
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+        <div class="blob blob-3"></div>
+    </div>
+    
+    <div class="app-layout">
+        <div class="bg-shape shape1"></div>
+        <div class="bg-shape shape2"></div>
+
+        <div class="sidebar enhanced-glass">
+            <div class="sidebar-header">
+                <!-- Вкладки Чаты / Архив -->
+                <div style="display: flex; gap: 6px; align-items: center;">
+                    <button class="tab-btn active" id="chats-tab" onclick="switchToTab('chats')" style="width: 38px; height: 38px; padding: 0; border: none; background: var(--color-primary); color: white; border-radius: var(--radius-full); font-weight: 600; font-size: 12px; cursor: pointer; transition: all 0.3s ease; display: flex; align-items: center; justify-content: center;">
+                        💬
+                    </button>
+                    <button class="tab-btn" id="archive-tab" onclick="switchToTab('archive')" style="width: 38px; height: 38px; padding: 0; border: none; background: var(--input-bg); color: var(--text-color); border-radius: var(--radius-full); font-weight: 600; font-size: 12px; cursor: pointer; transition: all 0.3s ease; display: flex; align-items: center; justify-content: center;">
+                        📦
+                    </button>
+                </div>
+                <div style="display: flex; gap: 4px; margin-left: 8px;">
+                    <button class="icon-btn" onclick="openModal('createRoomModal')" title="Создать Группу/Канал">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                            <line x1="12" y1="5" x2="12" y2="19"></line>
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                        </svg>
+                    </button>
+                    <button class="icon-btn" onclick="openModal('searchModal')" title="Поиск пользователей">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                            <circle cx="11" cy="11" r="8"></circle>
+                            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                        </svg>
+                    </button>
+                    <button class="icon-btn" onclick="openInlineSettings()" title="Настройки">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="3"></circle>
+                            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06A1.65 1.65 0 0 0 15 19.4a1.65 1.65 0 0 0-1 .6 1.65 1.65 0 0 0-.33 1.82l.02.06a2 2 0 1 1-3.38 0l.02-.06A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-.6-1 1.65 1.65 0 0 0-1.82-.33l-.06.02a2 2 0 1 1 0-3.38l.06.02A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06A2 2 0 1 1 7.04 4.3l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-.6 1.65 1.65 0 0 0 .33-1.82l-.02-.06a2 2 0 1 1 3.38 0l-.02.06A1.65 1.65 0 0 0 15 4.6a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9c.38 0 .74.14 1.02.38.29.24.5.57.6 1a1.65 1.65 0 0 0 1.82.33l.06-.02a2 2 0 1 1 0 3.38l-.06-.02a1.65 1.65 0 0 0-1.82.33 1.65 1.65 0 0 0-.6 1z"></path>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            <div class="sidebar-content">
+                
+                <ul class="room-list" id="room-list">
+                    {% if rooms %}
+                        {% for room in rooms %}
+                            <li class="room-item" data-room-id="{{ room.id }}" data-room-type="{{ room.type }}" data-room-name="{{ room.name }}" data-user-role="{{ room.role }}" data-dm-other-id="{{ room.dm_other_user_id or '' }}" onclick="selectRoom(this)">
+                                <span class="room-icon">
+                                    {% if room.avatar_url %}
+                                        <img src="{{ room.avatar_url }}" alt="Avatar">
+                                    {% elif room.type == 'dm' %}
+                                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                                            <circle cx="12" cy="8" r="5"></circle>
+                                            <path d="M20 21a8 8 0 1 0-16 0"></path>
+                                        </svg>
+                                    {% elif room.type == 'group' %}
+                                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                                        </svg>
+                                    {% elif room.type == 'channel' %}
+                                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                                            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                                        </svg>
+                                    {% endif %}
+                                </span>
+                                <span class="room-name-text">{{ room.name }}</span>
+                                {% if room.unread_count > 0 %}
+                                <span class="unread-badge">{{ room.unread_count }}</span>
+                                {% endif %}
+                            </li>
+                        {% endfor %}
+                    {% else %}
+                        <p class="empty-state" id="empty-state-rooms">У вас пока нет активных чатов. Используйте поиск (🔍) или создайте новую группу (➕).</p>
+                    {% endif %}
+                </ul>
+                
+                <!-- Список архивированных чатов (скрыт по умолчанию) -->
+                <ul class="room-list" id="archive-list" style="display: none;">
+                    {% if archived_rooms %}
+                        {% for room in archived_rooms %}
+                            <li class="room-item archived" data-room-id="{{ room.id }}" data-room-type="{{ room.type }}" data-room-name="{{ room.name }}" data-user-role="{{ room.role }}" data-dm-other-id="{{ room.dm_other_user_id or '' }}" onclick="selectRoom(this)">
+                                <span class="room-icon">
+                                    {% if room.avatar_url %}
+                                        <img src="{{ room.avatar_url }}" alt="Avatar">
+                                    {% elif room.type == 'dm' %}
+                                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                                            <circle cx="12" cy="8" r="5"></circle>
+                                            <path d="M20 21a8 8 0 1 0-16 0"></path>
+                                        </svg>
+                                    {% elif room.type == 'group' %}
+                                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                                        </svg>
+                                    {% elif room.type == 'channel' %}
+                                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                                            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                                        </svg>
+                                    {% endif %}
+                                </span>
+                                <span class="room-name-text">{{ room.name }}</span>
+                                {% if room.unread_count > 0 %}
+                                <span class="unread-badge">{{ room.unread_count }}</span>
+                                {% endif %}
+                            </li>
+                        {% endfor %}
+                    {% else %}
+                        <p class="empty-state" id="empty-state-archive">Архив пуст. Чтобы архивировать чат, нажмите правой кнопкой на него и выберите "В архив".</p>
+                    {% endif %}
+                </ul>
+            </div>
+            <div class="user-panel">
+                <!-- Desktop версия -->
+                <div class="desktop-user-panel" style="display:flex; align-items:center; gap:10px; min-width:0; width: 100%;">
+                    <span class="room-icon" style="width:36px; height:36px; border-width:1px;">
+                        {% if user.avatar_url %}
+                            <img id="my-avatar-img" src="{{ user.avatar_url }}" alt="Avatar">
+                        {% else %}
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="8" r="5"></circle>
+                                <path d="M20 21a8 8 0 1 0-16 0"></path>
+                            </svg>
+                        {% endif %}
+                    </span>
+                    <span id="current-username-display">@{{ user.username }}</span>
+                    <a href="{{ url_for('logout') }}" style="margin-left: auto;"><button class="logout-btn">Выйти</button></a>
+                </div>
+                
+                <!-- Mobile табы (Telegram стиль) -->
+                <div class="mobile-tabs" style="display: none;">
+                    <button class="mobile-tab active" onclick="toggleMobileTab('chats')" id="tab-chats">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                        </svg>
+                        <span>Чаты</span>
+                    </button>
+                    <button class="mobile-tab" onclick="openModal('searchModal')" id="tab-search">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                            <circle cx="11" cy="11" r="8"></circle>
+                            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                        </svg>
+                        <span>Поиск</span>
+                    </button>
+                    <button class="mobile-tab" onclick="openModal('createRoomModal')" id="tab-create">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                            <line x1="12" y1="5" x2="12" y2="19"></line>
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                        </svg>
+                        <span>Создать</span>
+                    </button>
+                    <button class="mobile-tab" onclick="openInlineSettings()" id="tab-settings">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="3"></circle>
+                            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06A1.65 1.65 0 0 0 15 19.4a1.65 1.65 0 0 0-1 .6 1.65 1.65 0 0 0-.33 1.82l.02.06a2 2 0 1 1-3.38 0l.02-.06A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-.6-1 1.65 1.65 0 0 0-1.82-.33l-.06.02a2 2 0 1 1 0-3.38l.06.02A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06A2 2 0 1 1 7.04 4.3l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-.6 1.65 1.65 0 0 0 .33-1.82l-.02-.06a2 2 0 1 1 3.38 0l-.02.06A1.65 1.65 0 0 0 15 4.6a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9c.38 0 .74.14 1.02.38.29.24.5.57.6 1a1.65 1.65 0 0 0 1.82.33l.06-.02a2 2 0 1 1 0 3.38l-.06-.02a1.65 1.65 0 0 0-1.82.33 1.65 1.65 0 0 0-.6 1z"></path>
+                        </svg>
+                        <span>Настройки</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="main-content" id="main-content">
+            
+            <!-- CHAT VIEW -->
+            <div id="chat-view" class="content-view">
+                <div class="chat-header" id="chat-header" style="display: none;">
+                    <button class="mobile-back-btn" onclick="closeMobileChat()" style="display: none;">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                            <line x1="19" y1="12" x2="5" y2="12"></line>
+                            <polyline points="12 19 5 12 12 5"></polyline>
+                        </svg>
+                    </button>
+                    <h3 id="chat-with-name"></h3>
+                    <div id="chat-header-actions">
+                        <!-- Объединенная кнопка звонка со стрелкой -->
+                        <div class="call-button-wrapper" style="display: flex; align-items: center; gap: 0; position: relative;">
+                            <button class="call-button-header" id="call-button" onclick="startCall()" style="height: 38px; display: flex; align-items: center;">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                                    <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
+                                </svg>
+                                Позвонить
+                            </button>
+                            <button class="call-dropdown-btn" onclick="event.stopPropagation(); toggleCallDropdown(event);" title="Опции" style="height: 38px;">
+                                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round">
+                                    <polyline points="6 9 12 15 18 9"></polyline>
+                                </svg>
+                            </button>
+                            <div class="call-dropdown-menu" id="call-dropdown-menu">
+                                <div class="call-dropdown-item" onclick="startVideoCall()">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M23 7l-7 5 7 5V7z"></path>
+                                        <rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect>
+                                    </svg>
+                                    <span>Видеозвонок</span>
+                                </div>
+                                <div class="call-dropdown-item" onclick="startAudioCall()">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                                        <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                                        <line x1="12" y1="19" x2="12" y2="23"></line>
+                                        <line x1="8" y1="23" x2="16" y2="23"></line>
+                                    </svg>
+                                    <span>Аудиозвонок</span>
+                                </div>
+                            </div>
+                        </div>
+                        <button class="icon-btn" id="room-settings-btn" onclick="openContextSettings()" title="Настройки чата">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="5" r="1.5"></circle>
+                                <circle cx="12" cy="12" r="1.5"></circle>
+                                <circle cx="12" cy="19" r="1.5"></circle>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+            <div class="chat-window" id="chat-window">
+                <!-- Индикатор активного звонка -->
+                <div class="active-call-indicator" id="active-call-indicator" style="display:none;" onclick="returnToCall()">
+                    <div class="call-indicator-left">
+                        <div class="call-indicator-icon">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="white" stroke="white" stroke-width="2">
+                                <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
+                            </svg>
+                        </div>
+                        <div class="call-indicator-info">
+                            <h4 id="call-indicator-title">Активный звонок</h4>
+                            <p id="call-indicator-subtitle">Нажмите, чтобы вернуться</p>
+                        </div>
+                    </div>
+                    <div class="call-indicator-actions">
+                        <span class="call-indicator-timer" id="call-indicator-timer">00:00</span>
+                        <button class="call-indicator-btn danger" onclick="event.stopPropagation(); endCall();">Завершить</button>
+                    </div>
+                </div>
+                
+                <div class="placeholder-text" id="placeholder-text">
+                    Выберите чат слева, чтобы начать общение.
+                </div>
+                <div id="unknown-contact-banner" class="unknown-banner" style="display:none;">
+                    <span id="unknown-banner-text">Этот пользователь не в ваших контактах.</span>
+                    <div class="unknown-actions">
+                        <button class="icon-btn" title="Добавить в контакты" onclick="addUnknownToContacts()" style="background: white; color: var(--color-success);">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                                <line x1="12" y1="5" x2="12" y2="19"></line>
+                                <line x1="5" y1="12" x2="19" y2="12"></line>
+                            </svg>
+                        </button>
+                        <button class="icon-btn" title="Заблокировать" onclick="blockUnknownContact()" style="background: white; color: var(--color-danger);">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+                <!-- Editing Message Banner -->
+                <div id="editing-banner" class="message-banner" style="display: none;">
+                    <div class="banner-icon">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                    </div>
+                    <div class="banner-content">
+                        <div class="banner-title">Редактирование</div>
+                        <div id="editing-banner-text" class="banner-text"></div>
+                    </div>
+                    <button class="icon-btn" id="cancel-editing-btn">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                    </button>
+                </div>
+
+                <div class="chat-input-area" id="chat-input-area" style="display: none;">
+                    <input type="file" id="file-input" accept="*/*" style="display: none;" onchange="handleFileSelect(event)" multiple>
+                    <input type="file" id="file-input-docs" accept="*/*" style="display: none;" onchange="handleFileSelect(event)" multiple>
+                    
+                    <!-- Кнопка стикеров слева -->
+                    <button class="icon-btn" onclick="toggleStickerPicker(event)" title="Стикеры">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <path d="M8 14s1.5 2 4 2 4-2 4-2"></path>
+                            <line x1="9" y1="9" x2="9.01" y2="9"></line>
+                            <line x1="15" y1="9" x2="15.01" y2="9"></line>
+                        </svg>
+                    </button>
+                    
+                    <input type="text" id="message-input" placeholder="Введите сообщение..." autocomplete="off" onkeypress="handleKeyPress(event)">
+                    
+                    <!-- Кнопка плюс (вложения) справа -->
+                    <div style="position: relative;">
+                        <button class="icon-btn" id="attach-btn" onclick="toggleAttachMenu(event)" title="Вложения">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                                <line x1="12" y1="5" x2="12" y2="19"></line>
+                                <line x1="5" y1="12" x2="19" y2="12"></line>
+                            </svg>
+                        </button>
+                        <!-- Выпадающее меню вложений -->
+                        <div class="attach-menu" id="attach-menu" style="display: none;">
+                            <div class="attach-menu-item" onclick="openMediaPicker(); event.stopPropagation();">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                                    <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                                    <polyline points="21 15 16 10 5 21"></polyline>
+                                </svg>
+                                <span>Медиа/Файлы</span>
+                            </div>
+                            <div class="attach-menu-item" onclick="openDocPicker(); event.stopPropagation();">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path>
+                                    <polyline points="13 2 13 9 20 9"></polyline>
+                                </svg>
+                                <span>Файлы</span>
+                            </div>
+                            <div class="attach-menu-item" onclick="createPoll(); event.stopPropagation();">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <line x1="12" y1="20" x2="12" y2="10"></line>
+                                    <line x1="18" y1="20" x2="18" y2="4"></line>
+                                    <line x1="6" y1="20" x2="6" y2="16"></line>
+                                </svg>
+                                <span>Голосование</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Кнопка голосового сообщения -->
+                    <button class="icon-btn" onmousedown="startVoiceRecording(event)" onmouseup="stopVoiceRecording(event)" ontouchstart="startVoiceRecording(event)" ontouchend="stopVoiceRecording(event)" title="Голосовое сообщение">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                            <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                            <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                            <line x1="12" y1="19" x2="12" y2="23"></line>
+                            <line x1="8" y1="23" x2="16" y2="23"></line>
+                        </svg>
+                    </button>
+                </div>
+                
+                <!-- Превью выбранных файлов -->
+                <div id="file-preview-area" style="display: none;">
+                    <div id="file-preview-container"></div>
+                </div>
+            
+            <!-- Floating Action Bar for Selection (перенесено внутрь main-content) -->
+            <div id="selection-bar" class="selection-bar glass" style="display: none;">
+                <span id="selection-count"></span>
+                <div class="selection-actions">
+                    <button class="icon-btn" id="delete-selected-btn" title="Удалить выбранные">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                    </button>
+                    <button class="icon-btn" id="cancel-selection-btn" title="Отменить выделение">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                    </button>
+                </div>
+            </div>
+            </div>
+
+            <!-- SETTINGS VIEW -->
+            <div id="settings-view-inline" class="content-view" style="display: none;">
+                <div class="settings-header-inline">
+                    <button class="icon-btn" onclick="closeInlineSettings()" title="Назад">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="19" y1="12" x2="5" y2="12"></line>
+                            <polyline points="12 19 5 12 12 5"></polyline>
+                        </svg>
+                    </button>
+                    <h2>Настройки</h2>
+                </div>
+                <div class="settings-content-inline">
+                    <div class="settings-section">
+                        <h3>Профиль</h3>
+                        <div class="settings-profile-header">
+                            <div class="room-icon" style="width:72px; height:72px; border-width:2px;">
+                                {% if user.avatar_url %}
+                                    <img id="inline-settings-avatar-img" src="{{ user.avatar_url }}" alt="Avatar">
+                                {% else %}
+                                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <circle cx="12" cy="8" r="5"></circle>
+                                        <path d="M20 21a8 8 0 1 0-16 0"></path>
+                                    </svg>
+                                {% endif %}
+                            </div>
+                            <div>
+                                <input type="file" id="inline-avatarFileInput" accept="image/*" style="display:none" onchange="uploadAvatarFileInline(event)">
+                                <button onclick="document.getElementById('inline-avatarFileInput').click()" style="margin: 4px;">Загрузить аватар</button>
+                                {% if user.avatar_url %}
+                                    <button class="logout-btn" style="background: var(--color-danger); margin: 4px;" onclick="removeAvatarInline()">Удалить</button>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="setting-item-inline">
+                            <label>Имя пользователя</label>
+                            <input type="text" id="inline-settingsUsername" value="{{ user.username }}">
+                        </div>
+                        
+                        <div class="setting-item-inline">
+                            <label>О себе</label>
+                            <textarea id="inline-settingsBio" rows="3" placeholder="Коротко о себе">{{ user.bio }}</textarea>
+                        </div>
+                    </div>
+
+                    <div class="settings-section">
+                        <h3>Тема оформления</h3>
+                        <div class="theme-selector">
+                            <div class="theme-option {% if user.theme=='dark' %}active{% endif %}" data-theme="dark" onclick="selectTheme('dark')">
+                                <div class="theme-preview dark-preview">
+                                    <div class="theme-preview-header"></div>
+                                    <div class="theme-preview-content">
+                                        <div class="theme-preview-sidebar"></div>
+                                        <div class="theme-preview-main"></div>
+                                    </div>
+                                </div>
+                                <span class="theme-label">Тёмная</span>
+                            </div>
+                            
+                            <div class="theme-option {% if user.theme=='light' %}active{% endif %}" data-theme="light" onclick="selectTheme('light')">
+                                <div class="theme-preview light-preview">
+                                    <div class="theme-preview-header"></div>
+                                    <div class="theme-preview-content">
+                                        <div class="theme-preview-sidebar"></div>
+                                        <div class="theme-preview-main"></div>
+                                    </div>
+                                </div>
+                                <span class="theme-label">Светлая</span>
+                            </div>
+                            
+                            <div class="theme-option {% if user.theme=='ocean' %}active{% endif %}" data-theme="ocean" onclick="selectTheme('ocean')">
+                                <div class="theme-preview ocean-preview">
+                                    <div class="theme-preview-header"></div>
+                                    <div class="theme-preview-content">
+                                        <div class="theme-preview-sidebar"></div>
+                                        <div class="theme-preview-main"></div>
+                                    </div>
+                                </div>
+                                <span class="theme-label">Океан</span>
+                            </div>
+
+                            <div class="theme-option {% if user.theme=='amoled' %}active{% endif %}" data-theme="amoled" onclick="selectTheme('amoled')">
+                                <div class="theme-preview dark-preview">
+                                    <div class="theme-preview-header" style="background:#000"></div>
+                                    <div class="theme-preview-content">
+                                        <div class="theme-preview-sidebar" style="background:#0b0b0b"></div>
+                                        <div class="theme-preview-main" style="background:#000"></div>
+                                    </div>
+                                </div>
+                                <span class="theme-label">AMOLED</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="settings-section">
+                        <h3>🎨 Эффект стекла</h3>
+                        <div class="setting-item-inline">
+                            <label>Прозрачность: <span id="inline-opacityValue">0.15</span></label>
+                            <input type="range" id="inline-glassOpacity" min="0.05" max="0.4" step="0.01" value="0.15" oninput="updateGlassEffectInline()">
+                        </div>
+                        
+                        <div class="setting-item-inline">
+                            <label>Размытие: <span id="inline-blurValue">40px</span></label>
+                            <input type="range" id="inline-glassBlur" min="10" max="100" step="5" value="40" oninput="updateGlassEffectInline()">
+                        </div>
+                        
+                        <div class="setting-item-inline">
+                            <label>Границы: <span id="inline-borderValue">0.2</span></label>
+                            <input type="range" id="inline-glassBorder" min="0.05" max="0.5" step="0.05" value="0.2" oninput="updateGlassEffectInline()">
+                        </div>
+                        
+                        <button onclick="resetGlassEffectInline()" style="background: var(--color-warning); margin-top: 12px;">🔄 Сбросить</button>
+                    </div>
+
+                    <div class="settings-section">
+                        <h3>Звук вызова</h3>
+                        <div class="setting-item-inline">
+                            <label for="inlineSettingsRingtone">🔔 Рингтон</label>
+                            <select id="inlineSettingsRingtone" onchange="previewRingtone()">
+                                <option value="marimba">Marimba (iPhone)</option>
+                                <option value="ascending">Восходящая</option>
+                                <option value="ripple">Волна</option>
+                                <option value="gentle">Нежная</option>
+                                <option value="cheerful">Веселая</option>
+                            </select>
+                            <button onclick="previewRingtone()" style="margin-top: 8px;">🎵 Прослушать</button>
+                        </div>
+                    </div>
+
+                    <div class="settings-section">
+                        <button onclick="saveInlineSettings()" style="width: 100%; font-size: 16px; padding: 14px;">Сохранить изменения</button>
+                        <div id="inline-settingsMessage" class="modal-message"></div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Поиск пользователей -->
+    <div id="searchModal" class="modal-overlay" onclick="closeModal(event)">
+        <div class="modal-content enhanced-glass">
+            <div class="modal-header">
+                <h3>Поиск пользователей</h3>
+                <button class="close-btn" onclick="closeModal(event)">&times;</button>
+            </div>
+            <div class="input-group">
+                <label for="searchQuery">Введите @имя</label>
+                <input type="text" id="searchQuery" placeholder="Например: ivan" onkeypress="if(event.key==='Enter'){searchUsers()}">
+            </div>
+            <button onclick="searchUsers()">Найти</button>
+            <div id="searchMessage" class="modal-message"></div>
+            <div id="searchResults"></div>
+        </div>
+    </div>
+
+    <!-- Видеозвонок -->
+    <div id="callModal" class="modal-overlay" onclick="closeModal(event)">
+        <div class="modal-content enhanced-glass" style="max-width: 900px; width: 90%;">
+            <div class="modal-header">
+                <h3 id="callTitle">Вызов</h3>
+                <button class="close-btn" onclick="closeModal(event); endCall()">&times;</button>
+            </div>
+            <div class="input-group" id="callInfo" style="display:none;"></div>
+            <div class="call-videos">
+                <div style="position: relative; width: 100%; height: 100%;">
+                    <video id="localVideo" autoplay playsinline muted webkit-playsinline="true"></video>
+                    <div id="localVideoPlaceholder" class="video-placeholder">
+                        <div class="video-placeholder-avatar">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                <circle cx="12" cy="7" r="4"></circle>
+                            </svg>
+                        </div>
+                        <div class="video-placeholder-text">Камера выключена</div>
+                    </div>
+                </div>
+                <div id="remoteVideos" class="remote-videos"></div>
+            </div>
+            <div class="call-controls">
+                <!-- Микрофон с встроенной стрелкой -->
+                <div class="control-btn-wrapper control-btn-with-settings">
+                    <button id="toggleMicBtn" class="control-btn" onclick="toggleMic()" title="Микрофон">
+                        <svg class="control-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                            <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                            <line x1="12" y1="19" x2="12" y2="23"></line>
+                            <line x1="8" y1="23" x2="16" y2="23"></line>
+                        </svg>
+                        <span class="control-label">Микро</span>
+                    </button>
+                    <button class="device-settings-btn" onclick="event.stopPropagation(); toggleDeviceMenu(event, 'mic');" title="Настройки">
+                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                            <polyline points="6 9 12 15 18 9"></polyline>
+                        </svg>
+                    </button>
+                    <div class="device-menu" id="mic-device-menu">
+                        <!-- Динамически заполняется -->
+                    </div>
+                </div>
+                
+                <!-- Камера с встроенной стрелкой -->
+                <div class="control-btn-wrapper control-btn-with-settings">
+                    <button id="toggleCamBtn" class="control-btn" onclick="toggleCam()" title="Камера">
+                        <svg class="control-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M23 7l-7 5 7 5V7z"></path>
+                            <rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect>
+                        </svg>
+                        <span class="control-label">Камера</span>
+                    </button>
+                    <button class="device-settings-btn" onclick="event.stopPropagation(); toggleDeviceMenu(event, 'cam');" title="Настройки">
+                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                            <polyline points="6 9 12 15 18 9"></polyline>
+                        </svg>
+                    </button>
+                    <div class="device-menu" id="cam-device-menu">
+                        <!-- Динамически заполняется -->
+                    </div>
+                </div>
+                
+                <!-- Экран с встроенной стрелкой -->
+                <div class="control-btn-wrapper control-btn-with-settings">
+                    <button id="shareScreenBtn" class="control-btn" onclick="shareScreen()" title="Демонстрация экрана">
+                        <svg class="control-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+                            <line x1="8" y1="21" x2="16" y2="21"></line>
+                            <line x1="12" y1="17" x2="12" y2="21"></line>
+                        </svg>
+                        <span class="control-label">Экран</span>
+                    </button>
+                    <button class="device-settings-btn" onclick="event.stopPropagation(); toggleDeviceMenu(event, 'screen');" title="Настройки">
+                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                            <polyline points="6 9 12 15 18 9"></polyline>
+                        </svg>
+                    </button>
+                    <div class="device-menu" id="screen-device-menu">
+                        <!-- Динамически заполняется -->
+                    </div>
+                </div>
+                
+                <!-- Компактная кнопка Свернуть -->
+                <button id="pipBtn" class="control-btn control-btn-compact" onclick="togglePictureInPicture()" title="Свернуть в окно">
+                    <svg class="control-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M22 13.7V9a2 2 0 0 0-2-2h-4.3a2 2 0 0 1-1.4-.6l-1-1.2a2 2 0 0 0-3.2 0l-1 1.2a2 2 0 0 1-1.4.6H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h4.3"/>
+                        <path d="m22 19-3-3m0 3 3-3"/>
+                    </svg>
+                    <span class="control-label">Свернуть</span>
+                </button>
+                
+                <!-- Компактная кнопка Завершить -->
+                <button class="end-call end-call-compact" onclick="endCall()">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M23 1L17 7m0 0L11 1m6 6V0"></path>
+                        <path d="M1 23l6-6m0 0l6 6m-6-6v7"></path>
+                    </svg>
+                    Заверш.
+                </button>
+                
+                <!-- Компактная кнопка Пригласить -->
+                <button class="control-btn control-btn-compact" id="inviteToCallBtn" onclick="openInviteToCallModal()" title="Пригласить участников" style="display:none;">
+                    <svg class="control-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="8.5" cy="7" r="4"></circle>
+                        <line x1="20" y1="8" x2="20" y2="14"></line>
+                        <line x1="23" y1="11" x2="17" y2="11"></line>
+                    </svg>
+                    <span class="control-label">Пригласить</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Набор (Dialing) -->
+    <div id="dialModal" class="modal-overlay" onclick="closeModal(event)">
+        <div class="modal-content glass" style="max-width: 420px; width: 90%; text-align: left;">
+            <div class="modal-header">
+                <h3 id="dialTitle">Идёт вызов…</h3>
+                <button class="close-btn" onclick="closeModal(event); cancelDialing()">&times;</button>
+            </div>
+            <p id="dialStatus" style="margin:0 0 10px 0; opacity:0.85;">Соединение…</p>
+            <div style="display:flex; gap:10px; justify-content:flex-end;">
+                <button class="end-call" onclick="cancelDialing()">Отменить</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Входящий звонок -->
+    <div id="incomingCallPopup" class="modal-overlay" style="display:none;" onclick="closeModal(event)">
+        <div class="modal-content glass" style="max-width: 420px; width: 90%;">
+            <div class="modal-header">
+                <h3>Входящий звонок</h3>
+                <button class="close-btn" onclick="closeModal(event); rejectIncomingCall()">&times;</button>
+            </div>
+            <p id="incomingCallText">Кто-то звонит...</p>
+            <div style="display:flex; gap:10px; justify-content:flex-end;">
+                <button onclick="rejectIncomingCall()" class="logout-btn" style="background: var(--color-danger);">Отклонить</button>
+                <button onclick="acceptIncomingCall()">Ответить</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальное окно выбора участников для приглашения в звонок -->
+    <div id="inviteToCallModal" class="modal-overlay" style="display:none;" onclick="closeModal(event)">
+        <div class="modal-content glass" style="max-width: 500px; width: 90%;">
+            <div class="modal-header">
+                <h3>Пригласить в звонок</h3>
+                <button class="close-btn" onclick="closeModal(event)">&times;</button>
+            </div>
+            <div class="input-group">
+                <label>Выберите участников для приглашения:</label>
+                <div class="contact-selector" id="inviteToCallMembersSelect" style="max-height: 300px; overflow-y: auto;">
+                    <!-- Сюда будут динамически загружаться участники -->
+                </div>
+            </div>
+            <button onclick="sendCallInvitations()" style="width: 100%; background: var(--color-success);">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="vertical-align: middle; margin-right: 6px;">
+                    <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
+                </svg>
+                Отправить приглашения
+            </button>
+            <div id="inviteToCallMessage" class="modal-message"></div>
+        </div>
+    </div>
+
+    <!-- Приглашение в групповой звонок -->
+    <div id="groupCallInviteModal" class="modal-overlay" style="display:none;" onclick="closeModal(event)">
+        <div class="modal-content glass" style="max-width: 500px; width: 90%;">
+            <div class="modal-header">
+                <h3>Групповой звонок</h3>
+                <button class="close-btn" onclick="closeModal(event); declineGroupCall()">&times;</button>
+            </div>
+            <div style="padding: 20px 0;">
+                <div style="text-align: center; margin-bottom: 20px;">
+                    <div style="width: 80px; height: 80px; background: linear-gradient(135deg, var(--color-success), #00c853); border-radius: 50%; margin: 0 auto 16px; display: flex; align-items: center; justify-content: center; animation: pulse 2s infinite;">
+                        <svg width="40" height="40" viewBox="0 0 24 24" fill="white" stroke="white" stroke-width="2">
+                            <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
+                        </svg>
+                    </div>
+                    <h3 id="groupCallInviterName" style="margin: 0 0 8px 0;">Пользователь</h3>
+                    <p id="groupCallRoomName" style="margin: 0; opacity: 0.7; font-size: 15px;">начал групповой звонок</p>
+                </div>
+                
+                <div style="background: rgba(255,255,255,0.05); border-radius: 12px; padding: 16px; margin-bottom: 20px;">
+                    <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                        </svg>
+                        <div style="flex: 1;">
+                            <div style="font-size: 12px; opacity: 0.7; margin-bottom: 2px;">Участников в звонке</div>
+                            <div style="font-size: 16px; font-weight: 600;" id="groupCallParticipantsCount">1</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div style="display:flex; gap:12px; justify-content:flex-end;">
+                <button onclick="declineGroupCall()" class="logout-btn" style="background: var(--color-danger); flex: 1;">Отклонить</button>
+                <button onclick="joinGroupCallFromInvite()" style="background: var(--color-success); flex: 1;">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="vertical-align: middle; margin-right: 6px;">
+                        <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
+                    </svg>
+                    Присоединиться
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Настройки профиля -->
+    <div id="settingsModal" class="modal-overlay" onclick="closeModal(event)">
+        <div class="modal-content glass">
+            <div class="modal-header">
+                <h3>Настройки аккаунта</h3>
+                <button class="close-btn" onclick="closeModal(event)">&times;</button>
+            </div>
+            <div style="display:flex; align-items:center; gap:12px; margin-bottom: 16px;">
+                <div class="room-icon" style="width:64px; height:64px; border-width:2px;">
+                    {% if user.avatar_url %}
+                        <img id="settings-avatar-img" src="{{ user.avatar_url }}" alt="Avatar">
+                    {% else %}
+                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="8" r="5"></circle>
+                            <path d="M20 21a8 8 0 1 0-16 0"></path>
+                        </svg>
+                    {% endif %}
+                </div>
+                <div>
+                    <input type="file" id="avatarFileInput" accept="image/*" style="display:none" onchange="uploadAvatarFile(event)">
+                    <button onclick="document.getElementById('avatarFileInput').click()">Загрузить аватар</button>
+                    {% if user.avatar_url %}
+                        <button class="logout-btn" style="background: var(--color-danger);" onclick="removeAvatar()">Удалить аватар</button>
+                    {% endif %}
+                    <div id="avatarMessage" class="modal-message"></div>
+                </div>
+            </div>
+            <div class="input-group">
+                <label for="settingsUsername">Имя пользователя</label>
+                <input type="text" id="settingsUsername" value="{{ user.username }}">
+            </div>
+            <div class="input-group">
+                <label for="settingsBio">О себе</label>
+                <textarea id="settingsBio" rows="3" placeholder="Коротко о себе">{{ user.bio }}</textarea>
+            </div>
+            <div class="input-group">
+                <label for="settingsTheme">Тема</label>
+                <select id="settingsTheme">
+                    <option value="dark" {% if user.theme=='dark' %}selected{% endif %}>Тёмная</option>
+                    <option value="light" {% if user.theme=='light' %}selected{% endif %}>Светлая</option>
+                    <option value="ocean" {% if user.theme=='ocean' %}selected{% endif %}>Океан</option>
+                            <option value="amoled" {% if user.theme=='amoled' %}selected{% endif %}>AMOLED</option>
+                </select>
+            </div>
+
+            <div class="input-group">
+                <label for="settingsRingtone">🔔 Рингтон звонка</label>
+                <select id="settingsRingtone" onchange="previewRingtone()">
+                    <option value="marimba">Marimba (iPhone)</option>
+                    <option value="ascending">Восходящая</option>
+                    <option value="ripple">Волна</option>
+                    <option value="gentle">Нежная</option>
+                    <option value="cheerful">Веселая</option>
+                </select>
+                <button onclick="previewRingtone()" style="margin-top: 8px;">🎵 Прослушать</button>
+            </div>
+
+            <div class="input-group">
+                <label>Проверка соединения (камера/микрофон/ICE)</label>
+                <button onclick="runConnectivityTest()">Проверить</button>
+                <div id="connectivityResult" class="modal-message"></div>
+            </div>
+            
+            <hr>
+            <h3 style="font-size: 18px; margin-bottom: 16px;">🎨 Настройки эффекта стекла</h3>
+            
+            <div class="input-group">
+                <label for="glassOpacity">Прозрачность стекла: <span id="opacityValue">0.15</span></label>
+                <input type="range" id="glassOpacity" min="0.05" max="0.4" step="0.01" value="0.15" oninput="updateGlassEffect()">
+            </div>
+            
+            <div class="input-group">
+                <label for="glassBlur">Размытие фона: <span id="blurValue">40px</span></label>
+                <input type="range" id="glassBlur" min="10" max="100" step="5" value="40" oninput="updateGlassEffect()">
+            </div>
+            
+            <div class="input-group">
+                <label for="glassBorder">Прозрачность границ: <span id="borderValue">0.2</span></label>
+                <input type="range" id="glassBorder" min="0.05" max="0.5" step="0.05" value="0.2" oninput="updateGlassEffect()">
+            </div>
+            
+            <button onclick="resetGlassEffect()" style="background: var(--color-warning); margin-top: 12px;">🔄 Сбросить по умолчанию</button>
+            
+            <button onclick="saveSettings()">Сохранить</button>
+            <div id="settingsMessage" class="modal-message"></div>
+        </div>
+    </div>
+
+    <div id="reaction-picker">
+        <span class="reaction-option" onclick="sendReaction('👍')">👍</span>
+        <span class="reaction-option" onclick="sendReaction('👎')">👎</span>
+        <span class="reaction-option" onclick="sendReaction('❤️')">❤️</span>
+        <span class="reaction-option" onclick="sendReaction('😂')">😂</span>
+        <span class="reaction-option" onclick="sendReaction('😮')">😮</span>
+        <span class="reaction-option" onclick="sendReaction('😢')">😢</span>
+        <span class="reaction-option" onclick="sendReaction('🔥')">🔥</span>
+        <span class="reaction-more" onclick="expandReactionPicker(event)">...</span>
+        <!-- Дополнительные эмоции (скрыты по умолчанию) -->
+        <span class="reaction-option hidden-reaction" onclick="sendReaction('😍')">😍</span>
+        <span class="reaction-option hidden-reaction" onclick="sendReaction('🥰')">🥰</span>
+        <span class="reaction-option hidden-reaction" onclick="sendReaction('😘')">😘</span>
+        <span class="reaction-option hidden-reaction" onclick="sendReaction('😎')">😎</span>
+        <span class="reaction-option hidden-reaction" onclick="sendReaction('🤩')">🤩</span>
+        <span class="reaction-option hidden-reaction" onclick="sendReaction('😭')">😭</span>
+        <span class="reaction-option hidden-reaction" onclick="sendReaction('😡')">😡</span>
+        <span class="reaction-option hidden-reaction" onclick="sendReaction('🤬')">🤬</span>
+        <span class="reaction-option hidden-reaction" onclick="sendReaction('🤯')">🤯</span>
+        <span class="reaction-option hidden-reaction" onclick="sendReaction('😱')">😱</span>
+        <span class="reaction-option hidden-reaction" onclick="sendReaction('🥺')">🥺</span>
+        <span class="reaction-option hidden-reaction" onclick="sendReaction('😴')">😴</span>
+        <span class="reaction-option hidden-reaction" onclick="sendReaction('🤔')">🤔</span>
+        <span class="reaction-option hidden-reaction" onclick="sendReaction('🤨')">🤨</span>
+        <span class="reaction-option hidden-reaction" onclick="sendReaction('😏')">😏</span>
+        <span class="reaction-option hidden-reaction" onclick="sendReaction('😬')">😬</span>
+        <span class="reaction-option hidden-reaction" onclick="sendReaction('🙄')">🙄</span>
+        <span class="reaction-option hidden-reaction" onclick="sendReaction('😤')">😤</span>
+        <span class="reaction-option hidden-reaction" onclick="sendReaction('😳')">😳</span>
+        <span class="reaction-option hidden-reaction" onclick="sendReaction('🥵')">🥵</span>
+        <span class="reaction-option hidden-reaction" onclick="sendReaction('🥶')">🥶</span>
+        <span class="reaction-option hidden-reaction" onclick="sendReaction('😈')">😈</span>
+        <span class="reaction-option hidden-reaction" onclick="sendReaction('👹')">👹</span>
+        <span class="reaction-option hidden-reaction" onclick="sendReaction('💀')">💀</span>
+        <span class="reaction-option hidden-reaction" onclick="sendReaction('☠️')">☠️</span>
+        <span class="reaction-option hidden-reaction" onclick="sendReaction('💩')">💩</span>
+        <span class="reaction-option hidden-reaction" onclick="sendReaction('🤡')">🤡</span>
+        <span class="reaction-option hidden-reaction" onclick="sendReaction('👻')">👻</span>
+        <span class="reaction-option hidden-reaction" onclick="sendReaction('👽')">👽</span>
+        <span class="reaction-option hidden-reaction" onclick="sendReaction('🤖')">🤖</span>
+        <span class="reaction-option hidden-reaction" onclick="sendReaction('💯')">💯</span>
+        <span class="reaction-option hidden-reaction" onclick="sendReaction('💪')">💪</span>
+        <span class="reaction-option hidden-reaction" onclick="sendReaction('🙏')">🙏</span>
+        <span class="reaction-option hidden-reaction" onclick="sendReaction('👏')">👏</span>
+        <span class="reaction-option hidden-reaction" onclick="sendReaction('🎉')">🎉</span>
+        <span class="reaction-option hidden-reaction" onclick="sendReaction('🎊')">🎊</span>
+        <span class="reaction-option hidden-reaction" onclick="sendReaction('⭐')">⭐</span>
+    </div>
+
+    <!-- НОВОЕ: Контекстное меню для сообщений -->
+    <div id="message-context-menu" class="context-menu glass" style="display: none;">
+        <ul>
+            <li id="edit-message-btn">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                <span>Редактировать</span>
+            </li>
+            <li id="delete-message-btn">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                <span>Удалить</span>
+            </li>
+            <li id="select-message-btn">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="9 11 12 14 22 4"></polyline><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>
+                <span>Выбрать</span>
+            </li>
+        </ul>
+    </div>
+    
+    <!-- Контекстное меню для чатов -->
+    <div id="room-context-menu" class="context-menu glass" style="display: none; z-index: 2000;">
+        <ul>
+            <li id="archive-room-btn">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                    <polyline points="21 8 21 21 3 21 3 8"></polyline>
+                    <rect x="1" y="3" width="22" height="5"></rect>
+                    <line x1="10" y1="12" x2="14" y2="12"></line>
+                </svg>
+                <span>В архив</span>
+            </li>
+            <li id="unarchive-room-btn" style="display: none;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                    <polyline points="3 8 3 21 21 21 21 8"></polyline>
+                    <rect x="1" y="3" width="22" height="5"></rect>
+                    <line x1="10" y1="12" x2="14" y2="12"></line>
+                </svg>
+                <span>Разархивировать</span>
+            </li>
+            <li id="delete-room-context-btn">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" class="danger">
+                    <polyline points="3 6 5 6 21 6"></polyline>
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                </svg>
+                <span>Удалить чат</span>
+            </li>
+        </ul>
+    </div>
+
+    <div id="createRoomModal" class="modal-overlay" onclick="closeModal(event)">
+        <div class="modal-content enhanced-glass">
+             <div class="modal-header">
+                <h3>Создать новую комнату</h3>
+                <button class="close-btn" onclick="closeModal(event)">&times;</button>
+            </div>
+            
+            <div class="input-group">
+                <label for="roomName">Название</label>
+                <input type="text" id="roomName" placeholder="Название группы или канала">
+            </div>
+            <div class="input-group">
+                <label for="roomType">Тип комнаты</label>
+                <select id="roomType">
+                    <option value="group">👥 Группа</option>
+                    <option value="channel">📢 Канал</option>
+                </select>
+            </div>
+
+            <div class="input-group">
+                <label>Добавить участников (из ваших контактов):</label>
+                <div class="contact-selector" id="roomMembersSelect">
+                    {% if contacts %}
+                        {% for contact in contacts %}
+                            <div class="contact-checkbox">
+                                <input type="checkbox" id="member-{{ contact.id }}" value="{{ contact.id }}">
+                                <label for="member-{{ contact.id }}">{{ contact.display_name }}</label>
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="empty-state small">У вас нет контактов для добавления.</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <button onclick="createRoom()">Создать</button>
+            <div id="createRoomMessage" class="modal-message"></div>
+        </div>
+    </div>
+
+    
+
+    <!-- Подтверждение удаления сообщений -->
+    <div id="delete-confirm-modal" class="modal-overlay" onclick="closeModal(event)">
+        <div class="modal-content glass" style="max-width: 420px; width: 90%; text-align: left;">
+            <div class="modal-header">
+                <h3>Удаление сообщений</h3>
+                <button class="close-btn" onclick="closeModal(event)">&times;</button>
+            </div>
+            <p id="delete-confirm-text">Вы уверены, что хотите удалить сообщение?</p>
+            <div id="delete-for-other-user-block" class="input-group" style="display:none;">
+                <label style="display:flex; align-items:center; gap:8px; margin-bottom:0;">
+                    <input type="checkbox" id="delete-for-other-user-checkbox">
+                    <span id="delete-for-other-user-label">Также удалить для собеседника</span>
+                </label>
+            </div>
+            <div style="display:flex; gap:10px; justify-content:flex-end;">
+                <button class="logout-btn" style="background: var(--color-danger);" id="confirm-delete-btn">Удалить</button>
+                <button onclick="closeModal(event)">Отмена</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="contactSettingsModal" class="modal-overlay" onclick="closeModal(event)">
+        <div class="modal-content glass">
+            <div class="modal-header">
+                <h3 id="contactSettingsTitle">Информация о контакте</h3>
+                <button class="close-btn" onclick="closeModal(event)">&times;</button>
+            </div>
+            <input type="hidden" id="contactSettingsId">
+            
+            <!-- Профильная информация -->
+            <div style="text-align: center; margin-bottom: 24px;">
+                <div class="room-icon" style="width:96px; height:96px; border-width:2px; margin: 0 auto 16px;" id="contactAvatarPreview">
+                    <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="8" r="5"></circle>
+                        <path d="M20 21a8 8 0 1 0-16 0"></path>
+                    </svg>
+                </div>
+                <h3 id="contactUsername" style="margin: 0 0 8px 0; font-size: 20px;"></h3>
+                <p id="contactBio" style="margin: 0; opacity: 0.7; font-size: 14px; font-style: italic;">Био не указано</p>
+            </div>
+            
+            <!-- Информация о контакте -->
+            <div style="background: rgba(255,255,255,0.05); border-radius: 12px; padding: 16px; margin-bottom: 20px;">
+                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="opacity: 0.6;">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <polyline points="12 6 12 12 16 14"></polyline>
+                    </svg>
+                    <div style="flex: 1;">
+                        <div style="font-size: 12px; opacity: 0.6; margin-bottom: 2px;">Был(а) в сети</div>
+                        <div id="contactLastSeen" style="font-size: 14px;">недавно</div>
+                    </div>
+                </div>
+                
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="opacity: 0.6;">
+                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                    </svg>
+                    <div style="flex: 1;">
+                        <div style="font-size: 12px; opacity: 0.6; margin-bottom: 2px;">Общих сообщений</div>
+                        <div id="contactMessagesCount" style="font-size: 14px;">0</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="input-group">
+                <label for="contactCustomName">Ваше имя для контакта (видно только вам)</label>
+                <input type="text" id="contactCustomName" placeholder="Например: Вася Программист">
+            </div>
+            
+            <button onclick="saveContactSettings()" style="width: 100%; margin-bottom: 12px;">Сохранить имя</button>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                <button onclick="openDMWithContact()" style="background: var(--color-primary);">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 6px;">
+                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                    </svg>
+                    Написать
+                </button>
+                <button onclick="blockContactFromSettings()" class="logout-btn" style="background: var(--color-danger);">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 6px;">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line>
+                    </svg>
+                    Заблокировать
+                </button>
+            </div>
+            
+            <div id="contactSettingsMessage" class="modal-message"></div>
+        </div>
+    </div>
+
+    <div id="roomSettingsModal" class="modal-overlay" onclick="closeModal(event)">
+        <div class="modal-content glass">
+            <div class="modal-header">
+                <h3 id="roomSettingsTitle">Управление Группой/Каналом</h3>
+                <button class="close-btn" onclick="closeModal(event)">&times;</button>
+            </div>
+            <input type="hidden" id="roomSettingsId">
+
+            <!-- Информационная секция -->
+            <div class="settings-section" id="roomInfoSection">
+                <div style="display:flex; align-items:center; gap:16px; margin-bottom: 20px;">
+                    <div class="room-icon" style="width:80px; height:80px; border-width:2px;" id="roomSettingsAvatarPreview">
+                        <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                        </svg>
+                    </div>
+                    <div style="flex: 1;">
+                        <h4 id="roomSettingsNameDisplay" style="margin: 0 0 8px 0; font-size: 18px;"></h4>
+                        <p id="roomSettingsTypeDisplay" style="margin: 0; opacity: 0.7; font-size: 14px;"></p>
+                    </div>
+                </div>
+                
+                <!-- Кнопка просмотра участников для всех -->
+                <button onclick="openMembersModal()" style="width: 100%; margin-bottom: 12px; background: var(--color-primary);">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 8px;">
+                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                    </svg>
+                    <span id="members-button-text">Участники</span> (<span id="roomMembersCount">0</span>)
+                </button>
+                
+                <!-- Дополнительная информация -->
+                <div id="roomSettingsStats" style="display:grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 20px;">
+                    <div style="text-align: center; padding: 12px; background: rgba(255,255,255,0.05); border-radius: 12px;">
+                        <div style="font-size: 24px; font-weight: bold;" id="roomMessagesCount">0</div>
+                        <div style="font-size: 11px; opacity: 0.7; margin-top: 4px;">Сообщений</div>
+                    </div>
+                    <div style="text-align: center; padding: 12px; background: rgba(255,255,255,0.05); border-radius: 12px;">
+                        <div style="font-size: 24px; font-weight: bold;" id="roomMediaCount">0</div>
+                        <div style="font-size: 11px; opacity: 0.7; margin-top: 4px;">Медиа</div>
+                    </div>
+                    <div style="text-align: center; padding: 12px; background: rgba(255,255,255,0.05); border-radius: 12px;">
+                        <div style="font-size: 24px; font-weight: bold;" id="roomLinksCount">0</div>
+                        <div style="font-size: 11px; opacity: 0.7; margin-top: 4px;">Ссылок</div>
+                    </div>
+                </div>
+            </div>
+
+            <hr>
+
+            <div id="admin-only-settings">
+                <h4 style="margin-bottom: 16px;">Настройки администратора</h4>
+                
+                <div class="input-group">
+                    <label for="roomSettingsName">Изменить название</label>
+                    <input type="text" id="roomSettingsName">
+                </div>
+                
+                <div class="input-group">
+                    <label>Аватар комнаты</label>
+                    <div style="display:flex; gap:8px; align-items:center; margin-bottom: 8px;">
+                        <input type="file" id="roomAvatarFileInput" accept="image/*" style="display:none" onchange="uploadRoomAvatarFile(event)">
+                        <button onclick="document.getElementById('roomAvatarFileInput').click()" style="flex: 1;">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 6px;">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                <polyline points="17 8 12 3 7 8"></polyline>
+                                <line x1="12" y1="3" x2="12" y2="15"></line>
+                            </svg>
+                            Загрузить файл
+                        </button>
+                        <button class="logout-btn" id="removeRoomAvatarBtn" onclick="removeRoomAvatar()" style="background: var(--color-danger); display:none;">Удалить</button>
+                    </div>
+                    <input type="text" id="roomSettingsAvatar" placeholder="Или вставьте прямую ссылку на изображение (http://...)" style="font-size: 13px;">
+                    <div id="roomAvatarMessage" class="modal-message"></div>
+                </div>
+                
+                <button onclick="updateRoomDetails()">Сохранить изменения</button>
+                
+                <hr>
+                
+                <div class="input-group">
+                    <label>Добавить новых участников (из ваших контактов):</label>
+                    <div class="contact-selector" id="addRoomMembersSelect">
+                        </div>
+                    <button onclick="addRoomMembers()">Добавить выбранных</button>
+                </div>
+                
+                <hr>
+                
+                <div class="danger-zone">
+                    <button onclick="deleteRoom()" class="logout-btn" style="background: var(--color-danger); width: 100%;">Удалить комнату</button>
+                </div>
+            </div>
+            <div id="roomSettingsMessage" class="modal-message"></div>
+        </div>
+    </div>
+    
+    <!-- Модальное окно участников -->
+    <div id="membersModal" class="modal-overlay" onclick="closeModal(event)">
+        <div class="modal-content glass">
+            <div class="modal-header">
+                <h3>Участники</h3>
+                <button class="close-btn" onclick="closeModal(event)">&times;</button>
+            </div>
+                <div id="membersListContainer">
+                <!-- Сюда будет динамически загружаться список -->
+            </div>
+            <div id="membersMessage" class="modal-message"></div>
+        </div>
+    </div>
+
+    <!-- Модальное окно эффектов видео -->
+    <div id="videoEffectsModal" class="modal-overlay" onclick="closeModal(event)">
+        <div class="modal-content glass" style="max-width: 600px;">
+            <div class="modal-header">
+                <h3>Эффекты камеры</h3>
+                <button class="close-btn" onclick="closeModal(event)">&times;</button>
+            </div>
+            <div class="effects-grid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 20px;">
+                <div class="effect-card" onclick="applyVideoEffect('none')">
+                    <div class="effect-preview" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                        <span style="color: white; font-weight: 600;">Без эффектов</span>
+                    </div>
+                    <div class="effect-name">Оригинал</div>
+                </div>
+                <div class="effect-card" onclick="applyVideoEffect('blur')">
+                    <div class="effect-preview" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); filter: blur(8px);">
+                    </div>
+                    <div class="effect-name">Размытие фона</div>
+                </div>
+                <div class="effect-card" onclick="applyVideoEffect('grayscale')">
+                    <div class="effect-preview" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); filter: grayscale(100%);">
+                    </div>
+                    <div class="effect-name">Чёрно-белое</div>
+                </div>
+                <div class="effect-card" onclick="applyVideoEffect('sepia')">
+                    <div class="effect-preview" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); filter: sepia(100%);">
+                    </div>
+                    <div class="effect-name">Сепия</div>
+                </div>
+            </div>
+            <div id="videoEffectsMessage" class="modal-message"></div>
+        </div>
+    </div>
+
+        <div id="presentationModal" class="modal-overlay" onclick="closeModal(event)">
+        <div class="modal-content glass presentation-modal">
+            <div class="modal-header">
+                <h3>Доска презентаций</h3>
+                <div class="presentation-header-controls">
+                    <button onclick="prevSlide()" class="icon-btn" title="Предыдущий слайд">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="15 18 9 12 15 6"></polyline>
+                        </svg>
+                    </button>
+                    <span id="slideCounter" class="slide-counter">1 / 1</span>
+                    <button onclick="nextSlide()" class="icon-btn" title="Следующий слайд">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="9 18 15 12 9 6"></polyline>
+                        </svg>
+                    </button>
+                    <button class="ghost-btn" onclick="duplicateSlide()" title="Дублировать слайд">Дублировать</button>
+                    <button class="ghost-btn danger" onclick="deleteSlide()" title="Удалить слайд">Удалить</button>
+                    <button class="close-btn" onclick="closeModal(event)">&times;</button>
+                </div>
+            </div>
+
+            <div class="presentation-toolbar" id="presentationToolbar">
+                <button class="tool-btn" data-tool="select" onclick="selectPresentationTool('select', this)" title="Выделение">
+                    <span class="material-icons-round">ads_click</span>
+                </button>
+                <button class="tool-btn" data-tool="text" onclick="addPresentationElement('text')" title="Добавить текст">
+                    <span class="material-icons-round">title</span>
+                </button>
+                <button class="tool-btn" data-tool="rectangle" onclick="addPresentationElement('rectangle')" title="Прямоугольник">
+                    <span class="material-icons-round">check_box_outline_blank</span>
+                </button>
+                <button class="tool-btn" data-tool="circle" onclick="addPresentationElement('circle')" title="Круг">
+                    <span class="material-icons-round">radio_button_unchecked</span>
+                </button>
+                <button class="tool-btn" data-tool="arrow" onclick="addPresentationElement('arrow')" title="Стрелка">
+                    <span class="material-icons-round">trending_flat</span>
+                </button>
+                <button class="tool-btn" data-tool="sticky" onclick="addPresentationElement('sticky')" title="Стикер">
+                    <span class="material-icons-round">sticky_note_2</span>
+                </button>
+                <label class="tool-btn upload" title="Вставить изображение">
+                    <span class="material-icons-round">image</span>
+                    <input type="file" id="presentationImageInput" accept="image/*" onchange="handlePresentationImage(event)">
+                </label>
+                <input type="color" id="presentationColor" value="#007aff" onchange="setPresentationColor(this.value)" title="Цвет акцентов">
+                <input type="range" id="presentationFontSize" min="12" max="96" value="32" onchange="setPresentationFontSize(this.value)" title="Размер текста">
+            </div>
+
+            <div class="presentation-workspace">
+                <div id="presentationSlides" class="presentation-canvas"></div>
+                <div id="presentationInspector" class="presentation-inspector">
+                    <p style="opacity: 0.7; font-size: 13px;">Выберите элемент на слайде, чтобы настроить его стиль.</p>
+                </div>
+            </div>
+
+            <div class="presentation-footer">
+                <div class="presentation-footer-left">
+                    <button class="ghost-btn" onclick="addNewSlide()">+ Новый слайд</button>
+                    <button class="ghost-btn" id="presentationGridToggle" onclick="toggleSlideGrid()">Сетка</button>
+                </div>
+                <div class="presentation-footer-right">
+                    <button class="secondary-btn" onclick="startPresentation()">Полноэкранный режим</button>
+                    <button class="primary-btn" onclick="sharePresentation()">Отправить в чат</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+<!-- Модальное окно доски для рисования -->
+        <div id="whiteboardModal" class="modal-overlay" onclick="closeModal(event)">
+        <div class="modal-content glass whiteboard-modal">
+            <div class="modal-header">
+                <h3>Интерактивная доска</h3>
+                <div class="whiteboard-toolbar" id="whiteboardToolbar">
+                    <button class="tool-btn active" data-tool="pen" onclick="setWhiteboardTool('pen', this)" title="Перо">
+                        <span class="material-icons-round">edit</span>
+                    </button>
+                    <button class="tool-btn" data-tool="highlighter" onclick="setWhiteboardTool('highlighter', this)" title="Маркер">
+                        <span class="material-icons-round">gesture</span>
+                    </button>
+                    <button class="tool-btn" data-tool="eraser" onclick="setWhiteboardTool('eraser', this)" title="Ластик">
+                        <span class="material-icons-round">format_clear</span>
+                    </button>
+                    <button class="tool-btn" data-tool="line" onclick="setWhiteboardTool('line', this)" title="Линия">
+                        <span class="material-icons-round">show_chart</span>
+                    </button>
+                    <button class="tool-btn" data-tool="rectangle" onclick="setWhiteboardTool('rectangle', this)" title="Прямоугольник">
+                        <span class="material-icons-round">crop_7_5</span>
+                    </button>
+                    <button class="tool-btn" data-tool="circle" onclick="setWhiteboardTool('circle', this)" title="Эллипс">
+                        <span class="material-icons-round">panorama_fish_eye</span>
+                    </button>
+                    <div class="whiteboard-divider"></div>
+                    <div class="whiteboard-palette" id="whiteboardPalette">
+                        <button class="color-swatch active" style="--swatch:#007aff" onclick="setWhiteboardColor('#007aff')" title="#007AFF"></button>
+                        <button class="color-swatch" style="--swatch:#ff2d55" onclick="setWhiteboardColor('#ff2d55')" title="#FF2D55"></button>
+                        <button class="color-swatch" style="--swatch:#34c759" onclick="setWhiteboardColor('#34c759')" title="#34C759"></button>
+                        <button class="color-swatch" style="--swatch:#ffbf00" onclick="setWhiteboardColor('#ffbf00')" title="#FFBF00"></button>
+                        <button class="color-swatch" style="--swatch:#333333" onclick="setWhiteboardColor('#333333')" title="#333333"></button>
+                        <button class="color-swatch" style="--swatch:#ffffff" onclick="setWhiteboardColor('#ffffff')" title="#FFFFFF"></button>
+                        <label class="color-picker" title="Другой цвет">
+                            <input type="color" id="brushColor" value="#007AFF" onchange="setWhiteboardColor(this.value)">
+                        </label>
+                    </div>
+                    <div class="whiteboard-slider">
+                        <input type="range" id="brushSize" min="1" max="30" value="3" oninput="setWhiteboardSize(this.value)">
+                        <span id="whiteboardSizeValue">3 px</span>
+                    </div>
+                    <button class="ghost-btn danger" onclick="clearWhiteboard()" title="Очистить доску">Очистить</button>
+                    <button class="close-btn" onclick="closeModal(event)">&times;</button>
+                </div>
+            </div>
+            <div class="whiteboard-stage">
+                <canvas id="whiteboardCanvas"></canvas>
+                <canvas id="whiteboardOverlay"></canvas>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Модальное окно совместных документов -->
+        <div id="documentsModal" class="modal-overlay" onclick="closeModal(event)">
+        <div class="modal-content glass documents-modal">
+            <div class="modal-header">
+                <h3>Общие документы</h3>
+                <button class="close-btn" onclick="closeModal(event)" title="Закрыть">&times;</button>
+            </div>
+            <div class="document-toolbar" id="documentToolbar">
+                <button onclick="formatText('bold')" class="tool-btn" title="Жирный"><strong>B</strong></button>
+                <button onclick="formatText('italic')" class="tool-btn" title="Курсив"><em>I</em></button>
+                <button onclick="formatText('underline')" class="tool-btn" title="Подчёркнутый"><u>U</u></button>
+                <button onclick="formatText('strikeThrough')" class="tool-btn" title="Зачёркнутый"><span class="material-icons-round">strikethrough_s</span></button>
+                <div class="toolbar-divider"></div>
+                <button onclick="formatText('insertUnorderedList')" class="tool-btn" title="Маркированный список"><span class="material-icons-round">format_list_bulleted</span></button>
+                <button onclick="formatText('insertOrderedList')" class="tool-btn" title="Нумерованный список"><span class="material-icons-round">format_list_numbered</span></button>
+                <div class="toolbar-divider"></div>
+                <button onclick="setDocumentBlock('P')" class="tool-btn" title="Обычный текст">¶</button>
+                <button onclick="setDocumentBlock('H2')" class="tool-btn" title="Заголовок 2">H2</button>
+                <button onclick="setDocumentBlock('H3')" class="tool-btn" title="Заголовок 3">H3</button>
+                <div class="toolbar-divider"></div>
+                <button onclick="setDocumentAlignment('left')" class="tool-btn" title="По левому краю"><span class="material-icons-round">format_align_left</span></button>
+                <button onclick="setDocumentAlignment('center')" class="tool-btn" title="По центру"><span class="material-icons-round">format_align_center</span></button>
+                <button onclick="setDocumentAlignment('right')" class="tool-btn" title="По правому краю"><span class="material-icons-round">format_align_right</span></button>
+                <div class="toolbar-divider"></div>
+                <button onclick="applyDocumentHighlight()" class="tool-btn" title="Маркер"><span class="material-icons-round">highlight</span></button>
+                <button onclick="toggleDocumentCode()" class="tool-btn" title="Код"><span class="material-icons-round">code</span></button>
+            </div>
+            <div id="documentEditor" class="document-editor" contenteditable="true" data-placeholder="Начните писать..." spellcheck="true"></div>
+            <div class="document-footer">
+                <span class="document-hint">Изменения синхронизируются автоматически</span>
+                <div class="document-actions">
+                    <button class="ghost-btn" onclick="shareDocument()">Скопировать текст</button>
+                    <button class="primary-btn" onclick="sendDocumentToChat()">Отправить в чат</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Telegram-style мобильная навигация -->
+    <nav class="telegram-mobile-nav" id="telegram-mobile-nav">
+        <div class="telegram-nav-container">
+            <button class="telegram-nav-item" data-nav="search" onclick="switchMobileNav('search', this)">
+                <span class="material-icons-round">search</span>
+                <span>Поиск</span>
+            </button>
+            
+            <button class="telegram-nav-item" data-nav="create" onclick="switchMobileNav('create', this)">
+                <span class="material-icons-round">add_circle</span>
+                <span>Создать</span>
+            </button>
+            
+            <button class="telegram-nav-item" data-nav="settings" onclick="switchMobileNav('settings', this)">
+                <span class="material-icons-round">settings</span>
+                <span>Настройки</span>
+            </button>
+        </div>
+    </nav>
+
+    <script id="bootstrap-data" type="application/json">
+        {"CURRENT_USER_ID": {{ user.id | tojson }}, "USER_CONTACTS": {{ contacts | tojson }}, "SFU_URL": {{ (sfu_url or none) | tojson }}}
+    </script>
+    <script>
+        (function(){
+            try {
+                const el = document.getElementById('bootstrap-data');
+                const data = JSON.parse(el.textContent || '{}');
+                window.CURRENT_USER_ID = data.CURRENT_USER_ID;
+                window.USER_CONTACTS = data.USER_CONTACTS || [];
+                if (data.SFU_URL) window.SFU_URL = data.SFU_URL;
+            } catch(e) {}
+        })();
+    </script>
+    <script>
+        // Telegram-style мобильная навигация
+        function switchMobileNav(section, element) {
+            // Убираем активный класс у всех кнопок навигации
+            document.querySelectorAll('.telegram-nav-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            
+            // Добавляем активный класс к выбранной кнопке
+            element.classList.add('active');
+            
+            // Обрабатываем переключение секций
+            switch(section) {
+                case 'chats':
+                    showChatsView();
+                    break;
+                case 'search':
+                    // Мобильное меню скрываем и блокируем на время поиска
+                    if (window.innerWidth <= 768) {
+                        window._mobileNavLock = true;
+                        const mobileNav = document.getElementById('telegram-mobile-nav');
+                        if (mobileNav) { mobileNav.classList.add('hidden'); mobileNav.style.animation = 'none'; }
+                    }
+                    openModal('searchModal');
+                    break;
+                case 'create':
+                    if (window.innerWidth <= 768) {
+                        window._mobileNavLock = true;
+                        const mobileNav = document.getElementById('telegram-mobile-nav');
+                        if (mobileNav) { mobileNav.classList.add('hidden'); mobileNav.style.animation = 'none'; }
+                    }
+                    openModal('createRoomModal');
+                    break;
+                case 'settings':
+                    // Открываем настройки в полноэкранном режиме на мобильных
+                    if (window.innerWidth <= 768) {
+                        const mainContent = document.getElementById('main-content');
+                        const sidebar = document.querySelector('.sidebar');
+                        const mobileNav = document.getElementById('telegram-mobile-nav');
+                        
+                        sidebar.classList.add('mobile-hidden');
+                        mainContent.classList.add('mobile-chat-open');
+                        
+                        // Скрываем навигацию (добавляем класс hidden)
+                        if (mobileNav) {
+                            mobileNav.classList.add('hidden');
+                            mobileNav.style.animation = 'none';
+                        }
+                        window._mobileNavLock = true;
+                        
+                        // Ждем открытия и показываем настройки
+                        setTimeout(() => {
+                            if (typeof openInlineSettings === 'function') {
+                                openInlineSettings();
+                            }
+                        }, 100);
+                    } else {
+                        if (typeof openInlineSettings === 'function') {
+                            openInlineSettings();
+                        }
+                    }
+                    break;
+            }
+        }
+        
+        function showChatsView() {
+            // Показываем список чатов на мобильных
+            if (window.innerWidth <= 768) {
+                const sidebar = document.querySelector('.sidebar');
+                const mainContent = document.getElementById('main-content');
+                const mobileNav = document.getElementById('telegram-mobile-nav');
+                const settingsView = document.getElementById('settings-view-inline');
+                const chatView = document.getElementById('chat-view');
+                
+                // Показываем сайдбар
+                if (sidebar) sidebar.classList.remove('mobile-hidden');
+                if (mainContent) mainContent.classList.remove('mobile-chat-open');
+                
+                // Показываем навигацию (убираем класс hidden)
+                if (mobileNav) {
+                    mobileNav.classList.remove('hidden');
+                }
+                
+                // Закрываем настройки если открыты
+                if (settingsView) settingsView.style.display = 'none';
+                if (chatView) chatView.style.display = 'flex';
+                
+                // Активируем кнопку "Чаты"
+                document.querySelectorAll('.telegram-nav-item').forEach(item => {
+                    item.classList.remove('active');
+                });
+                const chatsTab = document.querySelector('.telegram-nav-item[data-nav="chats"]');
+                if (chatsTab) chatsTab.classList.add('active');
+            }
+        }
+        
+        // closeMobileChat уже определен в chat.js
+        
+        // Обработчик изменения размера окна
+        function handleResize() {
+            if (window.innerWidth > 768) {
+                // На десктопе убираем мобильные классы
+                const mainContent = document.getElementById('main-content');
+                const sidebar = document.querySelector('.sidebar');
+                const mobileNav = document.getElementById('telegram-mobile-nav');
+                
+                mainContent.classList.remove('mobile-chat-open');
+                sidebar.classList.remove('mobile-hidden');
+                
+                // Убираем классы навигации
+                if (mobileNav) {
+                    mobileNav.classList.remove('hidden');
+                }
+                
+                // Скрываем кнопку "Назад"
+                const backBtn = document.querySelector('.mobile-back-btn');
+                if (backBtn) {
+                    backBtn.style.display = 'none';
+                }
+            }
+        }
+        
+        window.addEventListener('resize', handleResize);
+        
+        // Обновляем счетчик непрочитанных в навигации
+        function updateMobileNavBadge(count) {
+            const badge = document.getElementById('chats-badge');
+            if (badge) {
+                if (count > 0) {
+                    badge.textContent = count > 99 ? '99+' : count.toString();
+                    badge.style.display = 'block';
+                } else {
+                    badge.style.display = 'none';
+                }
+            }
+        }
+        
+        // Автоматическое скрытие плавающей навигации на мобильных
+        let _navHideTimeout;
+        function showMobileNavTemporarily() {
+            const mobileNav = document.getElementById('telegram-mobile-nav');
+            if (!mobileNav) return;
+            if (window._mobileNavLock) return; // не показываем, когда заблокировано
+            mobileNav.classList.remove('hidden');
+            // вернем управление transform/opacity обычным стилям
+            mobileNav.style.animation = '';
+            if (_navHideTimeout) clearTimeout(_navHideTimeout);
+            _navHideTimeout = setTimeout(() => mobileNav.classList.add('hidden'), 1800);
+        }
+        
+        function initAutoHideMobileNav() {
+            if (window.innerWidth > 768) return;
+            window._mobileNavLock = window._mobileNavLock || false;
+            const mobileNav = document.getElementById('telegram-mobile-nav');
+            if (!mobileNav) return;
+            const sidebarScroll = document.querySelector('.sidebar-content');
+            const chatWindow = document.getElementById('chat-window');
+            let lastSidebarY = 0;
+            let lastChatY = 0;
+            
+            const onScroll = (el, getLast, setLast) => {
+                const current = el.scrollTop || 0;
+                const goingDown = current > getLast();
+                setLast(current);
+                if (goingDown) {
+                    mobileNav.classList.add('hidden');
+                    mobileNav.style.animation = 'none';
+                } else {
+                    showMobileNavTemporarily();
+                }
+            };
+            
+            if (sidebarScroll) {
+                sidebarScroll.addEventListener('scroll', () => onScroll(
+                    sidebarScroll,
+                    () => lastSidebarY,
+                    v => { lastSidebarY = v; }
+                ), { passive: true });
+            }
+            if (chatWindow) {
+                chatWindow.addEventListener('scroll', () => onScroll(
+                    chatWindow,
+                    () => lastChatY,
+                    v => { lastChatY = v; }
+                ), { passive: true });
+            }
+            
+            // Скрываем по умолчанию через 2 секунды
+            _navHideTimeout = setTimeout(() => mobileNav.classList.add('hidden'), 2000);
+            
+            // Показ при тапе у нижнего края
+            document.addEventListener('touchstart', (e) => {
+                if (window.innerWidth > 768) return;
+                if (window.innerHeight - e.touches[0].clientY < 80) {
+                    showMobileNavTemporarily();
+                }
+            }, { passive: true });
+            
+            // Прячем, когда открыт ввод сообщения (клавиатура)
+            const messageInput = document.getElementById('message-input');
+            if (messageInput) {
+                messageInput.addEventListener('focus', () => mobileNav.classList.add('hidden'));
+                messageInput.addEventListener('blur', () => showMobileNavTemporarily());
+            }
+        }
+        
+        // Плавные анимации для мобильных жестов
+        let touchStartY = 0;
+        let touchStartX = 0;
+        
+        function handleTouchStart(e) {
+            touchStartY = e.touches[0].clientY;
+            touchStartX = e.touches[0].clientX;
+        }
+        
+        function handleTouchMove(e) {
+            if (!touchStartY || !touchStartX) return;
+            
+            const touchEndY = e.touches[0].clientY;
+            const touchEndX = e.touches[0].clientX;
+            
+            const deltaY = touchStartY - touchEndY;
+            const deltaX = touchStartX - touchEndX;
+            
+            // Свайп влево для закрытия чата (только на мобильных)
+            if (window.innerWidth <= 768 && Math.abs(deltaX) > Math.abs(deltaY) && deltaX < -100) {
+                const mainContent = document.getElementById('main-content');
+                if (mainContent.classList.contains('mobile-chat-open')) {
+                    closeMobileChat();
+                    touchStartX = 0;
+                    touchStartY = 0;
+                }
+            }
+        }
+        
+        function handleTouchEnd() {
+            touchStartX = 0;
+            touchStartY = 0;
+        }
+        
+        // Добавляем обработчики касаний
+        document.addEventListener('touchstart', handleTouchStart, { passive: true });
+        document.addEventListener('touchmove', handleTouchMove, { passive: true });
+        document.addEventListener('touchend', handleTouchEnd, { passive: true });
+        
+        // Инициализация при загрузке
+        document.addEventListener('DOMContentLoaded', function() {
+            handleResize();
+            
+            // Анимация появления навигации при загрузке на мобильных
+            if (window.innerWidth <= 768) {
+                const mobileNav = document.getElementById('telegram-mobile-nav');
+                if (mobileNav) {
+                    // Устанавливаем начальное состояние
+                    mobileNav.style.animation = 'navBounceIn 0.8s var(--easing-bounce) 0.3s both';
+                }
+                initAutoHideMobileNav();
+            }
+        });
+    </script>
+    
+    <script src="{{ url_for('static', filename='js/chat.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/sfu.js') }}"></script>
+</body>
+</html>

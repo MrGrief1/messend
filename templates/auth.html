@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Вход / Регистрация - GlassChat</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body data-theme="dark">
+    <div class="auth-container">
+        <div class="bg-shape shape1"></div>
+        <div class="bg-shape shape2"></div>
+        <div class="bg-shape" style="width: 350px; height: 350px; background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); top: 50%; left: 50%; transform: translate(-50%, -50%); filter: blur(90px); opacity: 0.4;"></div>
+
+        <div class="auth-card glass">
+            
+            <div id="login-form">
+                <h1>Добро пожаловать</h1>
+                <p>Войдите в свой аккаунт</p>
+                <div class="input-group">
+                    <input type="text" id="login-identifier" placeholder="@Имя пользователя или Email" required>
+                </div>
+                <div class="input-group">
+                    <input type="password" id="login-password" placeholder="Пароль" required>
+                </div>
+                <button onclick="handleLogin()">Войти</button>
+                <p class="toggle-link">Нет аккаунта? <a onclick="toggleForms()">Зарегистрироваться</a></p>
+                <p class="toggle-link"><a onclick="showForgotPassword()" style="font-size: 14px; color: var(--color-primary);">Забыли пароль?</a></p>
+            </div>
+
+            <div id="register-form" style="display: none;">
+                <h1>Создать аккаунт</h1>
+                <p>Придумайте уникальный @тег</p>
+                <div class="input-group">
+                    <input type="text" id="register-username" placeholder="Имя пользователя (без @)" required>
+                </div>
+                <div class="input-group">
+                    <input type="email" id="register-email" placeholder="Email (для подтверждения)" required>
+                </div>
+                <div class="input-group">
+                    <input type="password" id="register-password" placeholder="Придумайте пароль" required>
+                </div>
+                <button onclick="handleRegister()">Зарегистрироваться</button>
+                <p class="toggle-link">Уже есть аккаунт? <a onclick="toggleForms()">Войти</a></p>
+            </div>
+
+            <div id="message-box"></div>
+            
+            <!-- Модальное окно восстановления пароля -->
+            <div id="forgot-password-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 1000; align-items: center; justify-content: center;">
+                <div class="glass" style="max-width: 400px; width: 90%; padding: 30px; border-radius: var(--radius-xl);">
+                    <h2 style="margin-bottom: 20px;">Восстановление пароля</h2>
+                    <p style="margin-bottom: 20px; opacity: 0.8;">Введите email, использованный при регистрации</p>
+                    <div class="input-group">
+                        <input type="email" id="forgot-email" placeholder="Ваш Email" required>
+                    </div>
+                    <button onclick="handleForgotPassword()" style="width: 100%; margin-bottom: 10px;">Отправить ссылку</button>
+                    <button onclick="closeForgotPassword()" style="width: 100%; background: var(--glass-bg);">Отмена</button>
+                    <div id="forgot-message" style="margin-top: 15px; text-align: center;"></div>
+                    <p style="margin-top: 15px; font-size: 12px; opacity: 0.6; text-align: center;">💡 Письмо может прийти с задержкой 3-5 минут. Проверьте папку "Спам"</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        // Автоприменение темы из localStorage на странице входа
+        try {
+            const t = localStorage.getItem('appTheme');
+            if (t) document.body.setAttribute('data-theme', t);
+        } catch {}
+    </script>
+    <script src="{{ url_for('static', filename='js/auth.js') }}"></script>
+</body>
+</html>

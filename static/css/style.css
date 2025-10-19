@@ -1,0 +1,4036 @@
+/* --- Переменные Темы в стиле iOS с эффектом стекла --- */
+:root {
+    --color-primary: #007AFF;
+    --color-primary-hover: #0051D5;
+    --color-success: #34C759;
+    --color-danger: #FF3B30;
+    --color-warning: #FF9500;
+    --color-info: #5AC8FA;
+
+    /* Dark Theme - iOS Style */
+    --bg-gradient-start: #000000;
+    --bg-gradient-mid: #1C1C1E;
+    --bg-gradient-end: #2C2C2E;
+    --text-color: #F2F2F7;
+    --text-color-muted: rgba(235, 235, 245, 0.6);
+    --text-color-bright: #FFFFFF;
+    
+    /* Настраиваемые параметры стекла */
+    --glass-opacity: 0.05;
+    --glass-blur: 15px;
+    --glass-border-opacity: 0.1;
+    --glass-shadow: 0 2px 12px rgba(0, 0, 0, 0.2);
+    
+    --glass-bg: rgba(255, 255, 255, var(--glass-opacity));
+    --glass-border: rgba(255, 255, 255, var(--glass-border-opacity));
+    --glass-bg-hover: rgba(255, 255, 255, calc(var(--glass-opacity) + 0.05));
+    
+    --input-bg: rgba(118, 118, 128, 0.24);
+    --input-border: rgba(255, 255, 255, 0.15);
+    --chat-area-bg: rgba(0, 0, 0, 0.3);
+    --header-bg: rgba(28, 28, 30, 0.72);
+    --scrollbar-thumb: rgba(255, 255, 255, 0.3);
+    --msg-received-bg: rgba(118, 118, 128, 0.24);
+    
+    /* Радиусы скругления - все круглое */
+    --radius-full: 9999px;
+    --radius-xl: 24px;
+    --radius-lg: 20px;
+    --radius-md: 16px;
+    --radius-sm: 12px;
+    
+    /* Продолжительность анимаций */
+    --transition-fast: 0.15s;
+    --transition-normal: 0.25s;
+    --transition-slow: 0.35s;
+    --easing-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+    --easing-bounce: cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    --easing-swift: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+[data-theme="light"] {
+    --bg-gradient-start: #F2F2F7;
+    --bg-gradient-mid: #E5E5EA;
+    --bg-gradient-end: #D1D1D6;
+    --text-color: #000000;
+    --text-color-muted: rgba(60, 60, 67, 0.6);
+    --text-color-bright: #000000;
+    
+    --glass-bg: rgba(255, 255, 255, var(--glass-opacity));
+    --glass-border: rgba(0, 0, 0, 0.1);
+    --glass-bg-hover: rgba(255, 255, 255, calc(var(--glass-opacity) + 0.1));
+    
+    --input-bg: rgba(118, 118, 128, 0.12);
+    --input-border: rgba(0, 0, 0, 0.1);
+    --chat-area-bg: rgba(255, 255, 255, 0.5);
+    --header-bg: rgba(255, 255, 255, 0.72);
+    --scrollbar-thumb: rgba(0, 0, 0, 0.25);
+    --msg-received-bg: rgba(118, 118, 128, 0.12);
+}
+
+[data-theme="ocean"] {
+    --color-primary: #00D4FF;
+    --color-primary-hover: #00A8CC;
+    --bg-gradient-start: #001F3F;
+    --bg-gradient-mid: #003366;
+    --bg-gradient-end: #004080;
+    --glass-bg: rgba(0, 212, 255, var(--glass-opacity));
+    --glass-border: rgba(0, 212, 255, var(--glass-border-opacity));
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Helvetica Neue', 'Arial', sans-serif;
+    margin: 0;
+    padding: 0;
+    color: var(--text-color);
+    min-height: 100vh;
+    overflow: hidden;
+    background: linear-gradient(135deg, var(--bg-gradient-start), var(--bg-gradient-mid), var(--bg-gradient-end));
+    animation: fadeIn 0.5s var(--easing-smooth);
+}
+
+@keyframes gradientShift {
+    0%, 100% {
+        background-position: 0% 50%;
+    }
+    50% {
+        background-position: 100% 50%;
+    }
+}
+
+.glass {
+    background: var(--glass-bg);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--glass-shadow);
+    backdrop-filter: blur(var(--glass-blur)) saturate(130%);
+    -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(130%);
+    border: 1px solid var(--glass-border);
+    position: relative;
+    overflow: hidden;
+}
+
+/* Улучшенный glassmorphism с многослойными эффектами */
+.glass::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, 
+        rgba(255, 255, 255, 0.05) 0%, 
+        rgba(255, 255, 255, 0.02) 50%, 
+        rgba(255, 255, 255, 0.01) 100%);
+    pointer-events: none;
+    z-index: 1;
+}
+
+.glass::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, 
+        transparent 0%, 
+        rgba(255, 255, 255, 0.4) 50%, 
+        transparent 100%);
+    pointer-events: none;
+    z-index: 2;
+}
+
+/* Специальный класс для еще более продвинутого glassmorphism */
+.enhanced-glass {
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(15px) saturate(150%) brightness(1.1);
+    -webkit-backdrop-filter: blur(15px) saturate(150%) brightness(1.1);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 
+        0 4px 16px rgba(0, 0, 0, 0.1),
+        inset 0 1px 0 rgba(255, 255, 255, 0.1),
+        inset 0 -1px 0 rgba(255, 255, 255, 0.03);
+    position: relative;
+    overflow: hidden;
+}
+
+.enhanced-glass::before {
+    content: '';
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    right: -2px;
+    bottom: -2px;
+    background: linear-gradient(135deg, 
+        rgba(255, 255, 255, 0.15) 0%, 
+        transparent 30%, 
+        transparent 70%, 
+        rgba(255, 255, 255, 0.1) 100%);
+    border-radius: inherit;
+    z-index: -1;
+    opacity: 0.6;
+}
+
+/* Стеклянные эффекты для темных тем */
+[data-theme="dark"] .glass::before,
+[data-theme="amoled"] .glass::before {
+    background: linear-gradient(135deg, 
+        rgba(255, 255, 255, 0.08) 0%, 
+        rgba(255, 255, 255, 0.03) 50%, 
+        rgba(255, 255, 255, 0.01) 100%);
+}
+
+[data-theme="dark"] .enhanced-glass::before,
+[data-theme="amoled"] .enhanced-glass::before {
+    background: linear-gradient(135deg, 
+        rgba(255, 255, 255, 0.1) 0%, 
+        transparent 30%, 
+        transparent 70%, 
+        rgba(255, 255, 255, 0.05) 100%);
+}
+
+h1, h2, h3 {
+    font-weight: 600;
+    color: var(--text-color-bright);
+    letter-spacing: -0.5px;
+    transition: all var(--transition-normal) var(--easing-smooth);
+}
+
+h1:hover, h2:hover, h3:hover {
+    transform: translateX(2px);
+    color: var(--color-primary);
+}
+
+.app-layout {
+    display: flex;
+    height: 100vh;
+    width: 100%;
+    max-width: 100vw;
+    position: relative;
+    padding: 12px;
+    box-sizing: border-box;
+    gap: 12px;
+    overflow: hidden;
+}
+
+/* --- Формы и Кнопки в стиле iOS --- */
+input[type="text"], input[type="email"], input[type="password"], textarea, select {
+    width: 100%;
+    padding: 14px 18px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--input-border);
+    background: var(--input-bg);
+    backdrop-filter: blur(20px);
+    color: var(--text-color);
+    font-size: 16px;
+    font-family: inherit;
+    box-sizing: border-box;
+    transition: all var(--transition-normal) var(--easing-smooth);
+    outline: none;
+}
+
+/* Рингтоны: делаем варианты читаемыми в выпадающем списке */
+select option {
+    color: var(--text-color);
+    background: var(--input-bg);
+}
+select option:checked,
+select option:hover {
+    background: var(--glass-bg-hover);
+}
+
+input:focus, textarea:focus, select:focus {
+    border-color: var(--color-primary);
+    background: rgba(0, 122, 255, 0.08);
+    transform: scale(1.01);
+    box-shadow: 0 0 0 4px rgba(0, 122, 255, 0.15);
+}
+
+button {
+    padding: 12px 24px;
+    border-radius: var(--radius-full);
+    border: none;
+    background: var(--color-primary);
+    color: white;
+    font-size: 15px;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    transition: all var(--transition-fast) var(--easing-smooth);
+    margin: 8px 4px;
+    box-shadow: 0 2px 8px rgba(0, 122, 255, 0.25);
+    position: relative;
+    overflow: hidden;
+}
+
+button::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.3);
+    transform: translate(-50%, -50%);
+    transition: width var(--transition-normal) var(--easing-smooth), 
+                height var(--transition-normal) var(--easing-smooth);
+}
+
+button:hover::before {
+    width: 300px;
+    height: 300px;
+}
+
+button:hover {
+    background: var(--color-primary-hover);
+    transform: translateY(-2px) scale(1.02);
+    box-shadow: 0 6px 20px rgba(0, 122, 255, 0.4);
+}
+
+button:active {
+    transform: translateY(0) scale(0.98);
+    transition: all var(--transition-fast) var(--easing-smooth);
+}
+
+button:disabled {
+    background: var(--text-color-muted);
+    cursor: not-allowed;
+    opacity: 0.5;
+    transform: none;
+}
+
+label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 500;
+    font-size: 14px;
+    color: var(--text-color-bright);
+    letter-spacing: -0.3px;
+}
+
+.input-group {
+    margin-bottom: 20px;
+    text-align: left;
+}
+
+/* --- Стили Аутентификации в стиле iOS --- */
+.auth-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    padding: 20px;
+    box-sizing: border-box;
+}
+
+.auth-card {
+    padding: 48px 40px;
+    width: 420px;
+    max-width: 100%;
+    text-align: center;
+    z-index: 10;
+    animation: fadeInUp 0.3s ease-out;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px) scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+@keyframes slideInLeft {
+    from {
+        opacity: 0;
+        transform: translateX(-30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes slideInRight {
+    from {
+        opacity: 0;
+        transform: translateX(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes scaleIn {
+    from {
+        opacity: 0;
+        transform: scale(0.8);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+@keyframes bounceIn {
+    0% {
+        opacity: 0;
+        transform: scale(0.3);
+    }
+    50% {
+        opacity: 1;
+        transform: scale(1.05);
+    }
+    70% {
+        transform: scale(0.9);
+    }
+    100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.auth-card h1 {
+    font-size: 32px;
+    margin-bottom: 12px;
+    background: linear-gradient(135deg, var(--color-primary), var(--color-info));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.auth-card p {
+    margin-bottom: 32px;
+    font-size: 15px;
+    opacity: 0.8;
+}
+
+.toggle-link {
+    margin-top: 28px;
+    font-size: 14px;
+    color: var(--text-color-muted);
+}
+
+.toggle-link a {
+    color: var(--color-primary);
+    text-decoration: none;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.3s;
+}
+
+.toggle-link a:hover {
+    text-decoration: underline;
+    color: var(--color-primary-hover);
+}
+
+/* --- Сообщения (Ошибки/Успех) --- */
+#message-box, .modal-message {
+    margin-top: 16px;
+    padding: 14px 18px;
+    border-radius: var(--radius-lg);
+    display: none;
+    font-size: 14px;
+    text-align: center;
+    backdrop-filter: blur(20px);
+}
+
+.message-error {
+    background-color: rgba(255, 59, 48, 0.2);
+    border: 1px solid var(--color-danger);
+    color: var(--color-danger);
+    box-shadow: 0 4px 12px rgba(255, 59, 48, 0.2);
+}
+
+.message-success {
+    background-color: rgba(52, 199, 89, 0.2);
+    border: 1px solid var(--color-success);
+    color: var(--color-success);
+    box-shadow: 0 4px 12px rgba(52, 199, 89, 0.2);
+}
+
+/* --- Сайдбар в стиле iOS --- */
+.sidebar {
+    min-width: 280px;
+    width: 25%;
+    max-width: 380px;
+    height: calc(100vh - 24px);
+    display: flex;
+    flex-direction: column;
+    z-index: 10;
+    border-radius: var(--radius-xl);
+    flex-shrink: 0;
+    animation: slideInLeft 0.4s var(--easing-smooth);
+}
+
+.sidebar-header {
+    padding: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--glass-border);
+    flex-shrink: 0;
+}
+
+.icon-btn {
+    background: var(--input-bg);
+    backdrop-filter: blur(20px);
+    border: none;
+    color: var(--text-color);
+    font-size: 18px;
+    cursor: pointer;
+    padding: 10px;
+    margin: 0 6px;
+    width: 38px;
+    height: 38px;
+    border-radius: var(--radius-full);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all var(--transition-normal) var(--easing-smooth);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+    position: relative;
+    overflow: hidden;
+}
+
+.icon-btn::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: var(--color-primary);
+    opacity: 0.15;
+    transform: translate(-50%, -50%);
+    transition: width var(--transition-normal) var(--easing-smooth), 
+                height var(--transition-normal) var(--easing-smooth);
+}
+
+.icon-btn:hover::before {
+    width: 100px;
+    height: 100px;
+}
+
+.icon-btn svg {
+    transition: all var(--transition-normal) var(--easing-bounce);
+    z-index: 1;
+}
+
+.icon-btn:hover {
+    color: var(--color-primary);
+    background: var(--glass-bg-hover);
+    transform: translateY(-2px) scale(1.05);
+    box-shadow: 0 6px 16px rgba(0, 122, 255, 0.2);
+}
+
+.icon-btn:hover svg {
+    transform: rotate(10deg) scale(1.1);
+}
+
+.icon-btn:active {
+    transform: translateY(0) scale(0.95);
+    transition: all var(--transition-fast) var(--easing-smooth);
+}
+
+.icon-btn:active svg {
+    transform: rotate(0deg) scale(1);
+}
+
+.logout-btn {
+    width: auto;
+    padding: 10px 18px;
+    font-size: 14px;
+    background: var(--color-danger);
+    border-radius: var(--radius-full);
+}
+
+/* --- Список Комнат в стиле iOS --- */
+.room-list {
+    list-style: none;
+    padding: 12px;
+    margin: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+.room-item {
+    padding: 14px 16px;
+    border-radius: var(--radius-lg);
+    margin-bottom: 8px;
+    cursor: pointer;
+    transition: all var(--transition-normal) var(--easing-smooth);
+    background: var(--input-bg);
+    backdrop-filter: blur(20px);
+    border: 1px solid transparent;
+    display: flex;
+    align-items: center;
+    position: relative;
+    overflow: hidden;
+    animation: slideInLeft 0.3s var(--easing-smooth) backwards;
+}
+
+.room-item:nth-child(1) { animation-delay: 0.05s; }
+.room-item:nth-child(2) { animation-delay: 0.1s; }
+.room-item:nth-child(3) { animation-delay: 0.15s; }
+.room-item:nth-child(4) { animation-delay: 0.2s; }
+.room-item:nth-child(5) { animation-delay: 0.25s; }
+.room-item:nth-child(n+6) { animation-delay: 0.3s; }
+
+.room-item::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    height: 100%;
+    width: 4px;
+    background: var(--color-primary);
+    transform: scaleY(0);
+    transition: transform var(--transition-normal) var(--easing-smooth);
+}
+
+.room-item::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: var(--color-primary);
+    opacity: 0.1;
+    transform: translate(-50%, -50%);
+    transition: width var(--transition-slow) var(--easing-smooth), 
+                height var(--transition-slow) var(--easing-smooth);
+}
+
+.room-item:hover::after {
+    width: 300px;
+    height: 300px;
+}
+
+.room-item:hover {
+    background: var(--glass-bg-hover);
+    transform: translateX(6px) scale(1.02);
+    box-shadow: 0 6px 20px rgba(0, 122, 255, 0.15);
+}
+
+.room-item:hover::before {
+    transform: scaleY(1);
+}
+
+.room-item.active {
+    background: var(--color-primary);
+    color: white;
+    border-color: var(--color-primary);
+    box-shadow: 0 6px 24px rgba(0, 122, 255, 0.5);
+    transform: translateX(6px) scale(1.02);
+    animation: bounceIn 0.4s var(--easing-bounce);
+}
+
+.room-item.active::before {
+    transform: scaleY(1);
+    background: white;
+}
+
+.room-item.active::after {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.room-icon { 
+    margin-right: 14px;
+    font-size: 24px;
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    background: var(--glass-bg);
+    border-radius: var(--radius-full);
+    border: 2px solid var(--glass-border);
+    transition: all var(--transition-normal) var(--easing-bounce);
+    position: relative;
+}
+
+.room-icon svg {
+    transition: all var(--transition-normal) var(--easing-bounce);
+}
+
+.room-item:hover .room-icon {
+    transform: scale(1.1) rotate(5deg);
+    box-shadow: 0 4px 12px rgba(0, 122, 255, 0.2);
+}
+
+.room-item:hover .room-icon svg {
+    transform: scale(1.1);
+}
+
+.room-item.active .room-icon {
+    background: rgba(255, 255, 255, 0.2);
+    border-color: white;
+    animation: pulse 0.6s ease-in-out;
+}
+
+@keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.15); }
+}
+
+/* Аватар */
+.room-icon img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: var(--radius-full);
+}
+
+/* Индикатор онлайн (зелёная точка) как в Telegram */
+.presence-dot {
+    position: absolute;
+    right: 0px;
+    bottom: 0px;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: transparent; /* по умолчанию не показываем */
+    border: 2px solid white;
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.08);
+    transition: all var(--transition-normal) var(--easing-bounce);
+    opacity: 0; /* скрыто по умолчанию */
+    transform: scale(0);
+}
+
+.presence-dot.online {
+    background: #0ac630; /* зелёный как в Telegram */
+    opacity: 1; /* показываем только когда онлайн */
+    transform: scale(1);
+    box-shadow: 0 0 0 2px white, 
+                0 0 0 3px rgba(0, 0, 0, 0.08);
+    animation: pulseOnline 2s ease-in-out infinite;
+}
+
+@keyframes pulseOnline {
+    0%, 100% { 
+        box-shadow: 0 0 0 2px white, 
+                    0 0 0 3px rgba(0, 0, 0, 0.08);
+    }
+    50% { 
+        box-shadow: 0 0 0 2px white, 
+                    0 0 0 5px rgba(10, 198, 48, 0.3);
+    }
+}
+
+.room-name-text {
+    flex: 1;
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-weight: 500;
+    font-size: 15px;
+    letter-spacing: -0.3px;
+}
+
+.unread-badge {
+    background-color: var(--color-primary);
+    color: white;
+    font-size: 12px;
+    font-weight: bold;
+    padding: 4px 9px;
+    border-radius: var(--radius-full);
+    min-width: 22px;
+    text-align: center;
+    line-height: 14px;
+    box-shadow: 0 2px 6px rgba(0, 122, 255, 0.4);
+    transition: all var(--transition-normal) var(--easing-bounce);
+    margin-left: auto;
+    flex-shrink: 0;
+    animation: scaleIn 0.3s var(--easing-bounce);
+}
+
+.room-item.active .unread-badge {
+    background-color: white;
+    color: var(--color-primary);
+    box-shadow: 0 2px 6px rgba(255, 255, 255, 0.4);
+}
+
+.unread-badge:hover {
+    transform: scale(1.1);
+}
+
+.empty-state {
+    padding: 20px;
+    font-size: 14px;
+    opacity: 0.7;
+    text-align: center;
+    margin-top: 20px;
+    line-height: 1.5;
+}
+
+/* --- Основное Окно Чата в стиле iOS --- */
+.main-content {
+    flex: 1;
+    min-width: 0;
+    background: var(--chat-area-bg);
+    backdrop-filter: blur(var(--glass-blur));
+    z-index: 5;
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+    overflow: hidden;
+    border-radius: var(--radius-xl);
+    position: relative; /* For selection bar positioning */
+    animation: slideInRight 0.4s var(--easing-smooth);
+}
+
+.chat-header {
+    padding: 18px 24px;
+    border-bottom: 1px solid var(--glass-border);
+    background: var(--header-bg);
+    backdrop-filter: blur(var(--glass-blur)) saturate(180%);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+    flex-shrink: 0;
+}
+
+#chat-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.chat-window {
+    flex: 1;
+    min-height: 0;
+    padding: 24px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    display: flex;
+    flex-direction: column;
+    scroll-behavior: smooth;
+}
+
+.unknown-banner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    background: var(--color-warning);
+    border: none;
+    border-radius: var(--radius-lg);
+    padding: 14px 18px;
+    margin-bottom: 16px;
+    color: white;
+    backdrop-filter: blur(20px);
+    box-shadow: 0 4px 12px rgba(255, 149, 0, 0.3);
+    animation: slideInLeft 0.4s var(--easing-smooth);
+}
+
+.unknown-banner:hover {
+    transform: translateX(2px);
+    box-shadow: 0 6px 20px rgba(255, 149, 0, 0.4);
+}
+
+.unknown-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.unknown-actions button {
+    margin: 0;
+}
+
+.chat-input-area {
+    padding: 18px 24px;
+    border-top: 1px solid var(--glass-border);
+    background: var(--header-bg);
+    backdrop-filter: blur(var(--glass-blur)) saturate(180%);
+    display: flex;
+    gap: 12px;
+    border-radius: 0 0 var(--radius-xl) var(--radius-xl);
+    align-items: center;
+    flex-wrap: nowrap;
+    gap: 10px;
+    position: sticky; /* держим панель ввода всегда видимой как в Telegram */
+    bottom: 0;
+    z-index: 5;
+}
+
+.message-banner {
+    padding: 10px 24px;
+    border-top: 1px solid var(--glass-border);
+    background: var(--input-bg);
+    backdrop-filter: blur(20px);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.banner-icon {
+    color: var(--color-primary);
+    flex-shrink: 0;
+}
+
+.banner-content {
+    flex: 1;
+    min-width: 0;
+    font-size: 14px;
+}
+
+.banner-title {
+    font-weight: 600;
+    color: var(--color-primary);
+}
+
+.banner-text {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    opacity: 0.8;
+}
+
+#cancel-editing-btn {
+    margin: 0;
+    flex-shrink: 0;
+}
+
+.attach-btn {
+    margin: 0;
+    flex-shrink: 0;
+}
+
+/* Превью файлов */
+#file-preview-area {
+    padding: 12px 24px;
+    border-top: 1px solid var(--glass-border);
+    background: var(--input-bg);
+    backdrop-filter: blur(20px);
+}
+
+#file-preview-container {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.file-preview-item {
+    position: relative;
+    width: 100px;
+    height: 100px;
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+}
+
+.file-preview-item img,
+.file-preview-item video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.file-preview-remove {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    background: rgba(255, 59, 48, 0.9);
+    border: none;
+    color: white;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 16px;
+    line-height: 1;
+    padding: 0;
+    margin: 0;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.file-preview-remove:hover {
+    background: var(--color-danger);
+    transform: scale(1.1);
+}
+
+/* Медиа в сообщениях */
+.message-media {
+    margin-top: 8px;
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    max-width: 100%;
+}
+
+.message-media img,
+.message-media video {
+    max-width: 100%;
+    max-height: 400px;
+    display: block;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+}
+
+.message-media video {
+    background: #000;
+}
+
+.message-media-gallery {
+    display: grid;
+    gap: 4px;
+    margin-top: 8px;
+    border-radius: var(--radius-md);
+    overflow: hidden;
+}
+
+.message-media-gallery img,
+.message-media-gallery video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    cursor: pointer;
+    background: #000;
+}
+
+.gallery-grid-2 { grid-template-columns: 1fr 1fr; }
+.gallery-grid-3 { grid-template-columns: 1fr 1fr; }
+.gallery-grid-4 { grid-template-columns: 1fr 1fr; }
+
+/* Для 3-х картинок делаем первую большой */
+.gallery-grid-3 > *:first-child {
+    grid-column: 1 / 3;
+    grid-row: 1 / 2;
+}
+.gallery-grid-3 > *:nth-child(2) {
+    grid-column: 1 / 2;
+    grid-row: 2 / 3;
+}
+.gallery-grid-3 > *:nth-child(3) {
+    grid-column: 2 / 3;
+    grid-row: 2 / 3;
+}
+
+#message-input {
+    flex: 1;
+    min-width: 0;
+    margin-right: 0;
+    margin-top: 0;
+    margin-bottom: 0;
+    border-radius: var(--radius-full);
+}
+
+#send-button {
+    width: auto;
+    flex-shrink: 0;
+    padding: 14px 28px;
+    margin: 0;
+    border-radius: var(--radius-full);
+    display: none !important; /* скрываем кнопку отправки — отправка по Enter */
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    white-space: nowrap;
+}
+
+.call-button-header {
+    background: var(--color-success);
+    width: auto;
+    padding: 10px 14px;
+    font-size: 13px;
+    margin-top: 0;
+    margin-right: 0;
+    border-radius: var(--radius-lg) 0 0 var(--radius-lg);
+    box-shadow: 0 2px 8px rgba(52, 199, 89, 0.3);
+    position: relative;
+    overflow: hidden;
+    border: none;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.call-button-header::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.3);
+    transform: translate(-50%, -50%);
+    transition: width var(--transition-normal) var(--easing-smooth), 
+                height var(--transition-normal) var(--easing-smooth);
+}
+
+.call-button-header:hover::before {
+    width: 200px;
+    height: 200px;
+}
+
+.call-button-header:hover {
+    transform: translateY(-2px) scale(1.05);
+    box-shadow: 0 6px 20px rgba(52, 199, 89, 0.5);
+}
+
+.call-button-header svg {
+    transition: all var(--transition-normal) var(--easing-bounce);
+    position: relative;
+    z-index: 1;
+}
+
+.call-button-header:hover svg {
+    transform: rotate(15deg) scale(1.1);
+}
+
+/* --- Стили Сообщений в стиле iOS --- */
+
+/* Контейнер для сообщения и его реакций */
+.message-container {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 8px;
+    margin-bottom: 2px;
+    padding: 6px 12px;
+    max-width: 70%;
+    position: relative;
+    animation: slideIn 0.3s var(--easing-smooth);
+    border-radius: var(--radius-lg);
+    transition: all var(--transition-normal) var(--easing-smooth);
+}
+
+.message-container-inner {
+    display: flex;
+    flex-direction: column;
+    max-width: 100%;
+    width: max-content;
+    min-width: 0;
+}
+
+.message-container.sent {
+    justify-content: flex-end;
+    align-self: flex-end;
+}
+
+.message-container.received {
+    justify-content: flex-start;
+    align-self: flex-start;
+}
+
+.message-container.sent .message-container-inner {
+    align-self: flex-end;
+    align-items: flex-end;
+}
+
+.message-container.received .message-container-inner {
+    align-self: flex-start;
+    align-items: flex-start;
+}
+
+
+.message-container.selected {
+    background-color: rgba(0, 122, 255, 0.2);
+}
+
+.selection-indicator {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    border: 2px solid var(--glass-border);
+    background-color: var(--glass-bg);
+    cursor: pointer;
+    display: none; /* по умолчанию не участвует в раскладке */
+    align-items: center;
+    justify-content: center;
+    transition: all var(--transition-normal) var(--easing-bounce);
+}
+
+.selection-mode .selection-indicator {
+    display: flex; /* показываем только в режиме выбора */
+    animation: scaleIn 0.3s var(--easing-bounce);
+}
+
+.selection-indicator:hover {
+    transform: scale(1.15);
+    border-color: var(--color-primary);
+}
+
+.message-container.selected .selection-indicator {
+    background-color: var(--color-primary);
+    border-color: var(--color-primary);
+    animation: bounceIn 0.4s var(--easing-bounce);
+}
+
+.selection-indicator::after {
+    content: '✔';
+    color: white;
+    font-size: 14px;
+    font-weight: bold;
+    transform: scale(0) rotate(-45deg);
+    transition: all var(--transition-normal) var(--easing-bounce);
+}
+
+.message-container.selected .selection-indicator::after {
+    transform: scale(1) rotate(0deg);
+}
+
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px) scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+.message {
+    padding: 12px 18px;
+    border-radius: var(--radius-lg);
+    line-height: 1.5;
+    overflow-wrap: break-word;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.1);
+    cursor: pointer;
+    transition: all var(--transition-normal) var(--easing-smooth);
+    position: relative;
+    font-size: 15px;
+    display: inline-block; /* ведёт себя как пузырь, ширина = содержимому */
+}
+
+.message p {
+    margin: 0;
+    white-space: pre-wrap;
+    overflow-wrap: break-word; /* переносим только при необходимости */
+    word-break: break-word;
+}
+
+/* Кнопки действий с сообщением */
+.message-actions {
+    position: absolute;
+    top: -12px;
+    right: 8px;
+    display: none;
+    gap: 4px;
+    background: var(--glass-bg);
+    backdrop-filter: blur(20px);
+    padding: 4px;
+    border-radius: var(--radius-sm);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    border: 1px solid var(--glass-border);
+}
+
+.message:hover .message-actions {
+    display: flex;
+}
+
+.message-action-btn {
+    padding: 6px 8px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    border-radius: 6px;
+    transition: all var(--transition-normal) var(--easing-bounce);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0;
+    box-shadow: none;
+}
+
+.message-action-btn svg {
+    transition: all var(--transition-normal) var(--easing-bounce);
+}
+
+.message-action-btn:hover {
+    background: var(--glass-bg-hover);
+    transform: scale(1.15) rotate(5deg);
+}
+
+.message-action-btn:hover svg {
+    transform: scale(1.2);
+}
+
+.message-action-btn.delete-btn:hover {
+    background: rgba(255, 59, 48, 0.2);
+    transform: scale(1.15) rotate(-5deg);
+}
+
+.message-action-btn.delete-btn:hover svg {
+    stroke: var(--color-danger);
+    transform: scale(1.2) rotate(10deg);
+}
+
+.message-action-btn:active {
+    transform: scale(0.9);
+    transition: all var(--transition-fast) var(--easing-smooth);
+}
+
+.message:hover {
+    transform: scale(1.03) translateY(-1px);
+    box-shadow: 0 8px 24px rgba(0, 122, 255, 0.2);
+}
+
+.message.sent {
+    background: var(--color-primary);
+    color: white;
+    border-bottom-right-radius: 6px;
+    box-shadow: 0 4px 12px rgba(0, 122, 255, 0.3);
+    animation: slideInRight 0.3s var(--easing-smooth);
+}
+
+.message.sent:hover {
+    box-shadow: 0 8px 24px rgba(0, 122, 255, 0.5);
+}
+
+.message.received {
+    background: var(--msg-received-bg);
+    backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid var(--glass-border);
+    color: var(--text-color);
+    border-bottom-left-radius: 6px;
+    animation: slideInLeft 0.3s var(--easing-smooth);
+}
+
+.message.received:hover {
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+}
+
+.message-timestamp {
+    display: block;
+    font-size: 11px;
+    margin-top: 6px;
+    opacity: 0.65;
+    text-align: right;
+    font-weight: 500;
+}
+
+.message-sender {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 4px;
+    color: var(--color-primary);
+    letter-spacing: -0.2px;
+}
+
+.message.sent .message-sender {
+    display: none;
+}
+
+/* Контейнер реакций под сообщением */
+.reactions-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    margin-top: 6px;
+    padding-left: 4px;
+    padding-right: 4px;
+}
+
+/* Отдельная реакция */
+.reaction {
+    background: var(--input-bg);
+    backdrop-filter: blur(20px);
+    border: 1px solid var(--glass-border);
+    border-radius: 18px;
+    padding: 4px 10px;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all var(--transition-normal) var(--easing-bounce);
+    user-select: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+    min-height: 26px;
+    animation: scaleIn 0.3s var(--easing-bounce);
+}
+
+.reaction:hover {
+    background: var(--glass-bg-hover);
+    transform: scale(1.15) rotate(5deg);
+    box-shadow: 0 4px 16px rgba(0, 122, 255, 0.2);
+}
+
+.reaction.reacted-by-me {
+    background: var(--color-primary);
+    border-color: var(--color-primary);
+    color: white;
+    box-shadow: 0 4px 12px rgba(0, 122, 255, 0.3);
+    animation: bounceIn 0.4s var(--easing-bounce);
+}
+
+.reaction.reacted-by-me:hover {
+    transform: scale(1.15) rotate(-5deg);
+    box-shadow: 0 6px 20px rgba(0, 122, 255, 0.5);
+}
+
+/* Пикер Реакций */
+#reaction-picker {
+    position: absolute;
+    display: none;
+    background: var(--glass-bg);
+    backdrop-filter: blur(var(--glass-blur)) saturate(180%);
+    border-radius: 30px;
+    padding: 12px 18px;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+    z-index: 50;
+    border: 1px solid var(--glass-border);
+    max-width: 350px;
+    gap: 4px;
+    flex-wrap: wrap;
+}
+
+#reaction-picker.expanded {
+    max-width: 420px;
+    max-height: 350px;
+    overflow-y: auto;
+    transition: max-width 0.3s ease, max-height 0.3s ease;
+}
+
+#reaction-picker::-webkit-scrollbar {
+    width: 6px;
+}
+
+#reaction-picker::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+#reaction-picker::-webkit-scrollbar-thumb {
+    background: var(--glass-border);
+    border-radius: 3px;
+}
+
+#reaction-picker::-webkit-scrollbar-thumb:hover {
+    background: var(--color-primary);
+}
+
+.reaction-option {
+    font-size: 28px;
+    cursor: pointer;
+    padding: 6px;
+    transition: all var(--transition-normal) var(--easing-bounce);
+    display: inline-block;
+}
+
+.reaction-option:hover {
+    transform: scale(1.3) rotate(15deg);
+    filter: drop-shadow(0 4px 8px rgba(0, 122, 255, 0.3));
+}
+
+.reaction-option:active {
+    transform: scale(1.1) rotate(0deg);
+    transition: all var(--transition-fast) var(--easing-smooth);
+}
+
+.reaction-more {
+    font-size: 18px;
+    cursor: pointer;
+    padding: 0;
+    margin: 0;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--input-bg);
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    min-width: 40px;
+    min-height: 40px;
+    max-width: 40px;
+    max-height: 40px;
+    color: var(--text-color);
+    font-weight: bold;
+    border: 1px solid var(--glass-border);
+    flex-shrink: 0;
+}
+
+.reaction-more:hover {
+    transform: scale(1.15);
+    background: var(--glass-bg-hover);
+}
+
+.reaction-option.hidden-reaction {
+    display: none;
+    visibility: hidden;
+}
+
+#reaction-picker.expanded .reaction-option.hidden-reaction {
+    display: inline-block;
+    visibility: visible;
+}
+
+#reaction-picker.expanded .reaction-more {
+    display: none;
+    visibility: hidden;
+}
+
+/* Дополнительная специфичность */
+div#reaction-picker.expanded span.hidden-reaction {
+    display: inline-block !important;
+    visibility: visible !important;
+}
+
+.selection-bar {
+    position: absolute;
+    bottom: 84px; /* чуть выше ввода */
+    left: 50%;
+    transform: translateX(-50%); /* центр внутри правой панели */
+    z-index: 1002;
+    padding: 12px 20px;
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    border-radius: var(--radius-full);
+    animation: none; /* исключаем перерисовку при взаимодействии */
+}
+
+/* Фикс «прыжка» капсулы при клике: переопределяем общее правило .glass:active */
+.selection-bar.glass:active {
+    transform: translateX(-50%) !important;
+}
+
+.selection-actions {
+    display: flex;
+    gap: 8px;
+}
+
+/* Убираем микро-движения у кнопок внутри капсулы, чтобы она не "прыгала" */
+.selection-bar button,
+.selection-bar .icon-btn {
+    transform: none !important;
+    box-shadow: none !important;
+}
+.selection-bar button:hover,
+.selection-bar button:active,
+.selection-bar .icon-btn:hover,
+.selection-bar .icon-btn:active {
+    transform: none !important;
+}
+
+#selection-count {
+    font-weight: 600;
+    font-size: 15px;
+}
+
+
+/* --- НОВОЕ: Контекстное меню --- */
+.context-menu {
+    position: absolute;
+    z-index: 1001;
+    display: none;
+    padding: 8px;
+    min-width: 180px;
+    border-radius: var(--radius-md);
+    animation: scaleIn 0.2s var(--easing-bounce);
+}
+
+.context-menu ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.context-menu ul li {
+    padding: 10px 14px;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: all var(--transition-normal) var(--easing-smooth);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.context-menu ul li svg {
+    flex-shrink: 0;
+    transition: all var(--transition-normal) var(--easing-bounce);
+}
+
+.context-menu ul li:hover {
+    background: var(--glass-bg-hover);
+    transform: translateX(4px);
+}
+
+.context-menu ul li:hover svg {
+    transform: scale(1.2) rotate(10deg);
+}
+
+.context-menu ul li.danger:hover {
+    background: rgba(255, 59, 48, 0.2);
+    color: var(--color-danger);
+    transform: translateX(6px);
+}
+
+.context-menu ul li.danger:hover svg {
+    stroke: var(--color-danger);
+    transform: scale(1.2) rotate(-10deg);
+}
+
+
+/* --- Модальные Окна в стиле iOS --- */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(10px);
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    display: none;
+    animation: fadeIn 0.3s var(--easing-smooth);
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        backdrop-filter: blur(0px);
+    }
+    to {
+        opacity: 1;
+        backdrop-filter: blur(10px);
+    }
+}
+
+.modal-content {
+    width: 500px;
+    max-width: calc(100vw - 40px);
+    max-height: calc(100vh - 40px);
+    padding: 32px;
+    border-radius: var(--radius-xl);
+    animation: modalSlideIn 0.4s var(--easing-bounce);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+    overflow-y: auto;
+}
+
+@keyframes modalSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-30px) scale(0.9);
+    }
+    50% {
+        transform: translateY(5px) scale(1.02);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+}
+
+.close-btn {
+    font-size: 28px;
+    cursor: pointer;
+    background: var(--input-bg);
+    border: none;
+    color: var(--text-color);
+    padding: 0;
+    width: 36px;
+    height: 36px;
+    border-radius: var(--radius-full);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all var(--transition-normal) var(--easing-bounce);
+}
+
+.close-btn:hover {
+    background: var(--color-danger);
+    color: white;
+    transform: rotate(180deg) scale(1.15);
+    box-shadow: 0 4px 12px rgba(255, 59, 48, 0.3);
+}
+
+.close-btn:active {
+    transform: rotate(180deg) scale(0.95);
+    transition: all var(--transition-fast) var(--easing-smooth);
+}
+
+/* Результаты поиска */
+#searchResults {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.search-result {
+    padding: 16px 18px;
+    border-radius: var(--radius-lg);
+    margin-top: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--input-bg);
+    backdrop-filter: blur(20px);
+    border: 1px solid var(--glass-border);
+    transition: all var(--transition-normal) var(--easing-smooth);
+    animation: slideInRight 0.3s var(--easing-smooth);
+}
+
+.search-result:hover {
+    background: var(--glass-bg-hover);
+    transform: translateX(6px) scale(1.02);
+    box-shadow: 0 6px 20px rgba(0, 122, 255, 0.15);
+}
+
+.search-result button {
+    width: auto;
+    padding: 10px 18px;
+    font-size: 14px;
+    margin-top: 0;
+}
+
+.result-username {
+    font-weight: 600;
+    color: var(--text-color-bright);
+    display: block;
+    font-size: 15px;
+}
+
+/* Селектор контактов */
+.contact-selector {
+    max-height: 240px;
+    overflow-y: auto;
+    padding: 12px;
+    border: 1px solid var(--input-border);
+    background: var(--input-bg);
+    backdrop-filter: blur(20px);
+    border-radius: var(--radius-lg);
+}
+
+.contact-checkbox {
+    display: flex;
+    align-items: center;
+    margin-bottom: 12px;
+    padding: 8px;
+    border-radius: var(--radius-md);
+    transition: all var(--transition-normal) var(--easing-smooth);
+    cursor: pointer;
+}
+
+.contact-checkbox:hover {
+    background: var(--glass-bg-hover);
+    transform: translateX(4px);
+    box-shadow: 0 2px 8px rgba(0, 122, 255, 0.1);
+}
+
+.contact-checkbox input[type="checkbox"] {
+    width: 22px;
+    height: 22px;
+    margin-right: 12px;
+    cursor: pointer;
+    accent-color: var(--color-primary);
+    transition: all var(--transition-normal) var(--easing-bounce);
+}
+
+.contact-checkbox input[type="checkbox"]:hover {
+    transform: scale(1.15);
+}
+
+.contact-checkbox input[type="checkbox"]:checked {
+    animation: bounceIn 0.3s var(--easing-bounce);
+}
+
+.contact-checkbox label {
+    margin-bottom: 0;
+    cursor: pointer;
+    font-weight: normal;
+    font-size: 15px;
+}
+
+/* Разделитель в модальных окнах */
+hr {
+    border: 0;
+    border-top: 1px solid var(--glass-border);
+    margin: 28px 0;
+    opacity: 0.5;
+}
+
+/* --- Видеозвонки --- */
+.call-videos {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    min-height: 400px;
+    height: 500px;
+}
+
+.call-videos > div {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    background: black;
+    border-radius: var(--radius-lg);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    overflow: hidden;
+}
+
+.call-videos video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+#localVideo {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    position: absolute;
+    top: 0;
+    left: 0;
+}
+
+.remote-videos {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 12px;
+    min-height: 300px;
+}
+
+.remote-videos > div {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    min-height: 300px;
+}
+
+.call-controls {
+    display: flex;
+    gap: 6px;
+    justify-content: center;
+    margin-top: 16px;
+    flex-wrap: wrap;
+    align-items: stretch;
+}
+
+.control-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    padding: 8px 8px;
+    border-radius: var(--radius-lg);
+    background: var(--input-bg);
+    backdrop-filter: blur(20px);
+    border: 1px solid var(--glass-border);
+    transition: all var(--transition-normal) var(--easing-smooth);
+    min-width: 55px;
+    max-width: 65px;
+    min-height: 50px;
+    max-height: 50px;
+    position: relative;
+    overflow: hidden;
+}
+
+.control-btn::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: var(--color-primary);
+    opacity: 0.15;
+    transform: translate(-50%, -50%);
+    transition: width var(--transition-slow) var(--easing-smooth), 
+                height var(--transition-slow) var(--easing-smooth);
+}
+
+.control-btn:hover::before {
+    width: 200px;
+    height: 200px;
+}
+
+.control-btn .control-icon {
+    width: 16px;
+    height: 16px;
+    color: var(--text-color);
+    transition: all var(--transition-normal) var(--easing-bounce);
+    z-index: 1;
+}
+
+.control-btn .control-label {
+    font-size: 9px;
+    font-weight: 500;
+    color: var(--text-color);
+    z-index: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+}
+
+.control-btn:hover {
+    transform: translateY(-4px) scale(1.05);
+    box-shadow: 0 8px 24px rgba(0, 122, 255, 0.2);
+    background: var(--glass-bg-hover);
+}
+
+.control-btn:hover .control-icon {
+    transform: scale(1.2) rotate(10deg);
+}
+
+.control-btn:active {
+    transform: translateY(0) scale(0.95);
+    transition: all var(--transition-fast) var(--easing-smooth);
+}
+
+/* Состояние выключено (микрофон/камера) */
+.control-btn.disabled {
+    background: rgba(255, 59, 48, 0.15);
+    border-color: var(--color-danger);
+}
+
+.control-btn.disabled .control-icon {
+    color: var(--color-danger);
+    animation: shake 0.5s ease-in-out;
+}
+
+.control-btn.disabled .control-label {
+    color: var(--color-danger);
+}
+
+/* Состояние включено */
+.control-btn.enabled {
+    background: rgba(52, 199, 89, 0.15);
+    border-color: var(--color-success);
+}
+
+.control-btn.enabled .control-icon {
+    color: var(--color-success);
+    animation: pulse 0.5s ease-in-out;
+}
+
+.control-btn.enabled .control-label {
+    color: var(--color-success);
+}
+
+@keyframes shake {
+    0%, 100% { transform: translateX(0) rotate(0deg); }
+    10%, 30%, 50%, 70% { transform: translateX(-6px) rotate(-2deg); }
+    20%, 40%, 60% { transform: translateX(6px) rotate(2deg); }
+    80% { transform: translateX(-3px) rotate(-1deg); }
+    90% { transform: translateX(3px) rotate(1deg); }
+}
+
+@keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    25% { transform: scale(1.05); }
+    50% { transform: scale(1.15); }
+    75% { transform: scale(1.05); }
+}
+
+.end-call {
+    background: var(--color-danger);
+    box-shadow: 0 4px 12px rgba(255, 59, 48, 0.3);
+    border-radius: var(--radius-lg);
+    padding: 8px 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 600;
+    min-width: 55px;
+    max-width: 85px;
+    min-height: 50px;
+    max-height: 50px;
+    gap: 3px;
+}
+
+/* Улучшенная индикация активной кнопки (микрофон, камера, экран) */
+.control-btn.enabled {
+    box-shadow: 0 6px 20px rgba(52, 199, 89, 0.35);
+}
+.control-btn.disabled {
+    box-shadow: 0 6px 20px rgba(255, 59, 48, 0.25);
+}
+
+/* Входящий звонок */
+#incomingCallPopup .modal-content {
+    text-align: left;
+}
+
+/* Панель пользователя в сайдбаре */
+.user-panel {
+    padding: 16px 20px;
+    border-top: 1px solid var(--glass-border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    flex-shrink: 0;
+}
+
+#current-username-display {
+    font-weight: 600;
+    font-size: 15px;
+    color: var(--text-color-bright);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex: 1;
+    min-width: 0;
+}
+
+.sidebar-content {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    min-height: 0;
+}
+
+/* --- Фоновые Фигуры (Эллипсы) --- */
+.bg-shape {
+    position: absolute;
+    border-radius: 50%;
+    z-index: 1;
+    pointer-events: none;
+    /* Убрали анимацию для улучшения производительности */
+}
+
+[data-theme="light"] .bg-shape {
+    opacity: 0.15 !important;
+    filter: blur(100px) !important;
+}
+
+.shape1 {
+    width: 500px;
+    height: 500px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    top: -200px;
+    left: -100px;
+    filter: blur(80px);
+    opacity: 0.6;
+}
+
+.shape2 {
+    width: 400px;
+    height: 400px;
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    bottom: -150px;
+    right: -100px;
+    filter: blur(80px);
+    opacity: 0.5;
+    animation-delay: -10s;
+}
+
+/* --- Скроллбар --- */
+::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--scrollbar-thumb);
+    border-radius: var(--radius-full);
+    border: 2px solid transparent;
+    background-clip: padding-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--glass-border);
+    background-clip: padding-box;
+}
+
+/* --- Стили для range слайдеров --- */
+input[type="range"] {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 8px;
+    border-radius: var(--radius-full);
+    background: var(--input-bg);
+    outline: none;
+    transition: all var(--transition-normal) var(--easing-smooth);
+    margin-top: 8px;
+    position: relative;
+}
+
+input[type="range"]:hover {
+    background: var(--glass-bg-hover);
+    transform: scaleY(1.2);
+}
+
+input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 24px;
+    height: 24px;
+    border-radius: var(--radius-full);
+    background: var(--color-primary);
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0, 122, 255, 0.4);
+    transition: all var(--transition-normal) var(--easing-bounce);
+    border: 3px solid white;
+}
+
+input[type="range"]::-webkit-slider-thumb:hover {
+    transform: scale(1.3);
+    box-shadow: 0 6px 20px rgba(0, 122, 255, 0.6);
+    background: var(--color-primary-hover);
+}
+
+input[type="range"]::-webkit-slider-thumb:active {
+    transform: scale(1.1);
+    transition: all var(--transition-fast) var(--easing-smooth);
+}
+
+input[type="range"]::-moz-range-thumb {
+    width: 24px;
+    height: 24px;
+    border-radius: var(--radius-full);
+    background: var(--color-primary);
+    cursor: pointer;
+    border: 3px solid white;
+    box-shadow: 0 2px 8px rgba(0, 122, 255, 0.4);
+    transition: all var(--transition-normal) var(--easing-bounce);
+}
+
+input[type="range"]::-moz-range-thumb:hover {
+    transform: scale(1.3);
+    box-shadow: 0 6px 20px rgba(0, 122, 255, 0.6);
+    background: var(--color-primary-hover);
+}
+
+input[type="range"]::-moz-range-thumb:active {
+    transform: scale(1.1);
+    transition: all var(--transition-fast) var(--easing-smooth);
+}
+
+/* Placeholder текст в чате */
+.placeholder-text {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    font-size: 18px;
+    color: var(--text-color-muted);
+    text-align: center;
+    padding: 40px;
+}
+
+/* НОВОЕ: Встроенные настройки */
+.content-view {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+#settings-view-inline {
+    overflow-y: auto;
+}
+
+.settings-header-inline {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--glass-border);
+    background: var(--header-bg);
+    backdrop-filter: blur(var(--glass-blur)) saturate(180%);
+    flex-shrink: 0;
+}
+
+.settings-header-inline h2 {
+    margin: 0;
+    font-size: 24px;
+    font-weight: 600;
+}
+
+.settings-content-inline {
+    flex: 1;
+    padding: 24px;
+    overflow-y: auto;
+}
+
+.settings-section {
+    margin-bottom: 32px;
+    padding: 24px;
+    background: var(--input-bg);
+    backdrop-filter: blur(20px);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--glass-border);
+    animation: slideInRight 0.4s var(--easing-smooth) backwards;
+}
+
+.settings-section:nth-child(1) { animation-delay: 0.1s; }
+.settings-section:nth-child(2) { animation-delay: 0.2s; }
+.settings-section:nth-child(3) { animation-delay: 0.3s; }
+.settings-section:nth-child(4) { animation-delay: 0.4s; }
+
+.settings-section h3 {
+    margin-top: 0;
+    margin-bottom: 20px;
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.settings-profile-header {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    margin-bottom: 20px;
+}
+
+.setting-item-inline {
+    margin-bottom: 20px;
+}
+
+.setting-item-inline label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 500;
+    font-size: 14px;
+}
+
+.setting-item-inline input[type="text"],
+.setting-item-inline textarea {
+    width: 100%;
+}
+
+.setting-item-inline input[type="range"] {
+    width: 100%;
+}
+
+/* Селектор тем как в Spotlite */
+.theme-selector {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 16px;
+}
+
+.theme-option {
+    cursor: pointer;
+    padding: 12px;
+    border-radius: var(--radius-md);
+    border: 2px solid transparent;
+    background: var(--input-bg);
+    transition: all var(--transition-normal) var(--easing-smooth);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+}
+
+.theme-option:hover {
+    transform: translateY(-4px) scale(1.05);
+    box-shadow: 0 8px 24px rgba(0, 122, 255, 0.2);
+    border-color: var(--color-primary);
+}
+
+.theme-option.active {
+    border-color: var(--color-primary);
+    background: rgba(0, 122, 255, 0.1);
+    box-shadow: 0 6px 20px rgba(0, 122, 255, 0.4);
+    transform: scale(1.05);
+    animation: bounceIn 0.5s var(--easing-bounce);
+}
+
+.theme-preview {
+    width: 100%;
+    height: 80px;
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.theme-preview-header {
+    height: 20px;
+    width: 100%;
+}
+
+.theme-preview-content {
+    flex: 1;
+    display: flex;
+}
+
+.theme-preview-sidebar {
+    width: 30%;
+}
+
+.theme-preview-main {
+    flex: 1;
+}
+
+/* Превью темной темы */
+.dark-preview .theme-preview-header {
+    background: #1C1C1E;
+}
+.dark-preview .theme-preview-sidebar {
+    background: #2C2C2E;
+}
+.dark-preview .theme-preview-main {
+    background: #1C1C1E;
+}
+
+/* Превью светлой темы */
+.light-preview .theme-preview-header {
+    background: #E5E5EA;
+}
+.light-preview .theme-preview-sidebar {
+    background: #F2F2F7;
+}
+.light-preview .theme-preview-main {
+    background: #FFFFFF;
+}
+
+/* Превью темы океан */
+.ocean-preview .theme-preview-header {
+    background: #003366;
+}
+.ocean-preview .theme-preview-sidebar {
+    background: #004080;
+}
+.ocean-preview .theme-preview-main {
+    background: #001F3F;
+}
+
+.theme-label {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-color);
+}
+
+/* --- Адаптивные стили --- */
+
+/* Улучшенная оптимизация для сенсорных устройств */
+@media (hover: none) and (pointer: coarse) {
+    /* Увеличиваем области нажатия для пальцев - Apple HIG рекомендует минимум 44px */
+    button, .icon-btn, .room-item, .telegram-nav-item {
+        min-height: 44px;
+        min-width: 44px;
+    }
+    
+    /* Специальные размеры для элементов интерфейса */
+    .close-btn {
+        min-width: 44px;
+        min-height: 44px;
+        font-size: 24px;
+    }
+    
+    .message-action-btn {
+        min-width: 40px;
+        min-height: 40px;
+        padding: 8px;
+    }
+    
+    /* Убираем hover эффекты на тач-устройствах */
+    button:hover, 
+    .icon-btn:hover, 
+    .room-item:hover,
+    .message:hover,
+    .reaction-option:hover {
+        transform: none !important;
+        box-shadow: inherit !important;
+    }
+    
+    /* Улучшенная тактильная обратная связь */
+    button:active, 
+    .icon-btn:active,
+    .telegram-nav-item:active {
+        transform: scale(0.95) !important;
+        opacity: 0.8;
+        transition: all 0.1s ease !important;
+    }
+    
+    .room-item:active {
+        transform: scale(0.98) !important;
+        background: var(--glass-bg-hover) !important;
+        transition: all 0.1s ease !important;
+    }
+    
+    .message:active {
+        transform: scale(0.98) !important;
+        transition: all 0.1s ease !important;
+    }
+    
+    /* Оптимизация для предотвращения случайных нажатий */
+    * {
+        -webkit-tap-highlight-color: transparent;
+        -webkit-touch-callout: none;
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        user-select: none;
+        touch-action: manipulation; /* Предотвращает зум при двойном тапе */
+    }
+    
+    /* Разрешаем выделение текста там, где это нужно */
+    .message p, 
+    .message-container,
+    input, 
+    textarea,
+    .modal-content p,
+    .banner-text,
+    .search-result {
+        -webkit-user-select: text;
+        -moz-user-select: text;
+        -ms-user-select: text;
+        user-select: text;
+    }
+    
+    /* Улучшенная прокрутка для мобильных */
+    .room-list,
+    .chat-window,
+    .sidebar-content,
+    .settings-content-inline {
+        -webkit-overflow-scrolling: touch;
+        overscroll-behavior: contain; /* Предотвращает bounce эффект */
+    }
+    
+    /* Увеличенная область для свайпов */
+    .main-content.mobile-chat-open {
+        touch-action: pan-x; /* Разрешаем только горизонтальные жесты */
+    }
+    
+    /* Оптимизированные размеры полей ввода */
+    input[type="text"], 
+    input[type="email"], 
+    input[type="password"], 
+    textarea {
+        font-size: 16px; /* Предотвращает зум на iOS при фокусе */
+        min-height: 44px;
+        padding: 12px 16px;
+    }
+    
+    #message-input {
+        font-size: 16px;
+        min-height: 44px;
+        line-height: 1.4;
+    }
+    
+    /* Улучшенный picker реакций для тач-устройств */
+    .reaction-option {
+        font-size: 32px; /* Больше размер для удобства */
+        padding: 12px;
+        min-width: 52px;
+        min-height: 52px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .reaction-option:active {
+        transform: scale(0.9) !important;
+        transition: all 0.1s ease !important;
+    }
+    
+    /* Оптимизированные контролы звонков */
+    .control-btn {
+        min-width: 80px;
+        min-height: 60px;
+        padding: 16px;
+    }
+    
+    .end-call {
+        min-width: 120px;
+        min-height: 50px;
+        font-size: 16px;
+        font-weight: 600;
+    }
+}
+
+/* Оптимизация для iOS Safari */
+@supports (-webkit-touch-callout: none) {
+    body {
+        /* Фиксируем проблему с высотой 100vh на iOS */
+        min-height: -webkit-fill-available;
+    }
+    
+    .app-layout {
+        height: -webkit-fill-available;
+    }
+}
+
+/* Для больших экранов (Full HD и выше) */
+@media (min-width: 1920px) {
+    .sidebar {
+        min-width: 350px;
+        max-width: 450px;
+    }
+    
+    .message-container {
+        max-width: 60%;
+    }
+}
+
+/* Для средних экранов (ноутбуки) */
+@media (min-width: 1200px) and (max-width: 1919px) {
+    .sidebar {
+        min-width: 280px;
+        width: 22%;
+        max-width: 350px;
+    }
+}
+
+/* Для небольших экранов (маленькие ноутбуки) */
+@media (max-width: 1199px) {
+    .app-layout {
+        padding: 8px;
+        gap: 8px;
+    }
+    
+    .sidebar {
+        min-width: 250px;
+        width: 25%;
+        max-width: 300px;
+    }
+    
+    .sidebar-header h2 {
+        font-size: 18px;
+    }
+    
+    .room-item {
+        padding: 12px 14px;
+    }
+    
+    .message-container {
+        max-width: 75%;
+    }
+}
+
+/* Для планшетов */
+@media (max-width: 992px) {
+    .app-layout {
+        padding: 6px;
+        gap: 6px;
+    }
+    
+    .sidebar {
+        min-width: 220px;
+        width: 30%;
+        max-width: 280px;
+    }
+    
+    .room-icon {
+        width: 42px;
+        height: 42px;
+    }
+    
+    .room-icon svg {
+        width: 20px;
+        height: 20px;
+    }
+    
+    .icon-btn {
+        width: 34px;
+        height: 34px;
+        font-size: 16px;
+    }
+    
+    button {
+        padding: 10px 20px;
+        font-size: 14px;
+    }
+}
+
+/* Улучшенный адаптивный дизайн для мобильных - Telegram стиль */
+@media (max-width: 768px) {
+    .app-layout {
+        flex-direction: column;
+        padding: 0;
+        gap: 0;
+        height: 100vh;
+        overflow: hidden;
+    }
+    
+    /* СПИСОК ЧАТОВ - показываем по умолчанию, скрываем при открытии чата */
+    .sidebar {
+        width: 100%;
+        min-width: 100%;
+        max-width: 100%;
+        height: 100vh;
+        border-radius: 0;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 1000;
+        display: flex;
+        flex-direction: column;
+        transform: translateX(0);
+        transition: transform 0.3s var(--easing-swift), opacity 0.3s var(--easing-swift);
+        opacity: 1;
+        background: var(--bg-gradient-start);
+    }
+    
+    /* Состояние скрытого сайдбара */
+    .sidebar.mobile-hidden {
+        transform: translateX(-100%);
+        opacity: 0;
+        pointer-events: none;
+    }
+    
+    /* Улучшенная анимация для плавного перехода */
+    .sidebar,
+    .main-content {
+        will-change: transform, opacity;
+        backface-visibility: hidden;
+        -webkit-backface-visibility: hidden;
+    }
+    
+    .sidebar.hide-on-mobile {
+        display: none !important; /* Скрываем когда открыт чат */
+    }
+    
+    .sidebar-header {
+        padding: 16px;
+        flex-shrink: 0;
+        border-bottom: 1px solid var(--glass-border);
+    }
+    
+    .sidebar-header h2 {
+        font-size: 22px;
+        margin: 0;
+    }
+    
+    .sidebar-content {
+        flex: 1;
+        overflow-y: auto;
+        padding: 8px;
+    }
+    
+    .user-panel {
+        padding: 12px 16px;
+        border-top: 1px solid var(--glass-border);
+        flex-shrink: 0;
+        height: auto;
+    }
+    
+    /* ОСНОВНОЙ КОНТЕНТ (ЧАТ) - скрыт по умолчанию, показываем при выборе чата */
+    .main-content {
+        width: 100%;
+        height: 100vh;
+        border-radius: 0;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 1001;
+        display: none; /* Скрыт по умолчанию */
+        transform: translateX(100%);
+        transition: transform 0.3s var(--easing-swift), opacity 0.3s var(--easing-swift);
+        opacity: 0;
+    }
+    
+    .main-content.show-on-mobile,
+    .main-content.mobile-chat-open {
+        display: flex !important; /* Показываем когда выбран чат */
+        transform: translateX(0);
+        opacity: 1;
+        animation: slideInFromRight 0.3s var(--easing-swift);
+    }
+    
+    /* Анимация появления чата справа */
+    @keyframes slideInFromRight {
+        from {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+        to {
+            transform: translateX(0);
+            opacity: 1;
+        }
+    }
+    
+    /* Анимация скрытия чата вправо */
+    @keyframes slideOutToRight {
+        from {
+            transform: translateX(0);
+            opacity: 1;
+        }
+        to {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+    }
+    
+    /* Класс для анимации закрытия */
+    .main-content.closing {
+        animation: slideOutToRight 0.3s var(--easing-swift);
+    }
+    
+    /* Скрываем мобильные табы (не нужны) */
+    .mobile-tabs {
+        display: none !important;
+    }
+    
+    /* Скрываем desktop панель пользователя на мобильных */
+    .desktop-user-panel {
+        display: flex !important;
+    }
+    
+    .sidebar-header h2 {
+        font-size: 20px;
+        font-weight: 600;
+        letter-spacing: -0.02em;
+        margin: 0;
+        font-family: 'Inter', -apple-system, sans-serif;
+    }
+    
+    .room-list {
+        padding: 12px 8px;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch; /* Плавная прокрутка на iOS */
+    }
+    
+    .room-item {
+        padding: 14px 12px;
+        margin-bottom: 8px;
+        border-radius: var(--radius-lg);
+        min-height: 60px; /* Достаточно для удобного тапа */
+        display: flex;
+        align-items: center;
+        cursor: pointer;
+        transition: all 0.2s var(--easing-smooth);
+    }
+    
+    /* Улучшенная тактильная обратная связь для мобильных */
+    .room-item:active {
+        transform: scale(0.98);
+        background: var(--glass-bg-hover);
+        transition: all 0.1s ease;
+    }
+    
+    .room-icon {
+        width: 44px;
+        height: 44px;
+        font-size: 20px;
+        border-radius: var(--radius-full);
+        border-width: 2px;
+        margin-right: 12px;
+        flex-shrink: 0;
+    }
+    
+    .room-icon svg {
+        width: 22px;
+        height: 22px;
+    }
+    
+    .room-name-text {
+        font-size: 16px;
+        font-weight: 500;
+        letter-spacing: -0.01em;
+        color: var(--text-color-bright);
+        flex: 1;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    
+    /* Улучшенные значки непрочитанных */
+    .unread-badge {
+        font-size: 12px;
+        font-weight: 700;
+        padding: 6px 10px;
+        min-width: 24px;
+        height: 24px;
+        border-radius: var(--radius-full);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-left: 8px;
+        flex-shrink: 0;
+    }
+    
+    .main-content {
+        flex: 1;
+        min-height: 0;
+        height: auto;
+    }
+    
+    .message-container {
+        max-width: 85%;
+    }
+    
+    .message {
+        padding: 10px 14px;
+        font-size: 14px;
+    }
+    
+    button {
+        padding: 10px 18px;
+        font-size: 14px;
+        margin: 4px 2px;
+    }
+    
+    .icon-btn {
+        width: 32px;
+        height: 32px;
+        font-size: 14px;
+        margin: 0 3px;
+    }
+    
+    .modal-content {
+        width: 95%;
+        padding: 20px;
+        border-radius: var(--radius-lg);
+    }
+    
+    .auth-card {
+        padding: 28px 20px;
+        width: 100%;
+    }
+    
+    .chat-header {
+        padding: 6px 12px; /* поднять хедер выше, как в Telegram */
+    }
+    
+    .chat-window {
+        padding: 16px;
+    }
+    
+    .chat-input-area {
+        padding: 10px 12px;
+        flex-wrap: wrap;
+    }
+    
+    #message-input {
+        flex: 1 1 100%;
+        margin-bottom: 8px;
+    }
+    
+    #send-button {
+        flex: 1 1 100%;
+        width: 100%;
+    }
+    
+    .user-panel {
+        padding: 0;
+        gap: 0;
+        height: 70px;
+    }
+    
+    /* Скрываем desktop панель на мобильных */
+    .desktop-user-panel {
+        display: none !important;
+    }
+    
+    /* Показываем мобильные табы */
+    .mobile-tabs {
+        display: flex !important;
+    }
+    
+    /* Шапка чата на весь экран */
+    .chat-header {
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        border-radius: 0;
+        padding: 12px 16px;
+    }
+    
+    /* Кнопка "Назад" на мобильных */
+    .mobile-back-btn {
+        display: flex !important;
+        align-items: center;
+        justify-content: center;
+        background: transparent;
+        border: none;
+        color: var(--color-primary);
+        padding: 8px;
+        margin: 0;
+        margin-right: 12px;
+        cursor: pointer;
+        border-radius: var(--radius-full);
+        width: 40px;
+        height: 40px;
+        flex-shrink: 0;
+        transition: all var(--transition-fast);
+    }
+    
+    .mobile-back-btn:hover {
+        background: var(--glass-bg);
+        transform: scale(1.1);
+    }
+    
+    .mobile-back-btn:active {
+        transform: scale(0.95);
+    }
+    
+    /* Закрываем список чатов свайпом */
+    .sidebar-content.show::before {
+        content: '';
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 70px;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 998;
+    }
+    
+    #current-username-display {
+        font-size: 14px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    
+    .logout-btn {
+        padding: 8px 14px;
+        font-size: 13px;
+    }
+
+    /* Мобильная раскладка для звонков */
+    .call-videos {
+        gap: 8px;
+        flex-direction: column;
+        align-items: stretch;
+        grid-template-columns: 1fr;
+    }
+    #localVideo {
+        width: 100%;
+        height: auto;
+        min-height: 200px;
+        max-height: 40vh;
+        border-radius: var(--radius-md);
+        object-fit: cover;
+    }
+    .remote-videos {
+        grid-template-columns: 1fr;
+    }
+    #remoteVideos video,
+    .remote-videos video {
+        width: 100% !important;
+        height: auto !important;
+        min-height: 250px;
+        max-height: 60vh;
+        border-radius: var(--radius-md);
+        object-fit: cover;
+    }
+    .call-controls {
+        gap: 6px;
+        flex-wrap: wrap;
+        justify-content: center;
+        padding-bottom: env(safe-area-inset-bottom, 20px);
+        padding-top: 12px;
+    }
+    .control-btn {
+        min-width: 70px;
+        padding: 12px 16px;
+        flex: 0 1 auto;
+    }
+    .control-label {
+        font-size: 11px;
+    }
+    .end-call {
+        width: 100%;
+        max-width: 200px;
+    }
+    /* Модальное окно звонка на весь экран на мобильных */
+    .modal-content {
+        width: 100%;
+        height: 100%;
+        max-width: 100%;
+        max-height: 100%;
+        border-radius: 0;
+        padding: 16px;
+    }
+    #callModal .modal-content {
+        display: flex;
+        flex-direction: column;
+    }
+    #callModal .call-videos {
+        flex: 1;
+        overflow-y: auto;
+    }
+}
+
+/* Для очень маленьких экранов */
+@media (max-width: 480px) {
+    .app-layout {
+        padding: 2px;
+        gap: 2px;
+    }
+    
+    .sidebar {
+        height: 100vh;
+        max-height: 100vh; /* список контактов на всю высоту */
+    }
+    
+    .sidebar-header {
+        padding: 10px 12px;
+    }
+    
+    .sidebar-header h2 {
+        font-size: 15px;
+    }
+    
+    .room-item {
+        padding: 8px 10px;
+    }
+    
+    .room-icon {
+        width: 32px;
+        height: 32px;
+    }
+    
+    .room-icon svg {
+        width: 16px;
+        height: 16px;
+    }
+    
+    .room-name-text {
+        font-size: 14px;
+    }
+    
+    .message-container {
+        max-width: 90%;
+    }
+    
+    .message {
+        padding: 8px 12px;
+        font-size: 13px;
+    }
+    
+    .user-panel {
+        padding: 8px 12px;
+    }
+    
+    #current-username-display {
+        font-size: 13px;
+    }
+    
+    .logout-btn {
+        padding: 6px 10px;
+        font-size: 12px;
+    }
+}
+
+/* --- Дополнительные эффекты наведения --- */
+.glass:active {
+    transform: scale(0.99);
+}
+
+/* Эффект загрузки для кнопок */
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+.loading::after {
+    content: '';
+    width: 16px;
+    height: 16px;
+    margin-left: 8px;
+    border: 2px solid transparent;
+    border-top-color: white;
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+    display: inline-block;
+    vertical-align: middle;
+}
+
+/* Улучшенные тени для активных элементов */
+input:focus, 
+textarea:focus, 
+select:focus,
+.room-item.active,
+button:focus {
+    outline: none;
+}
+
+/* Оптимизация производительности - отключаем transition по умолчанию только для ненужных элементов */
+*:not(button):not(.icon-btn):not(.room-item):not(input):not(textarea):not(select):not(.message):not(.reaction):not(.modal-overlay):not(.modal-content):not(.close-btn):not(.glass):not(.auth-card):not(.reaction-option):not(.message-action-btn):not(.control-btn):not(.theme-option):not(.search-result):not(.room-icon):not(svg) {
+    transition: none;
+}
+
+/* Smooth scrolling для всей страницы */
+html {
+    scroll-behavior: smooth;
+}
+
+/* Улучшенная анимация для стеклянных элементов */
+.glass {
+    transition: all var(--transition-normal) var(--easing-smooth);
+}
+
+.glass:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+}
+
+.glass:active {
+    transform: scale(0.99);
+}
+
+/* НОВОЕ: Стили для контекстного меню */
+.context-menu {
+    position: absolute;
+    z-index: 1000;
+    border-radius: 8px;
+    padding: 6px;
+    min-width: 180px;
+}
+
+.context-menu ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.context-menu ul li {
+    padding: 8px 12px;
+    cursor: pointer;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 14px;
+    color: var(--color-text-primary);
+}
+
+.context-menu ul li:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.context-menu ul li svg {
+    stroke: currentColor; /* использовать текущий цвет текста пункта */
+    fill: none;
+}
+
+/* ... existing code ... */
+.glass:active {
+    transform: scale(0.99);
+}
+
+/* НОВОЕ: Стили для модального окна участников */
+#membersListContainer {
+    max-height: 60vh;
+    overflow-y: auto;
+    padding-right: 10px; /* место для скроллбара */
+    margin-right: -10px;
+}
+
+.member-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    border-radius: var(--radius-lg);
+    margin-bottom: 8px;
+    background: var(--input-bg);
+    backdrop-filter: blur(20px);
+    transition: all var(--transition-normal) var(--easing-smooth);
+}
+
+.member-item:hover {
+    background: var(--glass-bg-hover);
+    transform: translateX(4px);
+}
+
+.member-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.member-username {
+    font-weight: 600;
+    font-size: 15px;
+}
+
+.member-role {
+    font-size: 13px;
+    color: var(--text-color-muted);
+    text-transform: capitalize;
+}
+
+.member-role.admin {
+    color: var(--color-primary);
+    font-weight: 500;
+}
+
+.member-actions {
+    display: flex;
+    gap: 8px;
+}
+
+/* Poll builder modal */
+.poll-builder {
+    max-width: 520px;
+}
+
+.poll-builder .modal-header {
+    align-items: center;
+    justify-content: space-between;
+}
+
+.poll-builder .modal-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.poll-builder-body {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.poll-label {
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.poll-input {
+    width: 100%;
+    padding: 12px 14px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--glass-border);
+    background: rgba(255, 255, 255, 0.08);
+    color: inherit;
+}
+
+.poll-input:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.25);
+}
+
+.poll-options-editor {
+    background: rgba(255, 255, 255, 0.04);
+    border-radius: var(--radius-md);
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.poll-options-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-weight: 600;
+    font-size: 14px;
+}
+
+.poll-options-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.poll-option-editor-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: rgba(255, 255, 255, 0.06);
+    border-radius: var(--radius-md);
+    padding: 8px 10px;
+}
+
+.poll-option-input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    color: inherit;
+    font-size: 15px;
+}
+
+.poll-option-input::placeholder {
+    color: rgba(255, 255, 255, 0.45);
+}
+
+.poll-option-input:focus {
+    outline: none;
+}
+
+.poll-option-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.poll-option-action {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: var(--radius-sm);
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: inherit;
+    cursor: pointer;
+    transition: background var(--transition-fast), transform var(--transition-fast);
+}
+
+.poll-option-action:hover {
+    background: rgba(255, 255, 255, 0.16);
+    transform: translateY(-1px);
+}
+
+.poll-option-action.danger {
+    color: #ff6b6b;
+    border-color: rgba(255, 107, 107, 0.35);
+}
+
+.poll-option-action svg {
+    pointer-events: none;
+}
+
+.poll-settings {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.poll-toggle {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 14px;
+}
+
+.poll-preview-block {
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: var(--radius-md);
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.poll-preview {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.poll-preview-placeholder {
+    font-size: 13px;
+    opacity: 0.7;
+}
+
+.poll-preview-question {
+    font-weight: 600;
+    font-size: 16px;
+}
+
+.poll-preview-options {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.poll-preview-option {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 10px;
+    border-radius: var(--radius-sm);
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.poll-preview-option svg {
+    opacity: 0.6;
+}
+
+.poll-preview-footer {
+    font-size: 12px;
+    opacity: 0.75;
+}
+
+.poll-builder .modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+}
+
+.ghost-btn {
+    border: 1px dashed rgba(255, 255, 255, 0.35);
+    background: transparent;
+    color: inherit;
+    padding: 6px 12px;
+    border-radius: var(--radius-sm);
+    font-size: 13px;
+    cursor: pointer;
+    transition: background var(--transition-fast), border var(--transition-fast);
+}
+
+.ghost-btn:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.5);
+}
+
+.ghost-btn.danger {
+    color: #ff6b6b;
+    border-color: rgba(255, 107, 107, 0.35);
+}
+
+.ghost-btn.danger:hover {
+    background: rgba(255, 107, 107, 0.15);
+}
+
+.ghost-btn.active {
+    border-color: rgba(0, 122, 255, 0.6);
+    color: var(--color-primary);
+    background: rgba(0, 122, 255, 0.15);
+}
+
+.primary-btn {
+    background: var(--color-primary);
+    border: none;
+    color: #ffffff;
+    border-radius: var(--radius-md);
+    padding: 10px 20px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background var(--transition-fast);
+}
+
+.primary-btn:hover {
+    background: var(--color-primary-hover);
+}
+
+.secondary-btn {
+    background: rgba(255, 255, 255, 0.08);
+    border: none;
+    color: inherit;
+    border-radius: var(--radius-md);
+    padding: 10px 20px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background var(--transition-fast);
+}
+
+.secondary-btn:hover {
+    background: rgba(255, 255, 255, 0.14);
+}
+
+/* Poll message styling */
+.poll-container {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 14px;
+    border-radius: var(--radius-md);
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    position: relative;
+    overflow: hidden;
+}
+
+.poll-question {
+    font-weight: 600;
+    font-size: 16px;
+}
+
+.poll-options {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.poll-option-row {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.04);
+    transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.poll-option-row:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.18);
+}
+
+.poll-bar {
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, var(--color-primary), var(--color-primary-hover));
+    opacity: 0.18;
+    pointer-events: none;
+    transition: width var(--transition-normal);
+}
+
+.poll-vote-btn {
+    position: relative;
+    z-index: 2;
+    width: 38px;
+    height: 38px;
+    border: none;
+    background: transparent;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: inherit;
+    cursor: pointer;
+    transition: transform var(--transition-fast);
+}
+
+.poll-vote-btn:hover {
+    transform: scale(1.1);
+}
+
+.poll-option-content {
+    position: relative;
+    z-index: 2;
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 12px;
+}
+
+.poll-option-text {
+    font-size: 15px;
+    font-weight: 500;
+}
+
+.poll-option-votes {
+    font-size: 13px;
+    opacity: 0.8;
+}
+
+.poll-option-voted {
+    box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.3);
+}
+
+.poll-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 12px;
+    opacity: 0.8;
+}
+
+.poll-total {
+    font-weight: 600;
+}
+
+/* Presentation workspace */
+.presentation-modal {
+    max-width: 1100px;
+    width: 95%;
+    max-height: 95%;
+}
+
+.presentation-header-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.slide-counter {
+    font-weight: 600;
+    min-width: 70px;
+    text-align: center;
+}
+
+.presentation-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    padding: 12px 16px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: var(--radius-md);
+    margin-bottom: 16px;
+}
+
+.tool-btn {
+    width: 40px;
+    height: 40px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: rgba(255, 255, 255, 0.06);
+    border-radius: var(--radius-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: inherit;
+    cursor: pointer;
+    transition: background var(--transition-fast), transform var(--transition-fast), border var(--transition-fast), color var(--transition-fast);
+    position: relative;
+    overflow: hidden;
+}
+
+.tool-btn:hover {
+    background: rgba(255, 255, 255, 0.12);
+    transform: translateY(-1px);
+}
+
+.tool-btn.active {
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+    background: rgba(0, 122, 255, 0.15);
+}
+
+.tool-btn.upload input[type="file"] {
+    display: none;
+}
+
+.presentation-toolbar input[type="color"] {
+    width: 36px;
+    height: 36px;
+    border: none;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    padding: 0;
+    background: transparent;
+}
+
+.presentation-toolbar input[type="range"] {
+    width: 140px;
+    accent-color: var(--color-primary);
+}
+
+.presentation-workspace {
+    display: flex;
+    align-items: stretch;
+    gap: 16px;
+}
+
+.presentation-canvas {
+    position: relative;
+    flex: 1 1 auto;
+    background: #ffffff;
+    border-radius: var(--radius-lg);
+    min-height: 600px;
+    box-shadow: 0 22px 44px rgba(0, 0, 0, 0.22);
+    overflow: hidden;
+}
+
+.presentation-canvas.grid-on::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: linear-gradient(rgba(0, 0, 0, 0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 0, 0, 0.05) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    opacity: 0.5;
+}
+
+.presentation-slide {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+}
+
+.presentation-element {
+    position: absolute;
+    box-sizing: border-box;
+    cursor: move;
+    border: 1px dashed transparent;
+    min-width: 6%;
+    min-height: 6%;
+    transform-origin: center center;
+}
+
+.presentation-element.selected {
+    border-color: rgba(0, 122, 255, 0.7);
+    box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.2);
+}
+
+.presentation-element.text {
+    padding: 10px 14px;
+    font-size: 24px;
+    line-height: 1.3;
+    color: #1f1f1f;
+    background: transparent;
+    word-break: break-word;
+}
+
+.presentation-element.text:focus {
+    outline: none;
+}
+
+.presentation-element.sticky {
+    padding: 16px;
+    font-size: 20px;
+    line-height: 1.4;
+    background: rgba(255, 234, 138, 0.92);
+    color: #2d2200;
+    border-radius: 16px;
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
+}
+
+.presentation-element.rectangle {
+    background: rgba(0, 122, 255, 0.15);
+    border: 2px solid rgba(0, 122, 255, 0.55);
+    border-radius: 18px;
+}
+
+.presentation-element.circle {
+    background: rgba(0, 122, 255, 0.12);
+    border: 2px solid rgba(0, 122, 255, 0.5);
+    border-radius: 50%;
+}
+
+.presentation-element.arrow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.presentation-element.arrow svg {
+    width: 100%;
+    height: 100%;
+}
+
+.presentation-element.image {
+    overflow: hidden;
+    border-radius: 20px;
+    border: 2px solid rgba(255, 255, 255, 0.6);
+    box-shadow: 0 18px 36px rgba(0, 0, 0, 0.2);
+}
+
+.presentation-element.image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    pointer-events: none;
+}
+
+.resize-handle {
+    position: absolute;
+    right: -8px;
+    bottom: -8px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    border: 2px solid #ffffff;
+    background: var(--color-primary);
+    cursor: se-resize;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+}
+
+.presentation-inspector {
+    width: 260px;
+    background: rgba(255, 255, 255, 0.04);
+    border-radius: var(--radius-lg);
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    max-height: 620px;
+    overflow-y: auto;
+}
+
+.presentation-inspector h4 {
+    margin: 0;
+    font-size: 14px;
+    font-weight: 600;
+    opacity: 0.8;
+}
+
+.presentation-inspector label {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: 13px;
+}
+
+.presentation-inspector input,
+.presentation-inspector select {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: var(--radius-sm);
+    padding: 6px 8px;
+    color: inherit;
+}
+
+.presentation-inspector input[type="range"] {
+    accent-color: var(--color-primary);
+}
+
+.presentation-footer {
+    margin-top: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.presentation-footer-left,
+.presentation-footer-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+.whiteboard-modal {
+    max-width: 1100px;
+    width: 95%;
+    max-height: 95%;
+    height: 780px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.whiteboard-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+    background: rgba(255, 255, 255, 0.04);
+    padding: 10px 14px;
+    border-radius: var(--radius-md);
+}
+
+.whiteboard-toolbar .tool-btn {
+    width: 40px;
+    height: 40px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: rgba(255, 255, 255, 0.06);
+    border-radius: var(--radius-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: inherit;
+    cursor: pointer;
+    transition: background var(--transition-fast), transform var(--transition-fast), border var(--transition-fast), color var(--transition-fast);
+}
+
+.whiteboard-toolbar .tool-btn:hover {
+    background: rgba(255, 255, 255, 0.12);
+    transform: translateY(-1px);
+}
+
+.whiteboard-toolbar .tool-btn.active {
+    background: rgba(0, 122, 255, 0.2);
+    border-color: rgba(0, 122, 255, 0.6);
+    color: var(--color-primary);
+}
+
+.whiteboard-divider {
+    width: 1px;
+    height: 32px;
+    background: rgba(255, 255, 255, 0.12);
+}
+
+.whiteboard-palette {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.color-swatch {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    background: var(--swatch);
+    cursor: pointer;
+    transition: transform var(--transition-fast), border var(--transition-fast);
+}
+
+.color-swatch:hover {
+    transform: translateY(-1px);
+}
+
+.color-swatch.active {
+    border-color: #ffffff;
+    box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.45);
+}
+
+.color-swatch[style*='#ffffff'] {
+    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.1);
+}
+
+.color-picker input[type="color"] {
+    width: 32px;
+    height: 32px;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    padding: 0;
+    background: transparent;
+}
+
+.whiteboard-slider {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 160px;
+}
+
+.whiteboard-slider input[type="range"] {
+    width: 120px;
+    accent-color: var(--color-primary);
+}
+
+.whiteboard-slider span {
+    font-size: 12px;
+    opacity: 0.7;
+}
+
+.whiteboard-stage {
+    position: relative;
+    flex: 1 1 auto;
+    width: 100%;
+    background: #ffffff;
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    box-shadow: 0 22px 44px rgba(0, 0, 0, 0.22);
+}
+
+#whiteboardCanvas,
+#whiteboardOverlay {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+}
+
+#whiteboardCanvas {
+    cursor: crosshair;
+}
+
+#whiteboardOverlay {
+    pointer-events: none;
+}
+
+.documents-modal {
+    max-width: 900px;
+    width: 95%;
+    max-height: 90%;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.document-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    background: rgba(255, 255, 255, 0.04);
+    padding: 8px 12px;
+    border-radius: var(--radius-md);
+}
+
+.document-toolbar .tool-btn {
+    width: 36px;
+    height: 36px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: rgba(255, 255, 255, 0.06);
+    border-radius: var(--radius-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: inherit;
+    cursor: pointer;
+    transition: background var(--transition-fast), transform var(--transition-fast), border var(--transition-fast);
+}
+
+.document-toolbar .tool-btn:hover {
+    background: rgba(255, 255, 255, 0.12);
+    transform: translateY(-1px);
+}
+
+.toolbar-divider {
+    width: 1px;
+    height: 24px;
+    background: rgba(255, 255, 255, 0.12);
+}
+
+.document-editor {
+    width: 100%;
+    min-height: 500px;
+    padding: 20px;
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: var(--radius-lg);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    overflow-y: auto;
+    font-family: 'Inter', sans-serif;
+    font-size: 16px;
+    line-height: 1.6;
+}
+
+.document-editor:focus {
+    outline: none;
+    border-color: rgba(0, 122, 255, 0.5);
+    box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.15);
+}
+
+.document-editor:empty:before {
+    content: attr(data-placeholder);
+    color: rgba(255, 255, 255, 0.4);
+}
+
+.document-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 8px;
+}
+
+.document-hint {
+    font-size: 13px;
+    opacity: 0.7;
+}
+
+.document-actions {
+    display: flex;
+    gap: 12px;
+}
+.file-preview-generic {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 16px;
+    border-radius: var(--radius-sm);
+    background: rgba(255, 255, 255, 0.08);
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.file-preview-generic .material-icons-round {
+    font-size: 24px;
+    opacity: 0.75;
+}
+
+.file-preview-generic div {
+    display: flex;
+    flex-direction: column;
+    font-size: 13px;
+    line-height: 1.3;
+}
+
+.file-preview-generic div span {
+    opacity: 0.7;
+    font-size: 12px;
+}
