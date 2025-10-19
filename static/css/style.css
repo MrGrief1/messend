@@ -20,17 +20,23 @@
     --glass-blur: 15px;
     --glass-border-opacity: 0.1;
     --glass-shadow: 0 2px 12px rgba(0, 0, 0, 0.2);
-    
+
     --glass-bg: rgba(255, 255, 255, var(--glass-opacity));
     --glass-border: rgba(255, 255, 255, var(--glass-border-opacity));
     --glass-bg-hover: rgba(255, 255, 255, calc(var(--glass-opacity) + 0.05));
-    
+
     --input-bg: rgba(118, 118, 128, 0.24);
     --input-border: rgba(255, 255, 255, 0.15);
     --chat-area-bg: rgba(0, 0, 0, 0.3);
     --header-bg: rgba(28, 28, 30, 0.72);
     --scrollbar-thumb: rgba(255, 255, 255, 0.3);
     --msg-received-bg: rgba(118, 118, 128, 0.24);
+    --msg-sent-bg: linear-gradient(135deg, rgba(0, 122, 255, 0.92), rgba(48, 152, 255, 0.92));
+    --msg-sent-text: #ffffff;
+    --menu-shadow: 0 18px 40px rgba(0, 0, 0, 0.28);
+    --surface-elevated: rgba(255, 255, 255, 0.08);
+    --surface-muted: rgba(255, 255, 255, 0.05);
+    --thread-accent: rgba(0, 122, 255, 0.25);
     
     /* Радиусы скругления - все круглое */
     --radius-full: 9999px;
@@ -55,17 +61,22 @@
     --text-color: #000000;
     --text-color-muted: rgba(60, 60, 67, 0.6);
     --text-color-bright: #000000;
-    
+
     --glass-bg: rgba(255, 255, 255, var(--glass-opacity));
     --glass-border: rgba(0, 0, 0, 0.1);
     --glass-bg-hover: rgba(255, 255, 255, calc(var(--glass-opacity) + 0.1));
-    
+
     --input-bg: rgba(118, 118, 128, 0.12);
     --input-border: rgba(0, 0, 0, 0.1);
     --chat-area-bg: rgba(255, 255, 255, 0.5);
     --header-bg: rgba(255, 255, 255, 0.72);
     --scrollbar-thumb: rgba(0, 0, 0, 0.25);
     --msg-received-bg: rgba(118, 118, 128, 0.12);
+    --msg-sent-bg: linear-gradient(135deg, rgba(0, 122, 255, 0.9), rgba(88, 180, 255, 0.9));
+    --msg-sent-text: #ffffff;
+    --surface-elevated: rgba(255, 255, 255, 0.9);
+    --surface-muted: rgba(255, 255, 255, 0.8);
+    --thread-accent: rgba(0, 122, 255, 0.18);
 }
 
 [data-theme="ocean"] {
@@ -76,6 +87,27 @@
     --bg-gradient-end: #004080;
     --glass-bg: rgba(0, 212, 255, var(--glass-opacity));
     --glass-border: rgba(0, 212, 255, var(--glass-border-opacity));
+    --msg-received-bg: rgba(0, 60, 120, 0.35);
+    --msg-sent-bg: linear-gradient(140deg, rgba(0, 212, 255, 0.95), rgba(0, 128, 255, 0.95));
+    --thread-accent: rgba(0, 180, 255, 0.25);
+    --surface-elevated: rgba(0, 70, 140, 0.55);
+    --surface-muted: rgba(0, 60, 120, 0.35);
+}
+
+[data-theme="amoled"] {
+    --bg-gradient-start: #050505;
+    --bg-gradient-mid: #090909;
+    --bg-gradient-end: #050505;
+    --glass-bg: rgba(18, 18, 18, 0.82);
+    --glass-border: rgba(255, 255, 255, 0.05);
+    --glass-bg-hover: rgba(40, 40, 40, 0.9);
+    --input-bg: rgba(255, 255, 255, 0.08);
+    --msg-received-bg: rgba(255, 255, 255, 0.08);
+    --msg-sent-bg: linear-gradient(135deg, rgba(0, 132, 255, 0.95), rgba(0, 82, 220, 0.95));
+    --msg-sent-text: #ffffff;
+    --thread-accent: rgba(0, 132, 255, 0.3);
+    --surface-elevated: rgba(20, 20, 20, 0.9);
+    --surface-muted: rgba(18, 18, 18, 0.75);
 }
 
 body {
@@ -875,6 +907,10 @@ label {
     gap: 12px;
 }
 
+.message-banner .comment-icon {
+    color: #ffd86f;
+}
+
 .banner-icon {
     color: var(--color-primary);
     flex-shrink: 0;
@@ -1338,8 +1374,8 @@ label {
 }
 
 .message.sent {
-    background: var(--color-primary);
-    color: white;
+    background: var(--msg-sent-bg);
+    color: var(--msg-sent-text);
     border-bottom-right-radius: 6px;
     box-shadow: 0 4px 12px rgba(0, 122, 255, 0.3);
     animation: slideInRight 0.3s var(--easing-smooth);
@@ -1551,11 +1587,20 @@ div#reaction-picker.expanded span.hidden-reaction {
     gap: 24px;
     border-radius: var(--radius-full);
     animation: none; /* исключаем перерисовку при взаимодействии */
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--menu-shadow);
+    backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+    -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(160%);
 }
 
 /* Фикс «прыжка» капсулы при клике: переопределяем общее правило .glass:active */
 .selection-bar.glass:active {
     transform: translateX(-50%) !important;
+}
+
+.selection-bar.glass:hover {
+    transform: translateX(-50%);
 }
 
 .selection-actions {
@@ -1671,8 +1716,12 @@ div#reaction-picker.expanded span.hidden-reaction {
     padding: 32px;
     border-radius: var(--radius-xl);
     animation: modalSlideIn 0.4s var(--easing-bounce);
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+    box-shadow: var(--menu-shadow);
     overflow-y: auto;
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+    -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(160%);
 }
 
 @keyframes modalSlideIn {
@@ -3235,7 +3284,13 @@ html {
 
 /* Poll builder modal */
 .poll-builder {
-    max-width: 520px;
+    max-width: 560px;
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--menu-shadow);
+    backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+    -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+    color: var(--text-color);
 }
 
 .poll-builder .modal-header {
@@ -3252,7 +3307,7 @@ html {
 .poll-builder-body {
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: 18px;
 }
 
 .poll-label {
@@ -3262,26 +3317,28 @@ html {
 
 .poll-input {
     width: 100%;
-    padding: 12px 14px;
+    padding: 14px 16px;
     border-radius: var(--radius-md);
     border: 1px solid var(--glass-border);
-    background: rgba(255, 255, 255, 0.08);
+    background: var(--surface-elevated);
     color: inherit;
+    transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
 }
 
 .poll-input:focus {
     outline: none;
     border-color: var(--color-primary);
-    box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.25);
+    box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.25);
 }
 
 .poll-options-editor {
-    background: rgba(255, 255, 255, 0.04);
+    background: var(--surface-muted);
     border-radius: var(--radius-md);
-    padding: 12px;
+    padding: 14px;
     display: flex;
     flex-direction: column;
     gap: 12px;
+    border: 1px solid var(--glass-border);
 }
 
 .poll-options-header {
@@ -3302,9 +3359,10 @@ html {
     display: flex;
     align-items: center;
     gap: 12px;
-    background: rgba(255, 255, 255, 0.06);
+    background: var(--surface-elevated);
     border-radius: var(--radius-md);
-    padding: 8px 10px;
+    padding: 10px 12px;
+    border: 1px solid var(--glass-border);
 }
 
 .poll-option-input {
@@ -3316,7 +3374,7 @@ html {
 }
 
 .poll-option-input::placeholder {
-    color: rgba(255, 255, 255, 0.45);
+    color: var(--text-color-muted);
 }
 
 .poll-option-input:focus {
@@ -3327,34 +3385,44 @@ html {
     display: flex;
     align-items: center;
     gap: 6px;
+    margin-left: auto;
+    flex-shrink: 0;
 }
 
 .poll-option-action {
-    background: rgba(255, 255, 255, 0.08);
-    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: var(--surface-muted);
+    border: 1px solid var(--glass-border);
     border-radius: var(--radius-sm);
-    width: 32px;
-    height: 32px;
+    width: 34px;
+    height: 34px;
     display: flex;
     align-items: center;
     justify-content: center;
     color: inherit;
     cursor: pointer;
-    transition: background var(--transition-fast), transform var(--transition-fast);
+    transition: background var(--transition-fast), box-shadow var(--transition-fast);
 }
 
 .poll-option-action:hover {
-    background: rgba(255, 255, 255, 0.16);
-    transform: translateY(-1px);
+    background: var(--glass-bg-hover);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+}
+
+.poll-option-action:focus-visible {
+    outline: 2px solid rgba(120, 160, 255, 0.8);
+    outline-offset: 2px;
 }
 
 .poll-option-action.danger {
-    color: #ff6b6b;
+    color: var(--color-danger);
     border-color: rgba(255, 107, 107, 0.35);
+    background: rgba(255, 59, 48, 0.12);
 }
 
 .poll-option-action svg {
     pointer-events: none;
+    stroke: currentColor;
+    opacity: 0.9;
 }
 
 .poll-settings {
@@ -3371,18 +3439,23 @@ html {
 }
 
 .poll-preview-block {
-    background: rgba(255, 255, 255, 0.03);
-    border-radius: var(--radius-md);
-    padding: 12px;
+    background: var(--surface-muted);
+    border-radius: var(--radius-lg);
+    padding: 16px;
     display: flex;
     flex-direction: column;
     gap: 12px;
+    border: 1px solid var(--glass-border);
 }
 
 .poll-preview {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 12px;
+    background: var(--surface-elevated);
+    border-radius: var(--radius-lg);
+    padding: 16px 18px;
+    border: 1px solid var(--glass-border);
 }
 
 .poll-preview-placeholder {
@@ -3391,8 +3464,8 @@ html {
 }
 
 .poll-preview-question {
-    font-weight: 600;
-    font-size: 16px;
+    font-weight: 700;
+    font-size: 17px;
 }
 
 .poll-preview-options {
@@ -3405,13 +3478,15 @@ html {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 8px 10px;
-    border-radius: var(--radius-sm);
-    background: rgba(255, 255, 255, 0.05);
+    padding: 12px 14px;
+    border-radius: var(--radius-md);
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
 }
 
 .poll-preview-option svg {
-    opacity: 0.6;
+    opacity: 0.7;
+    stroke: currentColor;
 }
 
 .poll-preview-footer {
@@ -3490,24 +3565,27 @@ html {
 .poll-container {
     display: flex;
     flex-direction: column;
-    gap: 12px;
-    padding: 14px;
-    border-radius: var(--radius-md);
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.06);
+    gap: 16px;
+    padding: 18px;
+    border-radius: var(--radius-lg);
+    background: var(--surface-elevated);
+    border: 1px solid var(--glass-border);
     position: relative;
     overflow: hidden;
+    color: inherit;
+    box-shadow: var(--menu-shadow);
 }
 
 .poll-question {
-    font-weight: 600;
-    font-size: 16px;
+    font-weight: 700;
+    font-size: 18px;
+    letter-spacing: -0.2px;
 }
 
 .poll-options {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 12px;
 }
 
 .poll-option-row {
@@ -3515,16 +3593,18 @@ html {
     display: flex;
     align-items: center;
     gap: 12px;
-    border-radius: var(--radius-md);
+    border-radius: var(--radius-lg);
     overflow: hidden;
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.04);
-    transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    transition: transform var(--transition-fast), box-shadow var(--transition-fast), border-color var(--transition-fast);
+    padding: 14px 16px;
+    cursor: pointer;
 }
 
 .poll-option-row:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.18);
+    transform: translateY(-2px);
+    box-shadow: 0 10px 28px rgba(0, 30, 110, 0.35);
 }
 
 .poll-bar {
@@ -3532,29 +3612,10 @@ html {
     top: 0;
     left: 0;
     bottom: 0;
-    background: linear-gradient(135deg, var(--color-primary), var(--color-primary-hover));
-    opacity: 0.18;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0.3));
+    opacity: 0.3;
     pointer-events: none;
     transition: width var(--transition-normal);
-}
-
-.poll-vote-btn {
-    position: relative;
-    z-index: 2;
-    width: 38px;
-    height: 38px;
-    border: none;
-    background: transparent;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: inherit;
-    cursor: pointer;
-    transition: transform var(--transition-fast);
-}
-
-.poll-vote-btn:hover {
-    transform: scale(1.1);
 }
 
 .poll-option-content {
@@ -3565,33 +3626,311 @@ html {
     align-items: center;
     justify-content: space-between;
     gap: 12px;
-    padding: 10px 12px;
 }
 
 .poll-option-text {
-    font-size: 15px;
-    font-weight: 500;
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 1.35;
+    word-break: break-word;
 }
 
 .poll-option-votes {
     font-size: 13px;
-    opacity: 0.8;
+    opacity: 0.85;
 }
 
-.poll-option-voted {
-    box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.3);
+.poll-option-check {
+    position: relative;
+    z-index: 2;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    border: 2px solid rgba(255, 255, 255, 0.55);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all var(--transition-fast);
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.poll-option-check svg {
+    width: 18px;
+    height: 18px;
+    opacity: 0.55;
+    transition: opacity var(--transition-fast);
+}
+
+.poll-option-selected {
+    border-color: rgba(255, 255, 255, 0.75);
+    box-shadow: 0 12px 32px rgba(0, 36, 120, 0.4);
+}
+
+.poll-option-selected .poll-option-check {
+    background: rgba(255, 255, 255, 0.2);
+    border-color: #ffffff;
+}
+
+.poll-option-selected .poll-option-check svg {
+    opacity: 1;
+}
+
+.poll-option-selected .poll-bar {
+    opacity: 0.45;
+}
+
+.poll-option-disabled {
+    cursor: not-allowed;
+    opacity: 0.72;
+}
+
+.poll-option-disabled .poll-option-check {
+    opacity: 0.45;
 }
 
 .poll-footer {
     display: flex;
     align-items: center;
     justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.poll-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
     font-size: 12px;
-    opacity: 0.8;
+    opacity: 0.85;
+}
+
+.poll-tip-alert {
+    color: #ffeaa7;
+}
+
+.poll-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.poll-comment-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--glass-border);
+    background: var(--glass-bg);
+    color: inherit;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background var(--transition-fast), transform var(--transition-fast), border-color var(--transition-fast);
+}
+
+.poll-comment-btn:hover:not(:disabled) {
+    background: var(--glass-bg-hover);
+    transform: translateY(-1px);
+    border-color: var(--glass-border);
+}
+
+.poll-comment-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
 }
 
 .poll-total {
     font-weight: 600;
+}
+
+.message-thread-actions {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 8px;
+}
+
+/* Thread (comments) view */
+#thread-view {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 16px;
+    width: 100%;
+}
+
+.thread-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 14px 18px;
+    border-radius: var(--radius-xl);
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--menu-shadow);
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+    -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+}
+
+.thread-header-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.thread-title {
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: -0.2px;
+}
+
+.thread-subtitle {
+    font-size: 13px;
+    color: var(--text-color-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.thread-meta {
+    margin-left: auto;
+    font-size: 12px;
+    color: var(--text-color-muted);
+}
+
+.thread-root-card {
+    padding: 16px 18px;
+    border-radius: var(--radius-lg);
+    background: var(--surface-elevated);
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--menu-shadow);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    color: inherit;
+}
+
+.thread-root-title {
+    font-weight: 700;
+    font-size: 16px;
+}
+
+.thread-root-preview {
+    font-size: 14px;
+    color: var(--text-color-muted);
+}
+
+.thread-comments {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    padding-right: 4px;
+}
+
+.thread-comment-card {
+    padding: 14px 16px;
+    border-radius: var(--radius-lg);
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.thread-comment-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: var(--text-color-muted);
+}
+
+.thread-comment-author {
+    font-weight: 600;
+    color: var(--text-color);
+}
+
+.thread-comment-time {
+    margin-left: auto;
+    font-size: 12px;
+    opacity: 0.7;
+}
+
+.thread-comment-body {
+    font-size: 15px;
+    line-height: 1.45;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.thread-empty {
+    text-align: center;
+    padding: 32px 16px;
+    border-radius: var(--radius-lg);
+    background: var(--surface-muted);
+    border: 1px dashed var(--glass-border);
+    color: var(--text-color-muted);
+}
+
+.thread-input-area {
+    margin-top: auto;
+    padding: 12px 16px;
+    border-radius: var(--radius-lg);
+    display: flex;
+    align-items: flex-end;
+    gap: 12px;
+    position: sticky;
+    bottom: 0;
+    box-shadow: 0 -12px 32px rgba(0, 0, 0, 0.25);
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+    -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+}
+
+.thread-input-area textarea {
+    flex: 1;
+    resize: none;
+    border: none;
+    background: transparent;
+    color: inherit;
+    font-size: 15px;
+    min-height: 48px;
+}
+
+.thread-input-area textarea::placeholder {
+    color: var(--text-color-muted);
+}
+
+.thread-input-area textarea:focus {
+    outline: none;
+}
+
+.thread-input-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+@media (max-width: 768px) {
+    #thread-view {
+        padding: 12px;
+    }
+
+    .thread-header {
+        border-radius: var(--radius-lg);
+    }
+
+    .thread-input-area {
+        border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    }
 }
 
 /* Presentation workspace */

@@ -210,7 +210,9 @@ class Message(db.Model):
     media_type = db.Column(db.String(20), nullable=True)  # 'image', 'video', 'system', 'call'
     message_type = db.Column(db.String(20), default='text', nullable=False)  # 'text', 'system', 'call'
     call_duration = db.Column(db.String(10), nullable=True)  # Для карточек звонков
-    
+    thread_root_id = db.Column(db.Integer, db.ForeignKey('message.id'), nullable=True)
+    thread_type = db.Column(db.String(20), nullable=True)
+
     sender = db.relationship('User', foreign_keys=[sender_id])
     reactions = db.relationship('MessageReaction', backref='message', lazy='dynamic', cascade="all, delete-orphan")
     media_items = db.relationship('MessageMedia', backref='message', lazy='dynamic', cascade="all, delete-orphan")
@@ -240,6 +242,10 @@ class Message(db.Model):
             result['media_type'] = self.media_type
         if self.call_duration:
             result['call_duration'] = self.call_duration
+        if self.thread_root_id:
+            result['thread_root_id'] = self.thread_root_id
+        if self.thread_type:
+            result['thread_type'] = self.thread_type
         # Встраиваем текущие результаты для опросов
         if self.message_type == 'poll':
             try:
@@ -265,6 +271,12 @@ class Message(db.Model):
                 }
             except Exception:
                 pass
+        if not self.thread_root_id and self.message_type != 'poll_comment':
+            try:
+                count_stmt = db.select(db.func.count()).select_from(Message).where(Message.thread_root_id == self.id)
+                result['thread_comment_count'] = db.session.execute(count_stmt).scalar() or 0
+            except Exception:
+                result['thread_comment_count'] = 0
         return result
 
 class MessageReaction(db.Model):
@@ -670,22 +682,82 @@ def handle_vote_poll(data):
     indices = [i for i in indices if 0 <= i < len(options)]
     if not indices:
         return
-    # Для одиночного выбора: удаляем предыдущие голоса пользователя
+    existing_votes = PollVote.query.filter_by(message_id=message_id, user_id=user_id).all()
+    existing_indices = [vote.option_index for vote in existing_votes]
+
+    if not multiple_choice and existing_indices:
+        emit('poll_vote_ack', {
+            'message_id': message_id,
+            'selected': existing_indices,
+            'locked': True
+        }, room=f"user_{user_id}")
+        return
+
+    added = False
     if not multiple_choice:
-        PollVote.query.filter_by(message_id=message_id, user_id=user_id).delete()
-        db.session.commit()
-    # Добавляем голоса
-    for idx in indices:
-        if not multiple_choice:
-            # Уже очистили, просто добавляем один
-            db.session.add(PollVote(message_id=message_id, user_id=user_id, option_index=idx))
-        else:
-            # В мульти-режиме разрешаем несколько, но избегаем дублей за счет UniqueConstraint
+        # Для одиночного выбора учитываем только первый индекс
+        idx = indices[0]
+        db.session.add(PollVote(message_id=message_id, user_id=user_id, option_index=idx))
+        added = True
+    else:
+        for idx in indices:
             if not PollVote.query.filter_by(message_id=message_id, user_id=user_id, option_index=idx).first():
                 db.session.add(PollVote(message_id=message_id, user_id=user_id, option_index=idx))
-    db.session.commit()
-    # Отправляем обновленные результаты всем в комнате
-    socketio.emit('poll_updated', {'message_id': message_id, 'poll': message.to_dict().get('poll')}, room=str(message.room_id))
+                added = True
+
+    if added:
+        db.session.commit()
+
+    user_votes = PollVote.query.filter_by(message_id=message_id, user_id=user_id).all()
+    selected_indices = sorted(vote.option_index for vote in user_votes)
+
+    emit('poll_vote_ack', {
+        'message_id': message_id,
+        'selected': selected_indices,
+        'locked': (not multiple_choice) and len(selected_indices) > 0
+    }, room=f"user_{user_id}")
+
+    if added:
+        socketio.emit('poll_updated', {'message_id': message_id, 'poll': message.to_dict().get('poll')}, room=str(message.room_id))
+
+@app.route('/api/poll_vote/<int:message_id>', methods=['GET'])
+def get_poll_vote(message_id):
+    if 'user_id' not in session:
+        return jsonify({'error': 'Unauthorized'}), 401
+
+    user_id = session['user_id']
+    message = db.session.get(Message, message_id)
+    if not message or message.message_type != 'poll':
+        return jsonify({'success': False, 'selected': []}), 404
+
+    if not RoomParticipant.query.filter_by(user_id=user_id, room_id=message.room_id).first():
+        return jsonify({'error': 'Access denied'}), 403
+
+    votes = PollVote.query.filter_by(message_id=message_id, user_id=user_id).all()
+    selected = sorted(vote.option_index for vote in votes)
+    return jsonify({'success': True, 'selected': selected})
+
+
+@app.route('/api/thread/<int:message_id>', methods=['GET'])
+def get_thread(message_id):
+    if 'user_id' not in session:
+        return jsonify({'error': 'Unauthorized'}), 401
+
+    user_id = session['user_id']
+    root_message = db.session.get(Message, message_id)
+    if not root_message:
+        return jsonify({'success': False, 'message': 'Сообщение не найдено'}), 404
+
+    participant = RoomParticipant.query.filter_by(user_id=user_id, room_id=root_message.room_id).first()
+    if not participant:
+        return jsonify({'error': 'Forbidden'}), 403
+
+    comments = Message.query.filter_by(room_id=root_message.room_id, thread_root_id=message_id).order_by(Message.timestamp.asc()).all()
+    return jsonify({
+        'success': True,
+        'thread': root_message.to_dict(),
+        'comments': [comment.to_dict() for comment in comments]
+    })
 # --- API Блокировок и Контактов (неизвестные/запросы) ---
 @app.route('/api/block_user', methods=['POST'])
 def block_user():
@@ -722,7 +794,11 @@ def chat_history(room_id):
             other_id = other_participant_entry.user_id
             if BlockedUser.query.filter_by(blocker_id=user_id, blocked_id=other_id).first():
                 return jsonify([])
-    messages = Message.query.filter_by(room_id=room_id).order_by(Message.timestamp.asc()).limit(100).all()
+    messages = (Message.query
+                .filter(Message.room_id == room_id, Message.message_type.notin_(['poll_comment', 'comment']))
+                .order_by(Message.timestamp.asc())
+                .limit(100)
+                .all())
     return jsonify([message.to_dict() for message in messages])
 
 @app.route('/api/room_members/<int:room_id>', methods=['GET'])
@@ -1278,7 +1354,11 @@ def handle_message(data):
     if not participant: return
     room = participant.room
 
-    if room.type == 'channel' and participant.role != 'admin': return
+    message_type = (data.get('message_type') or 'text').strip().lower()
+
+    if room.type == 'channel' and participant.role != 'admin':
+        if message_type not in ('comment', 'poll_comment'):
+            return
 
     # Блок: запрещаем писать, если отправитель заблокировал получателя ИЛИ получатель заблокировал отправителя
     if room.type == 'dm':
@@ -1290,7 +1370,43 @@ def handle_message(data):
             if BlockedUser.query.filter_by(blocker_id=other_entry.user_id, blocked_id=sender_id).first():
                 return  # Получатель заблокировал отправителя
 
-    new_message = Message(room_id=room_id, sender_id=sender_id, content=content)
+    thread_root_id = data.get('thread_root_id')
+    thread_type = data.get('thread_type')
+
+    # Комментарии доступны только участникам комнаты
+    root_message = None
+    if thread_root_id:
+        try:
+            thread_root_id = int(thread_root_id)
+            root_message = db.session.get(Message, thread_root_id)
+        except (TypeError, ValueError):
+            thread_root_id = None
+    if root_message and root_message.room_id != room_id:
+        thread_root_id = None
+        root_message = None
+    if root_message:
+        if not thread_type:
+            if root_message.message_type == 'poll':
+                thread_type = 'poll'
+            else:
+                thread_type = 'message'
+        else:
+            thread_type = str(thread_type).strip().lower()
+        if root_message.message_type == 'poll':
+            message_type = 'poll_comment'
+        elif message_type not in ('comment', 'poll_comment'):
+            message_type = 'comment'
+    else:
+        thread_type = None
+
+    new_message = Message(
+        room_id=room_id,
+        sender_id=sender_id,
+        content=content,
+        message_type=message_type,
+        thread_root_id=thread_root_id,
+        thread_type=thread_type
+    )
     db.session.add(new_message)
     
     # Увеличиваем счетчик непрочитанных для всех в комнате, кроме отправителя
@@ -1304,7 +1420,13 @@ def handle_message(data):
 
     db.session.commit()
     message_dict = new_message.to_dict()
-    
+    if new_message.thread_root_id:
+        try:
+            count_stmt = db.select(db.func.count()).select_from(Message).where(Message.thread_root_id == new_message.thread_root_id)
+            message_dict['thread_comment_count'] = db.session.execute(count_stmt).scalar() or 0
+        except Exception:
+            message_dict['thread_comment_count'] = 0
+
     # Отправляем сообщение и обновленный счетчик непрочитанных
     for p in room.participants.all():
         # Сам отправитель не получает обновление счетчика, у него всегда 0
@@ -1872,6 +1994,8 @@ if __name__ == '__main__':
            msg_info = db.session.execute(text("PRAGMA table_info(message)")).fetchall()
            has_media_url = any(row[1] == 'media_url' for row in msg_info)
            has_media_type = any(row[1] == 'media_type' for row in msg_info)
+           has_thread_root = any(row[1] == 'thread_root_id' for row in msg_info)
+           has_thread_type = any(row[1] == 'thread_type' for row in msg_info)
            
            # Создаем новую таблицу message_media, если ее нет
            inspector = db.inspect(db.engine)
@@ -1883,6 +2007,12 @@ if __name__ == '__main__':
                db.session.commit()
            if not has_media_type:
                db.session.execute(text("ALTER TABLE message ADD COLUMN media_type VARCHAR(20)"))
+               db.session.commit()
+           if not has_thread_root:
+               db.session.execute(text("ALTER TABLE message ADD COLUMN thread_root_id INTEGER"))
+               db.session.commit()
+           if not has_thread_type:
+               db.session.execute(text("ALTER TABLE message ADD COLUMN thread_type VARCHAR(20)"))
                db.session.commit()
            
            # message_type для системных сообщений

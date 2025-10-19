@@ -536,7 +536,13 @@
         
         .attach-menu-item svg {
             flex-shrink: 0;
-            opacity: 0.8;
+            opacity: 0.85;
+            stroke: currentColor;
+            transition: opacity var(--transition-fast, 0.2s) ease;
+        }
+
+        .attach-menu-item:hover svg {
+            opacity: 1;
         }
         
         .call-dropdown-menu {
@@ -1436,6 +1442,21 @@
                     </button>
                 </div>
 
+                <div id="poll-comment-banner" class="message-banner" style="display: none;">
+                    <div class="banner-icon comment-icon">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 15a2 2 0 0 1-2 2H9l-4 4v-4H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                        </svg>
+                    </div>
+                    <div class="banner-content">
+                        <div class="banner-title">Комментарий к опросу</div>
+                        <div id="poll-comment-text" class="banner-text"></div>
+                    </div>
+                    <button class="icon-btn" id="cancel-poll-comment-btn" title="Отменить комментарий">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                    </button>
+                </div>
+
                 <div class="chat-input-area" id="chat-input-area" style="display: none;">
                     <input type="file" id="file-input" accept="*/*" style="display: none;" onchange="handleFileSelect(event)" multiple>
                     <input type="file" id="file-input-docs" accept="*/*" style="display: none;" onchange="handleFileSelect(event)" multiple>
@@ -1516,6 +1537,32 @@
                     </button>
                 </div>
             </div>
+            </div>
+
+            <!-- THREAD VIEW -->
+            <div id="thread-view" class="content-view" style="display: none;">
+                <div class="thread-header glass">
+                    <button class="icon-btn" id="thread-back-btn" title="Назад" onclick="closeThreadView()">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="19" y1="12" x2="5" y2="12"></line>
+                            <polyline points="12 19 5 12 12 5"></polyline>
+                        </svg>
+                    </button>
+                    <div class="thread-header-text">
+                        <div class="thread-title" id="thread-title">Комментарии</div>
+                        <div class="thread-subtitle" id="thread-subtitle"></div>
+                    </div>
+                    <div class="thread-meta" id="thread-meta"></div>
+                </div>
+                <div class="thread-root-card glass" id="thread-root-card" style="display: none;"></div>
+                <div class="thread-comments" id="thread-comments"></div>
+                <div class="thread-empty" id="thread-empty" style="display: none;">Пока нет комментариев. Будьте первым!</div>
+                <div class="thread-input-area glass" id="thread-input-area" style="display: none;">
+                    <textarea id="thread-input" rows="2" placeholder="Написать комментарий..." maxlength="2000"></textarea>
+                    <div class="thread-input-actions">
+                        <button class="primary-btn" id="thread-send-btn" onclick="sendThreadComment()">Отправить</button>
+                    </div>
+                </div>
             </div>
 
             <!-- SETTINGS VIEW -->
@@ -2511,6 +2558,16 @@
     <!-- Telegram-style мобильная навигация -->
     <nav class="telegram-mobile-nav" id="telegram-mobile-nav">
         <div class="telegram-nav-container">
+            <button class="telegram-nav-item active" data-nav="chats" onclick="switchMobileNav('chats', this)">
+                <span class="material-icons-round">forum</span>
+                <span>Чаты</span>
+            </button>
+
+            <button class="telegram-nav-item" data-nav="archive" onclick="switchMobileNav('archive', this)">
+                <span class="material-icons-round">inventory_2</span>
+                <span>Архив</span>
+            </button>
+
             <button class="telegram-nav-item" data-nav="search" onclick="switchMobileNav('search', this)">
                 <span class="material-icons-round">search</span>
                 <span>Поиск</span>
@@ -2549,14 +2606,19 @@
             document.querySelectorAll('.telegram-nav-item').forEach(item => {
                 item.classList.remove('active');
             });
-            
+
             // Добавляем активный класс к выбранной кнопке
             element.classList.add('active');
-            
+
             // Обрабатываем переключение секций
             switch(section) {
                 case 'chats':
-                    showChatsView();
+                    showChatsView('chats');
+                    switchToTab('chats');
+                    break;
+                case 'archive':
+                    showChatsView('archive');
+                    switchToTab('archive');
                     break;
                 case 'search':
                     // Мобильное меню скрываем и блокируем на время поиска
@@ -2607,7 +2669,7 @@
             }
         }
         
-        function showChatsView() {
+        function showChatsView(activeNav = 'chats') {
             // Показываем список чатов на мобильных
             if (window.innerWidth <= 768) {
                 const sidebar = document.querySelector('.sidebar');
@@ -2615,26 +2677,28 @@
                 const mobileNav = document.getElementById('telegram-mobile-nav');
                 const settingsView = document.getElementById('settings-view-inline');
                 const chatView = document.getElementById('chat-view');
-                
+
                 // Показываем сайдбар
                 if (sidebar) sidebar.classList.remove('mobile-hidden');
                 if (mainContent) mainContent.classList.remove('mobile-chat-open');
-                
+
                 // Показываем навигацию (убираем класс hidden)
                 if (mobileNav) {
                     mobileNav.classList.remove('hidden');
                 }
-                
+
                 // Закрываем настройки если открыты
                 if (settingsView) settingsView.style.display = 'none';
                 if (chatView) chatView.style.display = 'flex';
-                
+
                 // Активируем кнопку "Чаты"
                 document.querySelectorAll('.telegram-nav-item').forEach(item => {
                     item.classList.remove('active');
                 });
-                const chatsTab = document.querySelector('.telegram-nav-item[data-nav="chats"]');
-                if (chatsTab) chatsTab.classList.add('active');
+                const activeButton = document.querySelector(`.telegram-nav-item[data-nav="${activeNav}"]`);
+                if (activeButton) activeButton.classList.add('active');
+
+                window._mobileNavLock = false;
             }
         }
         
