@@ -30,8 +30,10 @@
     --chat-area-bg: rgba(0, 0, 0, 0.3);
     --header-bg: rgba(28, 28, 30, 0.72);
     --scrollbar-thumb: rgba(255, 255, 255, 0.3);
-    --msg-received-bg: rgba(118, 118, 128, 0.24);
-    --msg-sent-bg: linear-gradient(135deg, rgba(0, 122, 255, 0.92), rgba(48, 152, 255, 0.92));
+    --msg-received-bg: rgba(28, 28, 34, 0.7);
+    --msg-received-bg: color-mix(in srgb, rgba(28, 28, 34, 0.8) 70%, transparent);
+    --msg-sent-bg: linear-gradient(135deg, var(--color-primary), rgba(255, 255, 255, 0.18));
+    --msg-sent-bg: linear-gradient(135deg, color-mix(in srgb, var(--color-primary) 90%, transparent), color-mix(in srgb, var(--color-primary) 35%, rgba(255, 255, 255, 0.2)));
     --msg-sent-text: #ffffff;
     --menu-shadow: 0 18px 40px rgba(0, 0, 0, 0.28);
     --surface-elevated: rgba(255, 255, 255, 0.08);
@@ -71,8 +73,8 @@
     --chat-area-bg: rgba(255, 255, 255, 0.5);
     --header-bg: rgba(255, 255, 255, 0.72);
     --scrollbar-thumb: rgba(0, 0, 0, 0.25);
-    --msg-received-bg: rgba(118, 118, 128, 0.12);
-    --msg-sent-bg: linear-gradient(135deg, rgba(0, 122, 255, 0.9), rgba(88, 180, 255, 0.9));
+    --msg-received-bg: rgba(255, 255, 255, 0.9);
+    --msg-sent-bg: linear-gradient(135deg, rgba(0, 122, 255, 0.92), rgba(0, 122, 255, 0.45));
     --msg-sent-text: #ffffff;
     --surface-elevated: rgba(255, 255, 255, 0.9);
     --surface-muted: rgba(255, 255, 255, 0.8);
@@ -87,8 +89,8 @@
     --bg-gradient-end: #004080;
     --glass-bg: rgba(0, 212, 255, var(--glass-opacity));
     --glass-border: rgba(0, 212, 255, var(--glass-border-opacity));
-    --msg-received-bg: rgba(0, 60, 120, 0.35);
-    --msg-sent-bg: linear-gradient(140deg, rgba(0, 212, 255, 0.95), rgba(0, 128, 255, 0.95));
+    --msg-received-bg: rgba(0, 96, 160, 0.35);
+    --msg-sent-bg: linear-gradient(135deg, rgba(0, 212, 255, 0.95), rgba(0, 124, 255, 0.4));
     --thread-accent: rgba(0, 180, 255, 0.25);
     --surface-elevated: rgba(0, 70, 140, 0.55);
     --surface-muted: rgba(0, 60, 120, 0.35);
@@ -98,12 +100,14 @@
     --bg-gradient-start: #050505;
     --bg-gradient-mid: #090909;
     --bg-gradient-end: #050505;
+    --color-primary: #0A84FF;
+    --color-primary-hover: #0460CC;
     --glass-bg: rgba(18, 18, 18, 0.82);
     --glass-border: rgba(255, 255, 255, 0.05);
     --glass-bg-hover: rgba(40, 40, 40, 0.9);
     --input-bg: rgba(255, 255, 255, 0.08);
-    --msg-received-bg: rgba(255, 255, 255, 0.08);
-    --msg-sent-bg: linear-gradient(135deg, rgba(0, 132, 255, 0.95), rgba(0, 82, 220, 0.95));
+    --msg-received-bg: rgba(18, 18, 22, 0.85);
+    --msg-sent-bg: linear-gradient(135deg, rgba(10, 132, 255, 0.95), rgba(10, 132, 255, 0.32));
     --msg-sent-text: #ffffff;
     --thread-accent: rgba(0, 132, 255, 0.3);
     --surface-elevated: rgba(20, 20, 20, 0.9);
@@ -116,7 +120,8 @@ body {
     padding: 0;
     color: var(--text-color);
     min-height: 100vh;
-    overflow: hidden;
+    overflow-x: hidden;
+    overflow-y: hidden;
     background: linear-gradient(135deg, var(--bg-gradient-start), var(--bg-gradient-mid), var(--bg-gradient-end));
     animation: fadeIn 0.5s var(--easing-smooth);
 }
@@ -825,7 +830,7 @@ label {
 .chat-header {
     padding: 18px 24px;
     border-bottom: 1px solid var(--glass-border);
-    background: var(--header-bg);
+    background: var(--glass-bg);
     backdrop-filter: blur(var(--glass-blur)) saturate(180%);
     display: flex;
     justify-content: space-between;
@@ -844,11 +849,13 @@ label {
     flex: 1;
     min-height: 0;
     padding: 24px;
+    padding-bottom: calc(140px + env(safe-area-inset-bottom, 0));
     overflow-y: auto;
     overflow-x: hidden;
     display: flex;
     flex-direction: column;
     scroll-behavior: smooth;
+    scroll-padding-bottom: calc(140px + env(safe-area-inset-bottom, 0));
 }
 
 .unknown-banner {
@@ -883,8 +890,9 @@ label {
 
 .chat-input-area {
     padding: 18px 24px;
+    padding-bottom: calc(18px + env(safe-area-inset-bottom, 0));
     border-top: 1px solid var(--glass-border);
-    background: var(--header-bg);
+    background: var(--glass-bg);
     backdrop-filter: blur(var(--glass-blur)) saturate(180%);
     display: flex;
     gap: 12px;
@@ -1386,12 +1394,126 @@ label {
 }
 
 .message.received {
-    background: var(--msg-received-bg);
+    background: var(--msg-received-bg, var(--glass-bg));
     backdrop-filter: blur(20px) saturate(180%);
     border: 1px solid var(--glass-border);
     color: var(--text-color);
     border-bottom-left-radius: 6px;
     animation: slideInLeft 0.3s var(--easing-smooth);
+}
+
+.message.sticker {
+    padding: 16px;
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    box-shadow: 0 10px 32px rgba(0, 0, 0, 0.22);
+    border-radius: var(--radius-xl);
+    border-bottom-left-radius: var(--radius-xl) !important;
+    border-bottom-right-radius: var(--radius-xl) !important;
+    min-width: 96px;
+    min-height: 96px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.message.sent.sticker {
+    background: linear-gradient(135deg, var(--color-primary), rgba(255, 255, 255, 0.12));
+    color: var(--msg-sent-text);
+    border: none;
+    border-radius: var(--radius-xl);
+}
+
+.message.received.sticker {
+    border-radius: var(--radius-xl);
+}
+
+.sticker-bubble {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 80px;
+    height: 80px;
+}
+
+.sticker-bubble svg {
+    width: 100%;
+    height: 100%;
+    filter: drop-shadow(0 10px 25px rgba(0, 0, 0, 0.25));
+}
+
+#sticker-picker {
+    width: min(380px, calc(100vw - 32px));
+    max-height: min(480px, calc(100vh - 140px));
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--menu-shadow);
+    backdrop-filter: blur(var(--glass-blur)) saturate(180%);
+    -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(180%);
+    display: none;
+    overflow: hidden;
+}
+
+#sticker-picker .sticker-tabs {
+    display: flex;
+    gap: 6px;
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--glass-border);
+    overflow-x: auto;
+}
+
+#sticker-picker .sticker-tab {
+    background: transparent;
+    border: none;
+    color: var(--text-color);
+    border-radius: var(--radius-md);
+    padding: 6px 12px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background var(--transition-fast), color var(--transition-fast), transform var(--transition-fast);
+    white-space: nowrap;
+}
+
+#sticker-picker .sticker-tab.active {
+    background: var(--color-primary);
+    color: var(--msg-sent-text);
+    transform: translateY(-1px);
+}
+
+#sticker-picker .sticker-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(56px, 1fr));
+    gap: 10px;
+    padding: 12px;
+    overflow-y: auto;
+    align-content: flex-start;
+}
+
+#sticker-picker .sticker-btn {
+    background: transparent;
+    border: none;
+    border-radius: var(--radius-lg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    aspect-ratio: 1;
+    cursor: pointer;
+    transition: transform var(--transition-fast), box-shadow var(--transition-fast), background var(--transition-fast);
+    padding: 10px;
+}
+
+#sticker-picker .sticker-btn:hover,
+#sticker-picker .sticker-btn:focus-visible {
+    background: var(--glass-bg-hover);
+    transform: scale(1.05);
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.22);
+    outline: none;
+}
+
+#sticker-picker .sticker-btn svg {
+    width: 36px;
+    height: 36px;
 }
 
 .message.received:hover {
@@ -1436,17 +1558,37 @@ label {
     backdrop-filter: blur(20px);
     border: 1px solid var(--glass-border);
     border-radius: 18px;
-    padding: 4px 10px;
-    font-size: 13px;
+    padding: 6px 12px;
     cursor: pointer;
     transition: all var(--transition-normal) var(--easing-bounce);
     user-select: none;
     display: inline-flex;
     align-items: center;
-    gap: 4px;
+    gap: 8px;
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
     min-height: 26px;
     animation: scaleIn 0.3s var(--easing-bounce);
+}
+
+.reaction-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+}
+
+.reaction-icon svg {
+    width: 20px;
+    height: 20px;
+    stroke: currentColor;
+    fill: none;
+    pointer-events: none;
+}
+
+.reaction-count {
+    font-size: 12px;
+    font-weight: 600;
 }
 
 .reaction:hover {
@@ -1509,20 +1651,38 @@ label {
 }
 
 .reaction-option {
-    font-size: 28px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    border: 1px solid var(--glass-border);
     cursor: pointer;
     padding: 6px;
     transition: all var(--transition-normal) var(--easing-bounce);
-    display: inline-block;
+    display: inline-flex;
+    background: var(--glass-bg);
+}
+
+.reaction-option .reaction-icon {
+    width: 32px;
+    height: 32px;
+}
+
+.reaction-option .reaction-icon svg {
+    width: 28px;
+    height: 28px;
 }
 
 .reaction-option:hover {
-    transform: scale(1.3) rotate(15deg);
-    filter: drop-shadow(0 4px 8px rgba(0, 122, 255, 0.3));
+    transform: scale(1.12);
+    background: var(--glass-bg-hover);
+    box-shadow: 0 8px 20px rgba(0, 122, 255, 0.25);
 }
 
 .reaction-option:active {
-    transform: scale(1.1) rotate(0deg);
+    transform: scale(0.95);
     transition: all var(--transition-fast) var(--easing-smooth);
 }
 
@@ -2248,6 +2408,8 @@ input[type="range"]::-moz-range-thumb:active {
     height: 100%;
     display: flex;
     flex-direction: column;
+    flex: 1;
+    min-height: 0;
 }
 
 #settings-view-inline {
@@ -2260,7 +2422,7 @@ input[type="range"]::-moz-range-thumb:active {
     gap: 20px;
     padding: 20px 24px;
     border-bottom: 1px solid var(--glass-border);
-    background: var(--header-bg);
+    background: var(--glass-bg);
     backdrop-filter: blur(var(--glass-blur)) saturate(180%);
     flex-shrink: 0;
 }
@@ -2661,11 +2823,19 @@ input[type="range"]::-moz-range-thumb:active {
 
 /* Улучшенный адаптивный дизайн для мобильных - Telegram стиль */
 @media (max-width: 768px) {
+    body {
+        overflow-y: auto;
+        min-height: 100vh;
+        min-height: 100dvh;
+        overscroll-behavior-y: contain;
+    }
+
     .app-layout {
         flex-direction: column;
         padding: 0;
         gap: 0;
         height: 100vh;
+        height: 100dvh;
         overflow: hidden;
     }
     
@@ -2915,11 +3085,14 @@ input[type="range"]::-moz-range-thumb:active {
     
     .chat-window {
         padding: 16px;
+        padding-bottom: calc(170px + env(safe-area-inset-bottom, 0));
     }
-    
+
     .chat-input-area {
         padding: 10px 12px;
+        padding-bottom: calc(12px + env(safe-area-inset-bottom, 0));
         flex-wrap: wrap;
+        bottom: env(safe-area-inset-bottom, 0);
     }
     
     #message-input {
@@ -3320,7 +3493,7 @@ html {
     padding: 14px 16px;
     border-radius: var(--radius-md);
     border: 1px solid var(--glass-border);
-    background: var(--surface-elevated);
+    background: var(--glass-bg);
     color: inherit;
     transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
 }
@@ -3328,11 +3501,11 @@ html {
 .poll-input:focus {
     outline: none;
     border-color: var(--color-primary);
-    box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.25);
+    box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.15);
 }
 
 .poll-options-editor {
-    background: var(--surface-muted);
+    background: var(--glass-bg);
     border-radius: var(--radius-md);
     padding: 14px;
     display: flex;
@@ -3359,7 +3532,7 @@ html {
     display: flex;
     align-items: center;
     gap: 12px;
-    background: var(--surface-elevated);
+    background: var(--glass-bg);
     border-radius: var(--radius-md);
     padding: 10px 12px;
     border: 1px solid var(--glass-border);
@@ -3390,7 +3563,7 @@ html {
 }
 
 .poll-option-action {
-    background: var(--surface-muted);
+    background: var(--glass-bg);
     border: 1px solid var(--glass-border);
     border-radius: var(--radius-sm);
     width: 34px;
@@ -3398,14 +3571,14 @@ html {
     display: flex;
     align-items: center;
     justify-content: center;
-    color: inherit;
+    color: var(--text-color);
     cursor: pointer;
-    transition: background var(--transition-fast), box-shadow var(--transition-fast);
+    transition: background var(--transition-fast), box-shadow var(--transition-fast), color var(--transition-fast);
 }
 
 .poll-option-action:hover {
     background: var(--glass-bg-hover);
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.2);
 }
 
 .poll-option-action:focus-visible {
@@ -3415,14 +3588,15 @@ html {
 
 .poll-option-action.danger {
     color: var(--color-danger);
-    border-color: rgba(255, 107, 107, 0.35);
-    background: rgba(255, 59, 48, 0.12);
+    border-color: rgba(255, 107, 107, 0.4);
+    background: var(--glass-bg);
 }
 
 .poll-option-action svg {
     pointer-events: none;
     stroke: currentColor;
     opacity: 0.9;
+    fill: none;
 }
 
 .poll-settings {
@@ -3438,8 +3612,50 @@ html {
     font-size: 14px;
 }
 
+.poll-toggle input[type="checkbox"] {
+    appearance: none;
+    width: 42px;
+    height: 24px;
+    border-radius: var(--radius-full);
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    position: relative;
+    cursor: pointer;
+    transition: background var(--transition-fast), border var(--transition-fast);
+}
+
+.poll-toggle input[type="checkbox"]::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 4px;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: var(--text-color);
+    opacity: 0.8;
+    transform: translateY(-50%);
+    transition: transform var(--transition-fast), background var(--transition-fast), opacity var(--transition-fast);
+}
+
+.poll-toggle input[type="checkbox"]:checked {
+    background: var(--color-primary);
+    border-color: transparent;
+}
+
+.poll-toggle input[type="checkbox"]:checked::after {
+    transform: translate(18px, -50%);
+    background: #ffffff;
+    opacity: 1;
+}
+
+.poll-toggle input[type="checkbox"]:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+}
+
 .poll-preview-block {
-    background: var(--surface-muted);
+    background: var(--glass-bg);
     border-radius: var(--radius-lg);
     padding: 16px;
     display: flex;
@@ -3452,7 +3668,7 @@ html {
     display: flex;
     flex-direction: column;
     gap: 12px;
-    background: var(--surface-elevated);
+    background: var(--glass-bg);
     border-radius: var(--radius-lg);
     padding: 16px 18px;
     border: 1px solid var(--glass-border);
@@ -3501,28 +3717,31 @@ html {
 }
 
 .ghost-btn {
-    border: 1px dashed rgba(255, 255, 255, 0.35);
-    background: transparent;
+    border: 1px dashed var(--glass-border);
+    background: var(--glass-bg);
     color: inherit;
     padding: 6px 12px;
     border-radius: var(--radius-sm);
     font-size: 13px;
     cursor: pointer;
-    transition: background var(--transition-fast), border var(--transition-fast);
+    transition: background var(--transition-fast), border var(--transition-fast), color var(--transition-fast);
 }
 
 .ghost-btn:hover {
-    background: rgba(255, 255, 255, 0.08);
-    border-color: rgba(255, 255, 255, 0.5);
+    background: var(--glass-bg-hover);
+    border-color: var(--color-primary);
+    color: var(--color-primary);
 }
 
 .ghost-btn.danger {
-    color: #ff6b6b;
+    color: var(--color-danger);
     border-color: rgba(255, 107, 107, 0.35);
+    border-color: color-mix(in srgb, var(--color-danger) 45%, transparent);
 }
 
 .ghost-btn.danger:hover {
     background: rgba(255, 107, 107, 0.15);
+    background: color-mix(in srgb, var(--color-danger) 15%, transparent);
 }
 
 .ghost-btn.active {
@@ -3568,7 +3787,7 @@ html {
     gap: 16px;
     padding: 18px;
     border-radius: var(--radius-lg);
-    background: var(--surface-elevated);
+    background: var(--glass-bg);
     border: 1px solid var(--glass-border);
     position: relative;
     overflow: hidden;
@@ -3597,14 +3816,16 @@ html {
     overflow: hidden;
     background: var(--glass-bg);
     border: 1px solid var(--glass-border);
-    transition: transform var(--transition-fast), box-shadow var(--transition-fast), border-color var(--transition-fast);
+    transition: background var(--transition-fast), box-shadow var(--transition-fast), border-color var(--transition-fast);
     padding: 14px 16px;
     cursor: pointer;
+    width: 100%;
+    box-sizing: border-box;
 }
 
 .poll-option-row:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 10px 28px rgba(0, 30, 110, 0.35);
+    background: var(--glass-bg-hover);
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.25);
 }
 
 .poll-bar {
@@ -3612,8 +3833,8 @@ html {
     top: 0;
     left: 0;
     bottom: 0;
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0.3));
-    opacity: 0.3;
+    background: linear-gradient(135deg, var(--color-primary), rgba(255, 255, 255, 0.4));
+    opacity: 0.22;
     pointer-events: none;
     transition: width var(--transition-normal);
 }
@@ -3646,37 +3867,39 @@ html {
     width: 34px;
     height: 34px;
     border-radius: 50%;
-    border: 2px solid rgba(255, 255, 255, 0.55);
+    border: 2px solid var(--glass-border);
     display: flex;
     align-items: center;
     justify-content: center;
     transition: all var(--transition-fast);
-    background: rgba(255, 255, 255, 0.08);
+    background: var(--glass-bg);
 }
 
 .poll-option-check svg {
     width: 18px;
     height: 18px;
-    opacity: 0.55;
+    opacity: 0.65;
     transition: opacity var(--transition-fast);
 }
 
 .poll-option-selected {
-    border-color: rgba(255, 255, 255, 0.75);
-    box-shadow: 0 12px 32px rgba(0, 36, 120, 0.4);
+    border-color: var(--color-primary);
+    box-shadow: 0 12px 32px rgba(0, 36, 120, 0.35);
 }
 
 .poll-option-selected .poll-option-check {
-    background: rgba(255, 255, 255, 0.2);
-    border-color: #ffffff;
+    background: var(--color-primary);
+    border-color: transparent;
+    color: #ffffff;
 }
 
 .poll-option-selected .poll-option-check svg {
     opacity: 1;
+    stroke: currentColor;
 }
 
 .poll-option-selected .poll-bar {
-    opacity: 0.45;
+    opacity: 0.38;
 }
 
 .poll-option-disabled {
@@ -3755,7 +3978,11 @@ html {
     flex-direction: column;
     gap: 16px;
     padding: 16px;
+    padding-bottom: calc(16px + env(safe-area-inset-bottom, 0));
     width: 100%;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
 }
 
 .thread-header {
@@ -3804,7 +4031,7 @@ html {
 .thread-root-card {
     padding: 16px 18px;
     border-radius: var(--radius-lg);
-    background: var(--surface-elevated);
+    background: var(--glass-bg);
     border: 1px solid var(--glass-border);
     box-shadow: var(--menu-shadow);
     display: flex;
@@ -3874,7 +4101,7 @@ html {
     text-align: center;
     padding: 32px 16px;
     border-radius: var(--radius-lg);
-    background: var(--surface-muted);
+    background: var(--glass-bg);
     border: 1px dashed var(--glass-border);
     color: var(--text-color-muted);
 }
@@ -3882,6 +4109,7 @@ html {
 .thread-input-area {
     margin-top: auto;
     padding: 12px 16px;
+    padding-bottom: calc(12px + env(safe-area-inset-bottom, 0));
     border-radius: var(--radius-lg);
     display: flex;
     align-items: flex-end;
@@ -3893,6 +4121,10 @@ html {
     border: 1px solid var(--glass-border);
     backdrop-filter: blur(var(--glass-blur)) saturate(160%);
     -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+}
+
+.thread-comments {
+    padding-bottom: 80px;
 }
 
 .thread-input-area textarea {
@@ -3922,6 +4154,7 @@ html {
 @media (max-width: 768px) {
     #thread-view {
         padding: 12px;
+        padding-bottom: calc(12px + env(safe-area-inset-bottom, 0));
     }
 
     .thread-header {
@@ -3930,6 +4163,7 @@ html {
 
     .thread-input-area {
         border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+        padding-bottom: calc(16px + env(safe-area-inset-bottom, 0));
     }
 }
 

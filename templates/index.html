@@ -782,6 +782,7 @@
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3),
                         0 0 0 1px rgba(255, 255, 255, 0.1) inset;
             animation: deviceMenuSlideUp 0.2s ease;
+            color: var(--text-color);
         }
         
         /* Адаптивные размеры для мобильных */
@@ -804,12 +805,12 @@
         }
         
         .device-menu::-webkit-scrollbar-thumb {
-            background: rgba(255, 255, 255, 0.3);
+            background: var(--glass-border);
             border-radius: 3px;
         }
-        
+
         .device-menu::-webkit-scrollbar-thumb:hover {
-            background: rgba(255, 255, 255, 0.5);
+            background: var(--color-primary);
         }
         
         .device-menu.show {
@@ -829,10 +830,10 @@
         
         .device-menu-header {
             padding: 10px 14px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            border-bottom: 1px solid var(--glass-border);
             font-size: 12px;
             font-weight: 600;
-            color: rgba(255, 255, 255, 0.8);
+            color: var(--text-color-muted);
         }
         
         .device-menu-item {
@@ -842,7 +843,7 @@
             display: flex;
             align-items: center;
             gap: 8px;
-            color: white;
+            color: var(--text-color);
             font-size: 12px;
             min-height: 36px;
             word-wrap: break-word;
@@ -906,18 +907,19 @@
         }
         
         .device-menu-item:hover {
-            background: rgba(255, 255, 255, 0.1);
+            background: var(--glass-bg-hover);
         }
-        
+
         .device-menu-item.active {
-            background: rgba(0, 122, 255, 0.3);
-            color: #007AFF;
+            background: var(--thread-accent);
+            color: var(--color-primary);
         }
-        
+
         .device-menu-item.active::before {
             content: '✓';
             font-size: 16px;
             font-weight: bold;
+            color: var(--color-primary);
             margin-right: 4px;
         }
         
@@ -2021,52 +2023,13 @@
     </div>
 
     <div id="reaction-picker">
-        <span class="reaction-option" onclick="sendReaction('👍')">👍</span>
-        <span class="reaction-option" onclick="sendReaction('👎')">👎</span>
-        <span class="reaction-option" onclick="sendReaction('❤️')">❤️</span>
-        <span class="reaction-option" onclick="sendReaction('😂')">😂</span>
-        <span class="reaction-option" onclick="sendReaction('😮')">😮</span>
-        <span class="reaction-option" onclick="sendReaction('😢')">😢</span>
-        <span class="reaction-option" onclick="sendReaction('🔥')">🔥</span>
-        <span class="reaction-more" onclick="expandReactionPicker(event)">...</span>
-        <!-- Дополнительные эмоции (скрыты по умолчанию) -->
-        <span class="reaction-option hidden-reaction" onclick="sendReaction('😍')">😍</span>
-        <span class="reaction-option hidden-reaction" onclick="sendReaction('🥰')">🥰</span>
-        <span class="reaction-option hidden-reaction" onclick="sendReaction('😘')">😘</span>
-        <span class="reaction-option hidden-reaction" onclick="sendReaction('😎')">😎</span>
-        <span class="reaction-option hidden-reaction" onclick="sendReaction('🤩')">🤩</span>
-        <span class="reaction-option hidden-reaction" onclick="sendReaction('😭')">😭</span>
-        <span class="reaction-option hidden-reaction" onclick="sendReaction('😡')">😡</span>
-        <span class="reaction-option hidden-reaction" onclick="sendReaction('🤬')">🤬</span>
-        <span class="reaction-option hidden-reaction" onclick="sendReaction('🤯')">🤯</span>
-        <span class="reaction-option hidden-reaction" onclick="sendReaction('😱')">😱</span>
-        <span class="reaction-option hidden-reaction" onclick="sendReaction('🥺')">🥺</span>
-        <span class="reaction-option hidden-reaction" onclick="sendReaction('😴')">😴</span>
-        <span class="reaction-option hidden-reaction" onclick="sendReaction('🤔')">🤔</span>
-        <span class="reaction-option hidden-reaction" onclick="sendReaction('🤨')">🤨</span>
-        <span class="reaction-option hidden-reaction" onclick="sendReaction('😏')">😏</span>
-        <span class="reaction-option hidden-reaction" onclick="sendReaction('😬')">😬</span>
-        <span class="reaction-option hidden-reaction" onclick="sendReaction('🙄')">🙄</span>
-        <span class="reaction-option hidden-reaction" onclick="sendReaction('😤')">😤</span>
-        <span class="reaction-option hidden-reaction" onclick="sendReaction('😳')">😳</span>
-        <span class="reaction-option hidden-reaction" onclick="sendReaction('🥵')">🥵</span>
-        <span class="reaction-option hidden-reaction" onclick="sendReaction('🥶')">🥶</span>
-        <span class="reaction-option hidden-reaction" onclick="sendReaction('😈')">😈</span>
-        <span class="reaction-option hidden-reaction" onclick="sendReaction('👹')">👹</span>
-        <span class="reaction-option hidden-reaction" onclick="sendReaction('💀')">💀</span>
-        <span class="reaction-option hidden-reaction" onclick="sendReaction('☠️')">☠️</span>
-        <span class="reaction-option hidden-reaction" onclick="sendReaction('💩')">💩</span>
-        <span class="reaction-option hidden-reaction" onclick="sendReaction('🤡')">🤡</span>
-        <span class="reaction-option hidden-reaction" onclick="sendReaction('👻')">👻</span>
-        <span class="reaction-option hidden-reaction" onclick="sendReaction('👽')">👽</span>
-        <span class="reaction-option hidden-reaction" onclick="sendReaction('🤖')">🤖</span>
-        <span class="reaction-option hidden-reaction" onclick="sendReaction('💯')">💯</span>
-        <span class="reaction-option hidden-reaction" onclick="sendReaction('💪')">💪</span>
-        <span class="reaction-option hidden-reaction" onclick="sendReaction('🙏')">🙏</span>
-        <span class="reaction-option hidden-reaction" onclick="sendReaction('👏')">👏</span>
-        <span class="reaction-option hidden-reaction" onclick="sendReaction('🎉')">🎉</span>
-        <span class="reaction-option hidden-reaction" onclick="sendReaction('🎊')">🎊</span>
-        <span class="reaction-option hidden-reaction" onclick="sendReaction('⭐')">⭐</span>
+        <span class="reaction-option" data-emoji="👍" data-label="Нравится"></span>
+        <span class="reaction-option" data-emoji="👎" data-label="Не нравится"></span>
+        <span class="reaction-option" data-emoji="❤️" data-label="Любовь"></span>
+        <span class="reaction-option" data-emoji="😂" data-label="Смешно"></span>
+        <span class="reaction-option" data-emoji="😮" data-label="Удивление"></span>
+        <span class="reaction-option" data-emoji="😢" data-label="Печально"></span>
+        <span class="reaction-option" data-emoji="🔥" data-label="Огонь"></span>
     </div>
 
     <!-- НОВОЕ: Контекстное меню для сообщений -->
