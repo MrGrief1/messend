@@ -278,10 +278,19 @@ class MessageMedia(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     message_id = db.Column(db.Integer, db.ForeignKey('message.id'), nullable=False)
     url = db.Column(db.String(512), nullable=False)
-    type = db.Column(db.String(20), nullable=False)  # 'image' or 'video'
+    type = db.Column(db.String(20), nullable=False)  # 'image', 'video' или 'file'
+    original_name = db.Column(db.String(255), nullable=True)
+    mime_type = db.Column(db.String(120), nullable=True)
+    file_size = db.Column(db.Integer, nullable=True)
 
     def to_dict(self):
-        return {'url': self.url, 'type': self.type}
+        return {
+            'url': self.url,
+            'type': self.type,
+            'original_name': self.original_name,
+            'mime_type': self.mime_type,
+            'file_size': self.file_size
+        }
 
 class BlockedUser(db.Model):
     __tablename__ = 'blocked_user'
@@ -1408,17 +1417,20 @@ def send_media():
             if not file or not file.filename:
                 continue
 
-            filename = secure_filename(file.filename)
-            ext = filename.rsplit('.', 1)[1].lower() if '.' in filename else ''
-            
-            media_type = None
-            if ext in ALLOWED_IMAGE_EXTENSIONS: media_type = 'image'
-            elif ext in ALLOWED_VIDEO_EXTENSIONS: media_type = 'video'
-            else: continue
-            
-            unique_name = f"m{sender_id}_{int(time.time())}_{filename}"
+            original_name = (file.filename or '').strip()
+            sanitized_name = secure_filename(original_name) or 'file'
+            ext = sanitized_name.rsplit('.', 1)[1].lower() if '.' in sanitized_name else ''
+            mime_type = (file.mimetype or '').lower()
+
+            media_type = 'file'
+            if mime_type.startswith('image/') or ext in ALLOWED_IMAGE_EXTENSIONS:
+                media_type = 'image'
+            elif mime_type.startswith('video/') or ext in ALLOWED_VIDEO_EXTENSIONS:
+                media_type = 'video'
+
+            unique_name = f"m{sender_id}_{int(time.time())}_{sanitized_name}"
             save_path = os.path.join(UPLOAD_MEDIA_DIR, unique_name)
-            
+
             # Ограничим размер файла вручную на случай отсутствия Content-Length
             file.seek(0, os.SEEK_END)
             size = file.tell()
@@ -1427,13 +1439,16 @@ def send_media():
                 return jsonify({'success': False, 'message': 'Файл слишком большой.'}), 413
 
             file.save(save_path)
-            
+
             media_url = f"/static/uploads/media/{unique_name}"
-            
+
             media_item = MessageMedia(
                 message=new_message,
                 url=media_url,
-                type=media_type
+                type=media_type,
+                original_name=(original_name or sanitized_name)[:255],
+                mime_type=mime_type[:120] if mime_type else None,
+                file_size=size
             )
             media_items_added.append(media_item)
         
@@ -1853,6 +1868,18 @@ if __name__ == '__main__':
            inspector = db.inspect(db.engine)
            if not inspector.has_table('message_media'):
                 MessageMedia.__table__.create(db.engine)
+
+           media_table_info = db.session.execute(text("PRAGMA table_info(message_media)")).fetchall()
+           media_columns = {row[1] for row in media_table_info}
+           if 'original_name' not in media_columns:
+               db.session.execute(text("ALTER TABLE message_media ADD COLUMN original_name VARCHAR(255)"))
+               db.session.commit()
+           if 'mime_type' not in media_columns:
+               db.session.execute(text("ALTER TABLE message_media ADD COLUMN mime_type VARCHAR(120)"))
+               db.session.commit()
+           if 'file_size' not in media_columns:
+               db.session.execute(text("ALTER TABLE message_media ADD COLUMN file_size INTEGER"))
+               db.session.commit()
 
            if not has_media_url:
                db.session.execute(text("ALTER TABLE message ADD COLUMN media_url VARCHAR(512)"))

@@ -793,7 +793,7 @@ function addPollOption(value = '') {
     const input = document.createElement('input');
     input.type = 'text';
     input.className = 'poll-option-input';
-    input.placeholder = Вариант ;
+    input.placeholder = 'Вариант';
     input.maxLength = 100;
     input.value = value;
     input.addEventListener('input', updatePollPreview);
@@ -1246,6 +1246,7 @@ function closeAllMenus(exceptId = null) {
     const menus = document.querySelectorAll('.attach-menu, .call-dropdown-menu, .device-menu');
     menus.forEach(menu => {
         if (!exceptId || menu.id !== exceptId) {
+            menu.classList.remove('show');
             menu.style.display = 'none';
         }
     });
@@ -1808,28 +1809,79 @@ function displayMessage(data) {
 
     // НОВОЕ: Обработка галереи медиа
     if (data.media_items && data.media_items.length > 0) {
-        const gallery = document.createElement('div');
-        gallery.className = 'message-media-gallery';
-        if (data.media_items.length > 1) {
-            gallery.classList.add(`gallery-grid-${Math.min(data.media_items.length, 4)}`);
+        const galleryItems = data.media_items.filter(item => item.type === 'image' || item.type === 'video');
+        const fileItems = data.media_items.filter(item => item.type === 'file' || !item.type);
+
+        if (galleryItems.length > 0) {
+            const gallery = document.createElement('div');
+            gallery.className = 'message-media-gallery';
+            if (galleryItems.length > 1) {
+                gallery.classList.add(`gallery-grid-${Math.min(galleryItems.length, 4)}`);
+            }
+
+            galleryItems.forEach(item => {
+                if (item.type === 'image') {
+                    const img = document.createElement('img');
+                    img.src = item.url;
+                    img.alt = item.original_name || 'Изображение';
+                    img.onclick = () => window.open(item.url, '_blank');
+                    gallery.appendChild(img);
+                } else if (item.type === 'video') {
+                    const video = document.createElement('video');
+                    video.src = item.url;
+                    video.controls = true;
+                    video.preload = 'metadata';
+                    gallery.appendChild(video);
+                }
+            });
+            messageElement.appendChild(gallery);
         }
 
-        data.media_items.forEach(item => {
-            if (item.type === 'image') {
-                const img = document.createElement('img');
-                img.src = item.url;
-                img.alt = 'Изображение';
-                img.onclick = () => window.open(item.url, '_blank');
-                gallery.appendChild(img);
-            } else if (item.type === 'video') {
-                const video = document.createElement('video');
-                video.src = item.url;
-                video.controls = true;
-                video.preload = 'metadata';
-                gallery.appendChild(video);
-            }
-        });
-        messageElement.appendChild(gallery);
+        if (fileItems.length > 0) {
+            const fileList = document.createElement('div');
+            fileList.className = 'message-file-list';
+
+            fileItems.forEach(item => {
+                const link = document.createElement('a');
+                link.href = item.url;
+                link.target = '_blank';
+                link.rel = 'noopener noreferrer';
+                link.className = 'message-file-item';
+                if (item.original_name) {
+                    link.download = item.original_name;
+                }
+
+                const icon = document.createElement('div');
+                icon.className = 'message-file-icon';
+                icon.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><line x1="10" y1="9" x2="9" y2="9"></line></svg>`;
+                link.appendChild(icon);
+
+                const details = document.createElement('div');
+                details.className = 'message-file-details';
+
+                const nameSpan = document.createElement('span');
+                nameSpan.className = 'message-file-name';
+                const fallbackName = item.url ? decodeURIComponent(item.url.split('/').pop() || '') : '';
+                nameSpan.textContent = item.original_name || fallbackName || 'Файл';
+                details.appendChild(nameSpan);
+
+                const metaParts = [];
+                if (item.mime_type) metaParts.push(item.mime_type);
+                if (item.file_size) metaParts.push(formatFileSize(Number(item.file_size)));
+
+                if (metaParts.length > 0) {
+                    const metaSpan = document.createElement('span');
+                    metaSpan.className = 'message-file-meta';
+                    metaSpan.textContent = metaParts.join(' • ');
+                    details.appendChild(metaSpan);
+                }
+
+                link.appendChild(details);
+                fileList.appendChild(link);
+            });
+
+            messageElement.appendChild(fileList);
+        }
     }
     
     // Добавляем текст если есть
@@ -6398,35 +6450,38 @@ let callTimerInterval = null; // Интервал для таймера
 function toggleCallDropdown(event) {
     event.stopPropagation();
     event.preventDefault();
-    
+
     const menu = document.getElementById('call-dropdown-menu');
     if (!menu) {
         console.error('call-dropdown-menu не найдено!');
         return;
     }
-    
+
     const isVisible = menu.classList.contains('show');
     console.log('toggleCallDropdown вызвана, isVisible:', isVisible);
-    
+
     if (isVisible) {
-        // вместо мгновенного скрытия дадим возможность повторного открытия без конфликтов
         menu.classList.remove('show');
-        // не выходим, чтобы переустановить обработчик внешнего клика корректно
+        menu.style.display = 'none';
+        return;
     }
-    
+
+    closeAllMenus('call-dropdown-menu');
+
     menu.classList.add('show');
-    
+    menu.style.display = 'block';
+
     // Закрыть при клике вне меню
     setTimeout(() => {
-        function closeDropdown(e) {
-            // если клик по самой кнопке-стрелке — игнорим (чтобы не закрывалось до toggle)
+        const closeDropdown = (e) => {
             const inWrapper = e.target.closest('.call-button-wrapper');
             if (!inWrapper) {
                 menu.classList.remove('show');
-                document.removeEventListener('click', closeDropdown);
+                menu.style.display = 'none';
+                document.removeEventListener('click', closeDropdown, true);
             }
-        }
-        document.addEventListener('click', closeDropdown, { capture: true, once: true });
+        };
+        document.addEventListener('click', closeDropdown, true);
     }, 50);
 }
 
@@ -6440,7 +6495,11 @@ async function startVideoCall() {
     }
     
     // Закрываем меню
-    document.getElementById('call-dropdown-menu').classList.remove('show');
+    const callMenu = document.getElementById('call-dropdown-menu');
+    if (callMenu) {
+        callMenu.classList.remove('show');
+        callMenu.style.display = 'none';
+    }
     
     isAudioOnly = false; // Видео звонок
     await openCall(); // Используем существующую функцию
@@ -6456,7 +6515,11 @@ async function startAudioCall() {
     }
     
     // Закрываем меню
-    document.getElementById('call-dropdown-menu').classList.remove('show');
+    const callMenu = document.getElementById('call-dropdown-menu');
+    if (callMenu) {
+        callMenu.classList.remove('show');
+        callMenu.style.display = 'none';
+    }
     
     isAudioOnly = true; // Аудио звонок (без видео)
     await openCall(); // Используем существующую функцию
