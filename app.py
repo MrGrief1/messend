@@ -5,6 +5,8 @@ from flask_socketio import SocketIO, emit, join_room, leave_room
 from datetime import datetime
 from itsdangerous import URLSafeTimedSerializer
 import os
+import mimetypes
+from urllib.parse import unquote
 from flask_mail import Mail, Message as MailMessage
 from werkzeug.utils import secure_filename
 from sqlalchemy import text
@@ -278,10 +280,33 @@ class MessageMedia(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     message_id = db.Column(db.Integer, db.ForeignKey('message.id'), nullable=False)
     url = db.Column(db.String(512), nullable=False)
-    type = db.Column(db.String(20), nullable=False)  # 'image' or 'video'
+    type = db.Column(db.String(20), nullable=False)  # 'image', 'video', or 'file'
 
     def to_dict(self):
-        return {'url': self.url, 'type': self.type}
+        data = {'url': self.url, 'type': self.type}
+
+        filename = os.path.basename(self.url)
+        # Извлекаем оригинальное имя файла из уникального имени
+        original_name = filename.split('_', 2)[-1] if '_' in filename else filename
+        original_name = unquote(original_name)
+        data['name'] = original_name
+
+        # Определяем размер файла, если он существует на диске
+        size_value = None
+        if filename:
+            media_path = os.path.join(BASE_DIR, UPLOAD_MEDIA_DIR, filename) if not os.path.isabs(UPLOAD_MEDIA_DIR) else os.path.join(UPLOAD_MEDIA_DIR, filename)
+            try:
+                size_value = os.path.getsize(media_path)
+            except OSError:
+                size_value = None
+        if size_value is not None:
+            data['size'] = size_value
+
+        mime_type, _ = mimetypes.guess_type(original_name)
+        if mime_type:
+            data['mime_type'] = mime_type
+
+        return data
 
 class BlockedUser(db.Model):
     __tablename__ = 'blocked_user'
@@ -1412,9 +1437,12 @@ def send_media():
             ext = filename.rsplit('.', 1)[1].lower() if '.' in filename else ''
             
             media_type = None
-            if ext in ALLOWED_IMAGE_EXTENSIONS: media_type = 'image'
-            elif ext in ALLOWED_VIDEO_EXTENSIONS: media_type = 'video'
-            else: continue
+            if ext in ALLOWED_IMAGE_EXTENSIONS:
+                media_type = 'image'
+            elif ext in ALLOWED_VIDEO_EXTENSIONS:
+                media_type = 'video'
+            else:
+                media_type = 'file'
             
             unique_name = f"m{sender_id}_{int(time.time())}_{filename}"
             save_path = os.path.join(UPLOAD_MEDIA_DIR, unique_name)
