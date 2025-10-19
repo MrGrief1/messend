@@ -796,7 +796,7 @@ function addPollOption(value = '') {
     const input = document.createElement('input');
     input.type = 'text';
     input.className = 'poll-option-input';
-    input.placeholder = Вариант ;
+    input.placeholder = `Вариант ${rows.length + 1}`;
     input.maxLength = 100;
     input.value = value;
     input.addEventListener('input', updatePollPreview);
@@ -906,7 +906,7 @@ function refreshPollOptionPlaceholders() {
 
     const inputs = container.querySelectorAll('.poll-option-input');
     inputs.forEach((input, index) => {
-        input.placeholder = Вариант ;
+        input.placeholder = `Вариант ${index + 1}`;
     });
 }
 
