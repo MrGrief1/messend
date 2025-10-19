@@ -14,16 +14,20 @@
     --text-color: #F2F2F7;
     --text-color-muted: rgba(235, 235, 245, 0.6);
     --text-color-bright: #FFFFFF;
-    
+
+    /* Базовые цвета стекла */
+    --glass-base-rgb: 255, 255, 255;
+    --glass-border-rgb: 255, 255, 255;
+
     /* Настраиваемые параметры стекла */
     --glass-opacity: 0.05;
     --glass-blur: 15px;
     --glass-border-opacity: 0.1;
     --glass-shadow: 0 2px 12px rgba(0, 0, 0, 0.2);
 
-    --glass-bg: rgba(255, 255, 255, var(--glass-opacity));
-    --glass-border: rgba(255, 255, 255, var(--glass-border-opacity));
-    --glass-bg-hover: rgba(255, 255, 255, calc(var(--glass-opacity) + 0.05));
+    --glass-bg: rgba(var(--glass-base-rgb), var(--glass-opacity));
+    --glass-border: rgba(var(--glass-border-rgb), var(--glass-border-opacity));
+    --glass-bg-hover: rgba(var(--glass-base-rgb), calc(var(--glass-opacity) + 0.05));
 
     --input-bg: rgba(118, 118, 128, 0.24);
     --input-border: rgba(255, 255, 255, 0.15);
@@ -34,8 +38,8 @@
     --msg-sent-bg: linear-gradient(135deg, rgba(0, 122, 255, 0.92), rgba(48, 152, 255, 0.92));
     --msg-sent-text: #ffffff;
     --menu-shadow: 0 18px 40px rgba(0, 0, 0, 0.28);
-    --surface-elevated: rgba(255, 255, 255, 0.08);
-    --surface-muted: rgba(255, 255, 255, 0.05);
+    --surface-elevated: rgba(var(--glass-base-rgb), calc(var(--glass-opacity) + 0.08));
+    --surface-muted: rgba(var(--glass-base-rgb), calc(var(--glass-opacity) + 0.03));
     --thread-accent: rgba(0, 122, 255, 0.25);
     
     /* Радиусы скругления - все круглое */
@@ -55,6 +59,8 @@
 }
 
 [data-theme="light"] {
+    --glass-base-rgb: 255, 255, 255;
+    --glass-border-rgb: 0, 0, 0;
     --bg-gradient-start: #F2F2F7;
     --bg-gradient-mid: #E5E5EA;
     --bg-gradient-end: #D1D1D6;
@@ -80,6 +86,8 @@
 }
 
 [data-theme="ocean"] {
+    --glass-base-rgb: 0, 212, 255;
+    --glass-border-rgb: 0, 180, 255;
     --color-primary: #00D4FF;
     --color-primary-hover: #00A8CC;
     --bg-gradient-start: #001F3F;
@@ -95,6 +103,8 @@
 }
 
 [data-theme="amoled"] {
+    --glass-base-rgb: 18, 18, 18;
+    --glass-border-rgb: 255, 255, 255;
     --bg-gradient-start: #050505;
     --bg-gradient-mid: #090909;
     --bg-gradient-end: #050505;
@@ -115,6 +125,7 @@ body {
     margin: 0;
     padding: 0;
     color: var(--text-color);
+    min-height: 100dvh;
     min-height: 100vh;
     overflow: hidden;
     background: linear-gradient(135deg, var(--bg-gradient-start), var(--bg-gradient-mid), var(--bg-gradient-end));
@@ -170,6 +181,23 @@ body {
         transparent 100%);
     pointer-events: none;
     z-index: 2;
+}
+
+.glass-panel {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--menu-shadow);
+    backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+    -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+}
+
+.glass-panel.elevated {
+    background: var(--surface-elevated);
+}
+
+.glass-panel.muted {
+    background: var(--surface-muted);
 }
 
 /* Специальный класс для еще более продвинутого glassmorphism */
@@ -849,6 +877,8 @@ label {
     display: flex;
     flex-direction: column;
     scroll-behavior: smooth;
+    padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+    scroll-padding-bottom: calc(120px + env(safe-area-inset-bottom, 0px));
 }
 
 .unknown-banner {
@@ -895,6 +925,7 @@ label {
     position: sticky; /* держим панель ввода всегда видимой как в Telegram */
     bottom: 0;
     z-index: 5;
+    padding-bottom: calc(18px + env(safe-area-inset-bottom, 0px));
 }
 
 .message-banner {
@@ -1508,72 +1539,56 @@ label {
     background: var(--color-primary);
 }
 
-.reaction-option {
-    font-size: 28px;
+.reaction-option,
+.reaction-more {
+    border: none;
+    background: transparent;
     cursor: pointer;
     padding: 6px;
-    transition: all var(--transition-normal) var(--easing-bounce);
-    display: inline-block;
-}
-
-.reaction-option:hover {
-    transform: scale(1.3) rotate(15deg);
-    filter: drop-shadow(0 4px 8px rgba(0, 122, 255, 0.3));
-}
-
-.reaction-option:active {
-    transform: scale(1.1) rotate(0deg);
-    transition: all var(--transition-fast) var(--easing-smooth);
-}
-
-.reaction-more {
-    font-size: 18px;
-    cursor: pointer;
-    padding: 0;
-    margin: 0;
-    transition: all 0.2s ease;
+    width: 44px;
+    height: 44px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    background: var(--input-bg);
-    border-radius: 50%;
-    width: 40px;
-    height: 40px;
-    min-width: 40px;
-    min-height: 40px;
-    max-width: 40px;
-    max-height: 40px;
+    border-radius: var(--radius-full);
     color: var(--text-color);
-    font-weight: bold;
+    transition: transform var(--transition-fast) var(--easing-bounce),
+                background var(--transition-fast) var(--easing-smooth),
+                box-shadow var(--transition-fast) var(--easing-smooth);
+}
+
+.reaction-more {
     border: 1px solid var(--glass-border);
-    flex-shrink: 0;
 }
 
+.reaction-option svg,
+.reaction-more svg {
+    width: 26px;
+    height: 26px;
+    stroke-width: 2;
+    fill: none;
+    stroke: currentColor;
+}
+
+.reaction-option:hover,
 .reaction-more:hover {
-    transform: scale(1.15);
     background: var(--glass-bg-hover);
+    transform: translateY(-1px) scale(1.05);
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.25);
 }
 
-.reaction-option.hidden-reaction {
-    display: none;
-    visibility: hidden;
+.reaction-option:active,
+.reaction-more:active {
+    transform: scale(0.95);
+    box-shadow: none;
 }
 
-#reaction-picker.expanded .reaction-option.hidden-reaction {
-    display: inline-block;
-    visibility: visible;
+.reaction-option:focus-visible,
+.reaction-more:focus-visible {
+    outline: 2px solid rgba(0, 122, 255, 0.5);
+    outline-offset: 2px;
 }
 
-#reaction-picker.expanded .reaction-more {
-    display: none;
-    visibility: hidden;
-}
-
-/* Дополнительная специфичность */
-div#reaction-picker.expanded span.hidden-reaction {
-    display: inline-block !important;
-    visibility: visible !important;
-}
 
 .selection-bar {
     position: absolute;
@@ -2280,10 +2295,12 @@ input[type="range"]::-moz-range-thumb:active {
 .settings-section {
     margin-bottom: 32px;
     padding: 24px;
-    background: var(--input-bg);
-    backdrop-filter: blur(20px);
+    background: var(--surface-elevated);
     border-radius: var(--radius-lg);
     border: 1px solid var(--glass-border);
+    box-shadow: var(--menu-shadow);
+    backdrop-filter: blur(var(--glass-blur)) saturate(150%);
+    -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(150%);
     animation: slideInRight 0.4s var(--easing-smooth) backwards;
 }
 
@@ -2915,11 +2932,13 @@ input[type="range"]::-moz-range-thumb:active {
     
     .chat-window {
         padding: 16px;
+        padding-bottom: calc(120px + env(safe-area-inset-bottom, 0px));
     }
-    
+
     .chat-input-area {
         padding: 10px 12px;
         flex-wrap: wrap;
+        padding-bottom: calc(14px + env(safe-area-inset-bottom, 0px));
     }
     
     #message-input {
@@ -3597,14 +3616,16 @@ html {
     overflow: hidden;
     background: var(--glass-bg);
     border: 1px solid var(--glass-border);
-    transition: transform var(--transition-fast), box-shadow var(--transition-fast), border-color var(--transition-fast);
+    transition: background var(--transition-fast), box-shadow var(--transition-fast), border-color var(--transition-fast);
     padding: 14px 16px;
     cursor: pointer;
+    box-sizing: border-box;
 }
 
 .poll-option-row:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 10px 28px rgba(0, 30, 110, 0.35);
+    background: var(--glass-bg-hover);
+    border-color: rgba(var(--glass-border-rgb), 0.6);
+    box-shadow: none;
 }
 
 .poll-bar {
@@ -3646,33 +3667,36 @@ html {
     width: 34px;
     height: 34px;
     border-radius: 50%;
-    border: 2px solid rgba(255, 255, 255, 0.55);
+    border: 2px solid rgba(var(--glass-border-rgb), 0.45);
     display: flex;
     align-items: center;
     justify-content: center;
     transition: all var(--transition-fast);
-    background: rgba(255, 255, 255, 0.08);
+    background: transparent;
+    color: var(--text-color);
 }
 
 .poll-option-check svg {
     width: 18px;
     height: 18px;
-    opacity: 0.55;
-    transition: opacity var(--transition-fast);
+    opacity: 0;
+    transition: opacity var(--transition-fast), transform var(--transition-fast);
 }
 
 .poll-option-selected {
-    border-color: rgba(255, 255, 255, 0.75);
-    box-shadow: 0 12px 32px rgba(0, 36, 120, 0.4);
+    border-color: var(--color-primary);
+    box-shadow: inset 0 0 0 1px rgba(0, 122, 255, 0.2);
 }
 
 .poll-option-selected .poll-option-check {
-    background: rgba(255, 255, 255, 0.2);
-    border-color: #ffffff;
+    background: var(--color-primary);
+    border-color: var(--color-primary);
+    color: var(--msg-sent-text);
 }
 
 .poll-option-selected .poll-option-check svg {
     opacity: 1;
+    transform: scale(1.05);
 }
 
 .poll-option-selected .poll-bar {
@@ -3717,7 +3741,7 @@ html {
 .poll-comment-btn {
     display: inline-flex;
     align-items: center;
-    gap: 6px;
+    gap: 8px;
     padding: 8px 14px;
     border-radius: var(--radius-md);
     border: 1px solid var(--glass-border);
@@ -3726,6 +3750,24 @@ html {
     font-weight: 600;
     cursor: pointer;
     transition: background var(--transition-fast), transform var(--transition-fast), border-color var(--transition-fast);
+}
+
+.poll-comment-btn .thread-button-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.poll-comment-btn .thread-button-icon svg {
+    width: 18px;
+    height: 18px;
+    stroke: currentColor;
+    fill: none;
+    stroke-width: 2;
+}
+
+.poll-comment-btn .thread-button-text {
+    font-weight: 600;
 }
 
 .poll-comment-btn:hover:not(:disabled) {
@@ -3756,6 +3798,8 @@ html {
     gap: 16px;
     padding: 16px;
     width: 100%;
+    flex: 1;
+    min-height: 0;
 }
 
 .thread-header {
@@ -3831,6 +3875,7 @@ html {
     min-height: 0;
     overflow-y: auto;
     padding-right: 4px;
+    padding-bottom: 8px;
 }
 
 .thread-comment-card {
@@ -3893,6 +3938,7 @@ html {
     border: 1px solid var(--glass-border);
     backdrop-filter: blur(var(--glass-blur)) saturate(160%);
     -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+    padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
 }
 
 .thread-input-area textarea {

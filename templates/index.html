@@ -1907,7 +1907,7 @@
                     <p id="groupCallRoomName" style="margin: 0; opacity: 0.7; font-size: 15px;">начал групповой звонок</p>
                 </div>
                 
-                <div style="background: rgba(255,255,255,0.05); border-radius: 12px; padding: 16px; margin-bottom: 20px;">
+                <div class="glass-panel muted" style="padding: 16px; margin-bottom: 20px;">
                     <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
@@ -2020,53 +2020,31 @@
         </div>
     </div>
 
-    <div id="reaction-picker">
-        <span class="reaction-option" onclick="sendReaction('👍')">👍</span>
-        <span class="reaction-option" onclick="sendReaction('👎')">👎</span>
-        <span class="reaction-option" onclick="sendReaction('❤️')">❤️</span>
-        <span class="reaction-option" onclick="sendReaction('😂')">😂</span>
-        <span class="reaction-option" onclick="sendReaction('😮')">😮</span>
-        <span class="reaction-option" onclick="sendReaction('😢')">😢</span>
-        <span class="reaction-option" onclick="sendReaction('🔥')">🔥</span>
-        <span class="reaction-more" onclick="expandReactionPicker(event)">...</span>
-        <!-- Дополнительные эмоции (скрыты по умолчанию) -->
-        <span class="reaction-option hidden-reaction" onclick="sendReaction('😍')">😍</span>
-        <span class="reaction-option hidden-reaction" onclick="sendReaction('🥰')">🥰</span>
-        <span class="reaction-option hidden-reaction" onclick="sendReaction('😘')">😘</span>
-        <span class="reaction-option hidden-reaction" onclick="sendReaction('😎')">😎</span>
-        <span class="reaction-option hidden-reaction" onclick="sendReaction('🤩')">🤩</span>
-        <span class="reaction-option hidden-reaction" onclick="sendReaction('😭')">😭</span>
-        <span class="reaction-option hidden-reaction" onclick="sendReaction('😡')">😡</span>
-        <span class="reaction-option hidden-reaction" onclick="sendReaction('🤬')">🤬</span>
-        <span class="reaction-option hidden-reaction" onclick="sendReaction('🤯')">🤯</span>
-        <span class="reaction-option hidden-reaction" onclick="sendReaction('😱')">😱</span>
-        <span class="reaction-option hidden-reaction" onclick="sendReaction('🥺')">🥺</span>
-        <span class="reaction-option hidden-reaction" onclick="sendReaction('😴')">😴</span>
-        <span class="reaction-option hidden-reaction" onclick="sendReaction('🤔')">🤔</span>
-        <span class="reaction-option hidden-reaction" onclick="sendReaction('🤨')">🤨</span>
-        <span class="reaction-option hidden-reaction" onclick="sendReaction('😏')">😏</span>
-        <span class="reaction-option hidden-reaction" onclick="sendReaction('😬')">😬</span>
-        <span class="reaction-option hidden-reaction" onclick="sendReaction('🙄')">🙄</span>
-        <span class="reaction-option hidden-reaction" onclick="sendReaction('😤')">😤</span>
-        <span class="reaction-option hidden-reaction" onclick="sendReaction('😳')">😳</span>
-        <span class="reaction-option hidden-reaction" onclick="sendReaction('🥵')">🥵</span>
-        <span class="reaction-option hidden-reaction" onclick="sendReaction('🥶')">🥶</span>
-        <span class="reaction-option hidden-reaction" onclick="sendReaction('😈')">😈</span>
-        <span class="reaction-option hidden-reaction" onclick="sendReaction('👹')">👹</span>
-        <span class="reaction-option hidden-reaction" onclick="sendReaction('💀')">💀</span>
-        <span class="reaction-option hidden-reaction" onclick="sendReaction('☠️')">☠️</span>
-        <span class="reaction-option hidden-reaction" onclick="sendReaction('💩')">💩</span>
-        <span class="reaction-option hidden-reaction" onclick="sendReaction('🤡')">🤡</span>
-        <span class="reaction-option hidden-reaction" onclick="sendReaction('👻')">👻</span>
-        <span class="reaction-option hidden-reaction" onclick="sendReaction('👽')">👽</span>
-        <span class="reaction-option hidden-reaction" onclick="sendReaction('🤖')">🤖</span>
-        <span class="reaction-option hidden-reaction" onclick="sendReaction('💯')">💯</span>
-        <span class="reaction-option hidden-reaction" onclick="sendReaction('💪')">💪</span>
-        <span class="reaction-option hidden-reaction" onclick="sendReaction('🙏')">🙏</span>
-        <span class="reaction-option hidden-reaction" onclick="sendReaction('👏')">👏</span>
-        <span class="reaction-option hidden-reaction" onclick="sendReaction('🎉')">🎉</span>
-        <span class="reaction-option hidden-reaction" onclick="sendReaction('🎊')">🎊</span>
-        <span class="reaction-option hidden-reaction" onclick="sendReaction('⭐')">⭐</span>
+    <div id="reaction-picker" class="glass">
+        <button class="reaction-option" type="button" data-reaction="👍" onclick="sendReaction('👍')" aria-label="Нравится">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg>
+        </button>
+        <button class="reaction-option" type="button" data-reaction="👎" onclick="sendReaction('👎')" aria-label="Не нравится">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3zm7-13h2.67A2.31 2.31 0 0 1 22 4v7a2.31 2.31 0 0 1-2.33 2H17"/></svg>
+        </button>
+        <button class="reaction-option" type="button" data-reaction="❤️" onclick="sendReaction('❤️')" aria-label="Сердце">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+        </button>
+        <button class="reaction-option" type="button" data-reaction="😂" onclick="sendReaction('😂')" aria-label="Смешно">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
+        </button>
+        <button class="reaction-option" type="button" data-reaction="😮" onclick="sendReaction('😮')" aria-label="Удивлён">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><circle cx="9" cy="10" r="1"/><circle cx="15" cy="10" r="1"/><circle cx="12" cy="15" r="2"/></svg>
+        </button>
+        <button class="reaction-option" type="button" data-reaction="😢" onclick="sendReaction('😢')" aria-label="Грустно">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M16 16s-1.5-2-4-2-4 2-4 2"/><circle cx="9" cy="10" r="1"/><path d="M15 10v2"/><path d="M17 11c1 1.6 1.5 2.7 1.5 3.5a1.5 1.5 0 1 1-3 0c0-.8.5-1.9 1.5-3.5Z"/></svg>
+        </button>
+        <button class="reaction-option" type="button" data-reaction="🔥" onclick="sendReaction('🔥')" aria-label="Огонь">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3q1 4 4 6.5t3 5.5a1 1 0 0 1-14 0 5 5 0 0 1 1-3 1 1 0 0 0 5 0c0-2-1.5-3-1.5-5q0-2 2.5-4"/></svg>
+        </button>
+        <button class="reaction-more" type="button" onclick="expandReactionPicker(event)" aria-label="Больше реакций">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>
+        </button>
     </div>
 
     <!-- НОВОЕ: Контекстное меню для сообщений -->
@@ -2200,7 +2178,7 @@
             </div>
             
             <!-- Информация о контакте -->
-            <div style="background: rgba(255,255,255,0.05); border-radius: 12px; padding: 16px; margin-bottom: 20px;">
+            <div class="glass-panel muted" style="padding: 16px; margin-bottom: 20px;">
                 <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="opacity: 0.6;">
                         <circle cx="12" cy="12" r="10"></circle>
@@ -2282,15 +2260,15 @@
                 
                 <!-- Дополнительная информация -->
                 <div id="roomSettingsStats" style="display:grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 20px;">
-                    <div style="text-align: center; padding: 12px; background: rgba(255,255,255,0.05); border-radius: 12px;">
+                    <div class="glass-panel muted" style="text-align: center; padding: 12px;">
                         <div style="font-size: 24px; font-weight: bold;" id="roomMessagesCount">0</div>
                         <div style="font-size: 11px; opacity: 0.7; margin-top: 4px;">Сообщений</div>
                     </div>
-                    <div style="text-align: center; padding: 12px; background: rgba(255,255,255,0.05); border-radius: 12px;">
+                    <div class="glass-panel muted" style="text-align: center; padding: 12px;">
                         <div style="font-size: 24px; font-weight: bold;" id="roomMediaCount">0</div>
                         <div style="font-size: 11px; opacity: 0.7; margin-top: 4px;">Медиа</div>
                     </div>
-                    <div style="text-align: center; padding: 12px; background: rgba(255,255,255,0.05); border-radius: 12px;">
+                    <div class="glass-panel muted" style="text-align: center; padding: 12px;">
                         <div style="font-size: 24px; font-weight: bold;" id="roomLinksCount">0</div>
                         <div style="font-size: 11px; opacity: 0.7; margin-top: 4px;">Ссылок</div>
                     </div>

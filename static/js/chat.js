@@ -134,8 +134,9 @@ document.addEventListener('DOMContentLoaded', (event) => {
         if (savedTheme) {
             document.body.setAttribute('data-theme', savedTheme);
         }
+        reapplyGlassAfterThemeChange();
     } catch {}
-    
+
     // Запрашиваем разрешение на уведомления
     requestNotificationPermission();
     
@@ -1106,8 +1107,10 @@ const stickerPacks = {
 let currentStickerPack = 'emotions';
 
 function toggleStickerPicker(event) {
-    event.stopPropagation();
-    event.preventDefault();
+    if (event) {
+        if (typeof event.stopPropagation === 'function') event.stopPropagation();
+        if (typeof event.preventDefault === 'function') event.preventDefault();
+    }
     
     // Создаем пикер если его нет
     let picker = document.getElementById('sticker-picker');
@@ -2170,26 +2173,12 @@ function closeReactionPicker() {
 }
 
 function expandReactionPicker(event) {
-    if (event) event.stopPropagation();
-    const picker = document.getElementById('reaction-picker');
-    
-    // Показываем все скрытые эмоции
-    const hiddenReactions = picker.querySelectorAll('.hidden-reaction');
-    hiddenReactions.forEach(reaction => {
-        reaction.style.display = 'inline-block';
-        reaction.style.visibility = 'visible';
-    });
-    
-    // Скрываем кнопку "..."
-    const moreBtn = picker.querySelector('.reaction-more');
-    if (moreBtn) {
-        moreBtn.style.display = 'none';
+    if (event) {
+        event.stopPropagation();
+        event.preventDefault();
     }
-    
-    // Расширяем пикер
-    picker.classList.add('expanded');
-    
-    console.log('Пикер расширен. Показано эмоций:', hiddenReactions.length);
+    closeReactionPicker();
+    toggleStickerPicker(event || new Event('click'));
 }
 
 function sendReaction(emoji) {
@@ -3416,17 +3405,23 @@ function flashPollNotice(pollContainer, key, text) {
     pollTipTimers.set(key, timeoutId);
 }
 
-function formatThreadButtonLabel(count) {
-    const numeric = parseInt(count, 10);
-    return numeric && numeric > 0 ? `💬 ${numeric}` : '💬 Комментировать';
-}
-
 function updateThreadButtonCount(messageId, count) {
     const button = document.querySelector(`button[data-thread-root-id='${String(messageId)}']`);
     if (!button) return;
     const numeric = Math.max(0, parseInt(count, 10) || 0);
     button.dataset.commentCount = String(numeric);
-    button.textContent = formatThreadButtonLabel(numeric);
+    renderThreadButtonLabel(button, numeric);
+}
+
+function renderThreadButtonLabel(button, count) {
+    const numeric = Math.max(0, parseInt(count, 10) || 0);
+    button.innerHTML = `
+        <span class="thread-button-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
+        </span>
+        <span class="thread-button-text">${numeric > 0 ? numeric : 'Комментировать'}</span>
+    `;
+    button.setAttribute('aria-label', numeric > 0 ? `Комментарии: ${numeric}` : 'Открыть комментарии');
 }
 
 function showThreadView() {
@@ -3634,7 +3629,7 @@ function createThreadButton(messageId, threadType, previewText, count = 0) {
     button.dataset.threadType = threadType;
     const numericCount = Math.max(0, parseInt(count, 10) || 0);
     button.dataset.commentCount = String(numericCount);
-    button.textContent = formatThreadButtonLabel(numericCount);
+    renderThreadButtonLabel(button, numericCount);
     button.addEventListener('click', (event) => {
         event.stopPropagation();
         openThreadForMessage({
@@ -4576,6 +4571,7 @@ function saveSettings() {
             showMessage(messageBox, data.message, 'success');
             document.body.setAttribute('data-theme', data.theme);
             try { localStorage.setItem('appTheme', data.theme); } catch {}
+            reapplyGlassAfterThemeChange();
             document.getElementById('current-username-display').textContent = `@${data.username}`;
             setTimeout(() => closeModal({ target: document.getElementById('settingsModal'), forceClose: true }), 400);
         } else {
@@ -4809,27 +4805,67 @@ function updateGlassEffect() {
     localStorage.setItem('glassBorder', border);
 }
 
+function clampOpacity(value, max = 0.98) {
+    if (Number.isNaN(value)) return 0;
+    return Math.min(Math.max(value, 0), max);
+}
+
 function applyGlassSettings(opacity, blur, border) {
     const root = document.documentElement;
-    root.style.setProperty('--glass-opacity', opacity);
-    root.style.setProperty('--glass-blur', blur + 'px');
-    root.style.setProperty('--glass-border-opacity', border);
-    
-    // Пересчет производных значений
-    const hoverOpacity = parseFloat(opacity) + 0.05;
-    root.style.setProperty('--glass-bg', `rgba(255, 255, 255, ${opacity})`);
-    root.style.setProperty('--glass-border', `rgba(255, 255, 255, ${border})`);
-    root.style.setProperty('--glass-bg-hover', `rgba(255, 255, 255, ${hoverOpacity})`);
+    const computed = getComputedStyle(root);
+    const baseRgb = (computed.getPropertyValue('--glass-base-rgb') || '255, 255, 255').trim();
+    const borderRgb = (computed.getPropertyValue('--glass-border-rgb') || baseRgb).trim();
+
+    const currentComputedOpacity = parseFloat(computed.getPropertyValue('--glass-opacity')) || 0.08;
+    const requestedOpacity = parseFloat(opacity);
+    const opacityValue = clampOpacity(Number.isNaN(requestedOpacity) ? currentComputedOpacity : requestedOpacity);
+
+    const requestedBorder = parseFloat(border);
+    const currentBorderOpacity = parseFloat(computed.getPropertyValue('--glass-border-opacity')) || 0.1;
+    const borderValue = clampOpacity(Number.isNaN(requestedBorder) ? currentBorderOpacity : requestedBorder);
+
+    const parsedBlur = parseFloat(blur);
+    const blurValue = Math.max(Number.isNaN(parsedBlur) ? parseFloat(computed.getPropertyValue('--glass-blur')) || 0 : parsedBlur, 0);
+
+    root.style.setProperty('--glass-opacity', String(opacityValue));
+    root.style.setProperty('--glass-border-opacity', String(borderValue));
+    root.style.setProperty('--glass-blur', `${blurValue}px`);
+
+    const hoverOpacity = clampOpacity(opacityValue + 0.05);
+    const elevatedOpacity = clampOpacity(opacityValue + 0.08);
+    const mutedOpacity = clampOpacity(opacityValue + 0.03);
+
+    root.style.setProperty('--glass-bg', `rgba(${baseRgb}, ${opacityValue})`);
+    root.style.setProperty('--glass-border', `rgba(${borderRgb}, ${borderValue})`);
+    root.style.setProperty('--glass-bg-hover', `rgba(${baseRgb}, ${hoverOpacity})`);
+    root.style.setProperty('--surface-elevated', `rgba(${baseRgb}, ${elevatedOpacity})`);
+    root.style.setProperty('--surface-muted', `rgba(${baseRgb}, ${mutedOpacity})`);
 }
 
 function resetGlassEffect() {
     document.getElementById('glassOpacity').value = '0.15';
     document.getElementById('glassBlur').value = '40';
     document.getElementById('glassBorder').value = '0.2';
-    
+
     updateGlassEffect();
-    
+
     alert('Настройки эффекта стекла сброшены по умолчанию!');
+}
+
+function reapplyGlassAfterThemeChange() {
+    const root = document.documentElement;
+    const computed = getComputedStyle(root);
+    const storedOpacity = localStorage.getItem('glassOpacity');
+    const storedBlur = localStorage.getItem('glassBlur');
+    const storedBorder = localStorage.getItem('glassBorder');
+
+    const currentOpacity = storedOpacity !== null ? storedOpacity : computed.getPropertyValue('--glass-opacity');
+    const currentBlur = storedBlur !== null ? storedBlur : computed.getPropertyValue('--glass-blur');
+    const currentBorder = storedBorder !== null ? storedBorder : computed.getPropertyValue('--glass-border-opacity');
+
+    const blurValue = typeof currentBlur === 'string' ? parseFloat(currentBlur) : currentBlur;
+
+    applyGlassSettings(currentOpacity, blurValue, currentBorder);
 }
 
 // === НОВОЕ: Встроенные настройки ===
@@ -4913,6 +4949,7 @@ function selectTheme(theme) {
     // Мгновенная preview темы
     document.body.setAttribute('data-theme', theme);
     try { localStorage.setItem('appTheme', theme); } catch {}
+    reapplyGlassAfterThemeChange();
 }
 
 function loadGlassSettingsInline() {
