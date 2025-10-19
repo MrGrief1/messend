@@ -796,7 +796,7 @@ function addPollOption(value = '') {
     const input = document.createElement('input');
     input.type = 'text';
     input.className = 'poll-option-input';
-    input.placeholder = Вариант ;
+    input.placeholder = `Вариант ${rows.length + 1}`;
     input.maxLength = 100;
     input.value = value;
     input.addEventListener('input', updatePollPreview);
@@ -906,7 +906,7 @@ function refreshPollOptionPlaceholders() {
 
     const inputs = container.querySelectorAll('.poll-option-input');
     inputs.forEach((input, index) => {
-        input.placeholder = Вариант ;
+        input.placeholder = `Вариант ${index + 1}`;
     });
 }
 
@@ -917,36 +917,69 @@ function updatePollPreview() {
     const questionInput = document.getElementById('pollQuestion');
     const question = questionInput ? questionInput.value.trim() : '';
 
-    const options = Array.from(document.querySelectorAll('#pollOptionsList .poll-option-input'))
+    const optionInputs = Array.from(document.querySelectorAll('#pollOptionsList .poll-option-input'));
+    const options = optionInputs
         .map((input) => input.value.trim())
         .filter((text) => text.length > 0);
 
     const multiple = !!(document.getElementById('pollMultiple') && document.getElementById('pollMultiple').checked);
     const anonymous = !!(document.getElementById('pollAnonymous') && document.getElementById('pollAnonymous').checked);
 
+    preview.innerHTML = '';
+
     if (options.length === 0) {
-        preview.innerHTML = `<div class="poll-preview-placeholder">Добавьте варианты, чтобы увидеть, как участники будут голосовать.</div>`;
+        const placeholder = document.createElement('div');
+        placeholder.className = 'poll-preview-placeholder';
+        placeholder.textContent = 'Добавьте варианты, чтобы увидеть, как участники будут голосовать.';
+        preview.appendChild(placeholder);
         return;
     }
 
-    const optionsHtml = options.map((option) => `
-        <div class="poll-preview-option">
-            <span></span>
-            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M9 6l6 6-6 6" stroke-linecap="round" stroke-linejoin="round"></path>
-            </svg>
-        </div>
-    `).join('');
+    const questionEl = document.createElement('div');
+    questionEl.className = 'poll-preview-question';
+    questionEl.textContent = question || 'Без названия';
+    preview.appendChild(questionEl);
+
+    const optionsWrapper = document.createElement('div');
+    optionsWrapper.className = 'poll-preview-options';
+
+    options.forEach((optionText) => {
+        const optionRow = document.createElement('div');
+        optionRow.className = 'poll-preview-option';
+
+        const textSpan = document.createElement('span');
+        textSpan.textContent = optionText;
+        optionRow.appendChild(textSpan);
+
+        const arrow = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        arrow.setAttribute('viewBox', '0 0 24 24');
+        arrow.setAttribute('width', '18');
+        arrow.setAttribute('height', '18');
+        arrow.setAttribute('fill', 'none');
+        arrow.setAttribute('stroke', 'currentColor');
+        arrow.setAttribute('stroke-width', '2');
+
+        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        path.setAttribute('d', 'M9 6l6 6-6 6');
+        path.setAttribute('stroke-linecap', 'round');
+        path.setAttribute('stroke-linejoin', 'round');
+        arrow.appendChild(path);
+
+        optionRow.appendChild(arrow);
+        optionsWrapper.appendChild(optionRow);
+    });
+
+    preview.appendChild(optionsWrapper);
+
+    const footer = document.createElement('div');
+    footer.className = 'poll-preview-footer';
 
     const footerParts = [];
     footerParts.push(multiple ? 'Можно выбрать несколько вариантов' : 'Один голос на участника');
     if (anonymous) footerParts.push('Голоса анонимные');
 
-    preview.innerHTML = `
-        <div class="poll-preview-question"></div>
-        <div class="poll-preview-options"></div>
-        <div class="poll-preview-footer"></div>
-    `;
+    footer.textContent = footerParts.join(' · ');
+    preview.appendChild(footer);
 }
 
 function closePollBuilder() {
@@ -1782,7 +1815,7 @@ function displayMessage(data) {
         container.setAttribute('data-message-id', data.id);
         const inner = document.createElement('div');
         inner.className = `message ${data.sender_id == CURRENT_USER_ID ? 'sent' : 'received'}`;
-                const poll = data.poll || {};
+        const poll = data.poll || {};
         const pollBox = document.createElement('div');
         pollBox.className = 'poll-container';
 
@@ -1808,6 +1841,7 @@ function displayMessage(data) {
 
         pollBox.appendChild(footer);
 
+        inner.appendChild(pollBox);
         container.appendChild(inner);
         chatWindow.appendChild(container);
         // Рендерим варианты и текущие результаты
