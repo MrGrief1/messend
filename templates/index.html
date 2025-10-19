@@ -117,13 +117,13 @@
         /* Плавающая (левитирующая) навигация в стиле Telegram */
         .telegram-mobile-nav {
             position: fixed;
-            bottom: 20px;
+            bottom: calc(20px + env(safe-area-inset-bottom, 0px));
             left: 50%;
             transform: translateX(-50%);
             width: 95vw;
             max-width: 420px;
             height: auto;
-            background: var(--glass-bg);
+            background: var(--panel-bg);
             backdrop-filter: blur(var(--glass-blur)) saturate(180%);
             -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(180%);
             border: 1px solid var(--glass-border);
@@ -203,7 +203,7 @@
             }
             
             .main-content {
-                padding-bottom: 0;
+                padding-bottom: calc(120px + env(safe-area-inset-bottom, 0px));
                 height: 100vh; /* На всю высоту */
                 padding-top: env(safe-area-inset-top, 0); /* Поддержка вырезов PWA */
             }
@@ -2601,6 +2601,12 @@
     </script>
     <script>
         // Telegram-style мобильная навигация
+        function refreshNavMetrics() {
+            if (typeof window.updateViewportMetrics === 'function') {
+                window.updateViewportMetrics();
+            }
+        }
+
         function switchMobileNav(section, element) {
             // Убираем активный класс у всех кнопок навигации
             document.querySelectorAll('.telegram-nav-item').forEach(item => {
@@ -2625,7 +2631,11 @@
                     if (window.innerWidth <= 768) {
                         window._mobileNavLock = true;
                         const mobileNav = document.getElementById('telegram-mobile-nav');
-                        if (mobileNav) { mobileNav.classList.add('hidden'); mobileNav.style.animation = 'none'; }
+                        if (mobileNav) {
+                            mobileNav.classList.add('hidden');
+                            mobileNav.style.animation = 'none';
+                        }
+                        refreshNavMetrics();
                     }
                     openModal('searchModal');
                     break;
@@ -2633,7 +2643,11 @@
                     if (window.innerWidth <= 768) {
                         window._mobileNavLock = true;
                         const mobileNav = document.getElementById('telegram-mobile-nav');
-                        if (mobileNav) { mobileNav.classList.add('hidden'); mobileNav.style.animation = 'none'; }
+                        if (mobileNav) {
+                            mobileNav.classList.add('hidden');
+                            mobileNav.style.animation = 'none';
+                        }
+                        refreshNavMetrics();
                     }
                     openModal('createRoomModal');
                     break;
@@ -2653,7 +2667,8 @@
                             mobileNav.style.animation = 'none';
                         }
                         window._mobileNavLock = true;
-                        
+                        refreshNavMetrics();
+
                         // Ждем открытия и показываем настройки
                         setTimeout(() => {
                             if (typeof openInlineSettings === 'function') {
@@ -2667,8 +2682,10 @@
                     }
                     break;
             }
+
+            refreshNavMetrics();
         }
-        
+
         function showChatsView(activeNav = 'chats') {
             // Показываем список чатов на мобильных
             if (window.innerWidth <= 768) {
@@ -2699,6 +2716,7 @@
                 if (activeButton) activeButton.classList.add('active');
 
                 window._mobileNavLock = false;
+                refreshNavMetrics();
             }
         }
         
@@ -2726,6 +2744,8 @@
                     backBtn.style.display = 'none';
                 }
             }
+
+            refreshNavMetrics();
         }
         
         window.addEventListener('resize', handleResize);
@@ -2753,7 +2773,11 @@
             // вернем управление transform/opacity обычным стилям
             mobileNav.style.animation = '';
             if (_navHideTimeout) clearTimeout(_navHideTimeout);
-            _navHideTimeout = setTimeout(() => mobileNav.classList.add('hidden'), 1800);
+            _navHideTimeout = setTimeout(() => {
+                mobileNav.classList.add('hidden');
+                refreshNavMetrics();
+            }, 1800);
+            refreshNavMetrics();
         }
         
         function initAutoHideMobileNav() {
@@ -2773,6 +2797,7 @@
                 if (goingDown) {
                     mobileNav.classList.add('hidden');
                     mobileNav.style.animation = 'none';
+                    refreshNavMetrics();
                 } else {
                     showMobileNavTemporarily();
                 }
@@ -2794,8 +2819,12 @@
             }
             
             // Скрываем по умолчанию через 2 секунды
-            _navHideTimeout = setTimeout(() => mobileNav.classList.add('hidden'), 2000);
-            
+            _navHideTimeout = setTimeout(() => {
+                mobileNav.classList.add('hidden');
+                refreshNavMetrics();
+            }, 2000);
+            refreshNavMetrics();
+
             // Показ при тапе у нижнего края
             document.addEventListener('touchstart', (e) => {
                 if (window.innerWidth > 768) return;
@@ -2803,11 +2832,14 @@
                     showMobileNavTemporarily();
                 }
             }, { passive: true });
-            
+
             // Прячем, когда открыт ввод сообщения (клавиатура)
             const messageInput = document.getElementById('message-input');
             if (messageInput) {
-                messageInput.addEventListener('focus', () => mobileNav.classList.add('hidden'));
+                messageInput.addEventListener('focus', () => {
+                    mobileNav.classList.add('hidden');
+                    refreshNavMetrics();
+                });
                 messageInput.addEventListener('blur', () => showMobileNavTemporarily());
             }
         }

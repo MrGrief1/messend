@@ -32,6 +32,28 @@ const threadInputArea = document.getElementById('thread-input-area');
 const threadInput = document.getElementById('thread-input');
 const chatViewContainer = document.getElementById('chat-view');
 const settingsViewContainer = document.getElementById('settings-view-inline');
+
+let mobileNavElement = null;
+
+function updateViewportMetrics() {
+    const viewportHeight = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+    if (viewportHeight) {
+        document.documentElement.style.setProperty('--app-viewport-height', `${viewportHeight}px`);
+    }
+
+    if (!mobileNavElement) {
+        mobileNavElement = document.getElementById('telegram-mobile-nav');
+    }
+
+    let navHeight = 0;
+    if (mobileNavElement && window.matchMedia('(max-width: 768px)').matches) {
+        navHeight = mobileNavElement.offsetHeight || 0;
+    }
+
+    document.documentElement.style.setProperty('--mobile-nav-height', `${navHeight}px`);
+}
+
+window.updateViewportMetrics = updateViewportMetrics;
 // Вызовы
 let localStream = null;
 let isMicEnabled = true;
@@ -135,10 +157,19 @@ document.addEventListener('DOMContentLoaded', (event) => {
             document.body.setAttribute('data-theme', savedTheme);
         }
     } catch {}
-    
+
     // Запрашиваем разрешение на уведомления
     requestNotificationPermission();
-    
+
+    mobileNavElement = document.getElementById('telegram-mobile-nav');
+    updateViewportMetrics();
+    window.addEventListener('resize', updateViewportMetrics);
+    window.addEventListener('orientationchange', updateViewportMetrics);
+    if (window.visualViewport) {
+        window.visualViewport.addEventListener('resize', updateViewportMetrics);
+    }
+    setTimeout(updateViewportMetrics, 200);
+
     // Подключаемся к Socket.IO по текущему origin. Разрешаем стандартный апгрейд (polling -> websocket).
     socket = io({ transports: ['polling'], upgrade: false });
 
@@ -1075,35 +1106,29 @@ function submitPoll() {
 }
 // ========== СТИКЕРЫ ==========
 
-// Встроенные стикер-паки
-const stickerPacks = {
-    emotions: {
-        name: '😊 Эмоции',
-        stickers: ['😀', '😂', '🤣', '😊', '😇', '🙂', '😉', '😍', '🥰', '😘', '😋', '😜', '🤪', '😎', '🤩', '🥳', '😏', '😒', '😞', '😔', '😢', '😭', '😤', '😠', '😱', '😨', '🤯', '😳', '🥺', '😬', '🙄', '😴', '🤤', '😷', '🤒', '🤕', '🤢', '🤮', '🤧', '🥵', '🥶', '😵', '🤠', '🥴', '😖', '😣', '😫', '😩', '🥱']
-    },
-    hands: {
-        name: '👋 Жесты',
-        stickers: ['👋', '🤚', '🖐', '✋', '🖖', '👌', '🤌', '🤏', '✌', '🤞', '🤟', '🤘', '🤙', '👈', '👉', '👆', '🖕', '👇', '☝', '👍', '👎', '✊', '👊', '🤛', '🤜', '👏', '🙌', '👐', '🤲', '🤝', '🙏', '✍', '💅', '🤳', '💪', '🦾', '🦿', '🦵', '🦶']
-    },
-    animals: {
-        name: '🐶 Животные',
-        stickers: ['🐶', '🐱', '🐭', '🐹', '🐰', '🦊', '🐻', '🐼', '🐨', '🐯', '🦁', '🐮', '🐷', '🐸', '🐵', '🙈', '🙉', '🙊', '🐒', '🐔', '🐧', '🐦', '🐤', '🐣', '🐥', '🦆', '🦅', '🦉', '🦇', '🐺', '🐗', '🐴', '🦄', '🐝', '🐛', '🦋', '🐌', '🐞', '🐜', '🦟', '🦗', '🕷', '🦂', '🐢', '🐍', '🦎', '🦖', '🦕']
-    },
-    food: {
-        name: '🍕 Еда',
-        stickers: ['🍏', '🍎', '🍐', '🍊', '🍋', '🍌', '🍉', '🍇', '🍓', '🍈', '🍒', '🍑', '🥭', '🍍', '🥥', '🥝', '🍅', '🍆', '🥑', '🥦', '🥬', '🥒', '🌶', '🌽', '🥕', '🥔', '🍠', '🥐', '🥯', '🍞', '🥖', '🥨', '🧀', '🥚', '🍳', '🥞', '🧇', '🥓', '🥩', '🍗', '🍖', '🦴', '🌭', '🍔', '🍟', '🍕', '🥪', '🥙', '🌮']
-    },
-    activities: {
-        name: '⚽ Активности',
-        stickers: ['⚽', '🏀', '🏈', '⚾', '🥎', '🎾', '🏐', '🏉', '🥏', '🎱', '🪀', '🏓', '🏸', '🏒', '🏑', '🥍', '🏏', '🥅', '⛳', '🪁', '🏹', '🎣', '🤿', '🥊', '🥋', '🎽', '🛹', '🛼', '🛷', '⛸', '🥌', '🎿', '⛷', '🏂', '🪂', '🏋', '🤼', '🤸', '🤺', '⛹', '🤾', '🏌', '🏇', '🧘', '🏊', '🤽', '🚣', '🧗', '🚴']
-    },
-    symbols: {
-        name: '❤️ Символы',
-        stickers: ['❤️', '🧡', '💛', '💚', '💙', '💜', '🖤', '🤍', '🤎', '💔', '❣️', '💕', '💞', '💓', '💗', '💖', '💘', '💝', '💟', '☮', '✝', '☪', '🕉', '☸', '✡', '🔯', '🕎', '☯', '☦', '🛐', '⛎', '♈', '♉', '♊', '♋', '♌', '♍', '♎', '♏', '♐', '♑', '♒', '♓', '🆔', '⚛', '🉑', '☢', '☣', '📴']
-    }
+const STICKER_ICONS = {
+    smile: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15.182 15.182a4.5 4.5 0 0 1-6.364 0"/><path d="M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/><path d="M9.75 9.75c0 .414-.168.75-.375.75S9 10.164 9 9.75 9.168 9 9.375 9s.375.336.375.75Z"/><path d="M14.25 9.75c0 .414-.168.75-.375.75s-.375-.336-.375-.75.168-.75.375-.75.375.336.375.75Z"/></svg>`,
+    frown: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15.182 16.318A4.486 4.486 0 0 0 12.016 15a4.486 4.486 0 0 0-3.198 1.318"/><path d="M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/><path d="M9.75 9.75c0 .414-.168.75-.375.75S9 10.164 9 9.75 9.168 9 9.375 9s.375.336.375.75Z"/><path d="M14.25 9.75c0 .414-.168.75-.375.75s-.375-.336-.375-.75.168-.75.375-.75.375.336.375.75Z"/></svg>`,
+    heart: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733C11.285 4.876 9.623 3.75 7.687 3.75 5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12Z"/></svg>`,
+    sparkles: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09Z"/><path d="M18.259 8.715 18 9.75l-.259-1.035a3.375 3.375 0 0 0-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 0 0 2.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 0 0 2.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 0 0-2.456 2.456Z"/><path d="M16.894 20.567 16.5 21.75l-.394-1.183a2.25 2.25 0 0 0-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 0 0 1.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 0 0 1.423 1.423l1.183.394-1.183.394a2.25 2.25 0 0 0-1.423 1.423Z"/></svg>`,
+    fire: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15.362 5.214A8.252 8.252 0 0 1 12 21 8.25 8.25 0 0 1 6.038 7.047 8.287 8.287 0 0 0 9 9.601a8.983 8.983 0 0 1 3.361-6.867 8.21 8.21 0 0 0 3 2.48Z"/><path d="M12 18a3.75 3.75 0 0 0 .495-7.468 5.99 5.99 0 0 0-1.925 3.547 5.975 5.975 0 0 1-2.133-1.001A3.75 3.75 0 0 0 12 18Z"/></svg>`,
+    rocket: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15.59 14.37a6 6 0 0 1-5.84 7.38v-4.8"/><path d="M21.43 2.25A14.98 14.98 0 0 0 9.631 8.41"/><path d="M15.59 14.37a14.926 14.926 0 0 1-5.841 2.58"/><path d="M9.749 8.41a6 6 0 0 0-7.381 5.84h4.8"/><path d="M7.508 16.95a15.09 15.09 0 0 1-2.448-2.448"/><path d="M5.27 18.428a4.493 4.493 0 0 0-1.757 4.306 4.493 4.493 0 0 0 4.306-1.758"/><path d="M16.5 9a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0Z"/></svg>`,
+    gift: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20.625 11.505v8.25a1.5 1.5 0 0 1-1.5 1.5H4.875a1.5 1.5 0 0 1-1.5-1.5v-8.25"/><path d="M11.625 5.13A2.625 2.625 0 1 0 9 7.755h2.625"/><path d="M11.625 5.13V7.755"/><path d="M11.625 5.13a2.625 2.625 0 1 1 2.625 2.625h-2.625"/><path d="M11.625 7.755v13.5"/><path d="M3 11.505h18c.621 0 1.125-.504 1.125-1.125v-1.5c0-.622-.504-1.125-1.125-1.125H3c-.621 0-1.125.503-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125Z"/></svg>`,
+    thumbUp: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6.633 10.25c.806 0 1.533-.446 2.031-1.08a9.041 9.041 0 0 1 2.861-2.4c.723-.384 1.35-.956 1.653-1.715a4.498 4.498 0 0 0 .322-1.672V2.75a.75.75 0 0 1 .75-.75 2.25 2.25 0 0 1 2.25 2.25c0 1.152-.26 2.243-.723 3.218"/><path d="M15.777 7.468h3.126c1.026 0 1.945.694 2.054 1.715.045.422.068.85.068 1.285a11.95 11.95 0 0 1-2.649 7.521c-.388.482-.987.729-1.605.729H13.48a4.5 4.5 0 0 1-1.423-.23l-3.114-1.04a4.501 4.501 0 0 0-1.423-.23H5.904"/><path d="M5.904 18.5c.083.205.173.405.27.602.197.4-.078.898-.523.898h-.908c-.889 0-1.713-.518-1.972-1.368a12 12 0 0 1-.521-3.507c0-1.553.295-3.036.831-4.398C3.387 9.953 4.167 9.5 5 9.5h1.053c.472 0 .745.556.5.96a8.958 8.958 0 0 0-1.302 4.665c0 1.194.232 2.333.654 3.375Z"/></svg>`,
+    thumbDown: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7.498 15.25H4.372c-1.026 0-1.945-.694-2.054-1.715a12.137 12.137 0 0 1-.068-1.285c0-2.848.992-5.464 2.649-7.521C5.287 4.247 5.886 4 6.504 4h4.016a4.5 4.5 0 0 1 1.423.23l3.114 1.04a4.5 4.5 0 0 0 1.423.23h1.294"/><path d="M7.498 15.25c.618 0 .991.724.725 1.282A7.471 7.471 0 0 0 7.5 19.75 2.25 2.25 0 0 0 9.75 22a.75.75 0 0 0 .75-.75v-.633c0-.573.11-1.14.322-1.672.304-.76.93-1.33 1.653-1.715a9.04 9.04 0 0 0 2.86-2.4c.498-.634 1.226-1.08 2.032-1.08h.384"/><path d="M17.775 5.5c.593 1.2.925 2.55.925 3.977 0 1.487-.36 2.89-.999 4.125"/><path d="M19.728 5.5h.908c.889 0 1.713.518 1.972 1.368.339 1.11.521 2.287.521 3.507 0 1.553-.295 3.036-.831 4.398-.306.774-1.086 1.227-1.918 1.227h-1.053c-.472 0-.745-.556-.5-.96"/></svg>`,
+    hand: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.05 4.575a1.575 1.575 0 1 0-3.15 0v3"/><path d="M10.05 4.575v-1.5a1.575 1.575 0 0 1 3.15 0v1.5"/><path d="M10.125 4.575 10.2 10.5m3.075.75V4.575"/><path d="M13.275 4.575a1.575 1.575 0 0 1 3.15 0V15"/><path d="M6.9 7.575a1.575 1.575 0 1 0-3.15 0v8.175a6.75 6.75 0 0 0 6.75 6.75h2.018a5.25 5.25 0 0 0 3.712-1.538l1.732-1.732a5.25 5.25 0 0 0 1.538-3.712l.003-2.024a.668.668 0 0 1 .198-.471 1.575 1.575 0 1 0-2.228-2.228 3.818 3.818 0 0 0-1.12 2.687"/><path d="M6.9 7.575V12"/><path d="M13.17 16.318A4.49 4.49 0 0 1 16.35 15"/></svg>`,
+    chat: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20.25 8.511c.884.284 1.5 1.128 1.5 2.097v4.286c0 1.136-.847 2.1-1.982 2.193-.34.027-.68.052-1.02.072v3.091l-3-3c-1.354 0-2.694-.055-4.02-.163a2.115 2.115 0 0 1-.825-.242"/><path d="M20.25 8.511a2.126 2.126 0 0 0-.476-.095 48.64 48.64 0 0 0-8.048 0c-1.131.094-1.976 1.057-1.976 2.192v4.286c0 .837.46 1.58 1.155 1.951"/><path d="M20.25 8.511V6.637c0-1.621-1.152-3.026-2.76-3.235A48.455 48.455 0 0 0 11.25 3c-2.115 0-4.198.137-6.24.402-1.608.209-2.76 1.614-2.76 3.235v6.226c0 1.621 1.152 3.026 2.76 3.235.577.075 1.157.14 1.74.194V21l4.155-4.155"/></svg>`,
+    idea: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 18v-5.25"/><path d="M12 12.75a6.01 6.01 0 0 0 1.5-.189"/><path d="M12 12.75a6.01 6.01 0 0 1-1.5-.189"/><path d="M14.25 17.808V18m0 0a12.06 12.06 0 0 1-4.5 0M14.25 18a3 3 0 0 1 1.508-2.316 7.5 7.5 0 1 0-7.517 0A3 3 0 0 1 9.75 18"/><path d="M13.5 21.383a14.406 14.406 0 0 1-3 0"/></svg>`,
+    star: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11.48 3.499a.562.562 0 0 1 1.04 0l2.125 5.111a.563.563 0 0 0 .475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 0 0-.182.557l1.285 5.385a.562.562 0 0 1-.84.61l-4.725-2.885a.562.562 0 0 0-.586 0L6.982 20.54a.562.562 0 0 1-.84-.61l1.285-5.386a.562.562 0 0 0-.182-.557L3.041 10.385c-.38-.325-.178-.948.321-.988l5.518-.442a.563.563 0 0 0 .475-.345L11.48 3.5Z"/></svg>`
 };
 
-let currentStickerPack = 'emotions';
+const stickerPacks = {
+    moods: { name: 'Эмоции', icons: ['smile', 'heart', 'sparkles', 'star', 'frown', 'idea'] },
+    gestures: { name: 'Жесты', icons: ['thumbUp', 'thumbDown', 'hand', 'chat', 'heart', 'idea'] },
+    energy: { name: 'Энергия', icons: ['fire', 'sparkles', 'rocket', 'gift', 'star', 'chat'] }
+};
+
+let currentStickerPack = 'moods';
 
 function toggleStickerPicker(event) {
     event.stopPropagation();
@@ -1141,69 +1166,49 @@ function toggleStickerPicker(event) {
 function createStickerPicker() {
     const picker = document.createElement('div');
     picker.id = 'sticker-picker';
-    picker.className = 'sticker-picker glass';
+    picker.className = 'sticker-picker';
     picker.style.cssText = `
         position: fixed;
-        bottom: 80px;
+        bottom: 96px;
         left: 20px;
-        width: 380px;
-        height: 450px;
-        max-height: 80vh;
-        background: var(--glass-bg);
-        backdrop-filter: blur(var(--glass-blur)) saturate(180%);
-        border: 1px solid var(--glass-border);
-        border-radius: var(--radius-lg);
-        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        width: 360px;
+        max-height: 70vh;
         z-index: 2000;
         display: none;
-        overflow: hidden;
     `;
-    
-    // Вкладки паков
+
     const tabs = document.createElement('div');
-    tabs.style.cssText = 'display: flex; border-bottom: 1px solid var(--glass-border); padding: 8px; gap: 4px; overflow-x: auto;';
-    
+    tabs.className = 'sticker-tabs';
+
     for (const [key, pack] of Object.entries(stickerPacks)) {
         const tab = document.createElement('button');
-        tab.textContent = pack.name.split(' ')[0];
-        tab.style.cssText = `
-            padding: 6px 12px;
-            border: none;
-            background: ${key === currentStickerPack ? 'var(--color-primary)' : 'transparent'};
-            color: var(--text-color);
-            border-radius: var(--radius-md);
-            cursor: pointer;
-            font-size: 14px;
-            transition: all 0.2s ease;
-        `;
+        tab.type = 'button';
+        tab.className = `sticker-tab${key === currentStickerPack ? ' active' : ''}`;
+        tab.textContent = pack.name;
+        tab.dataset.packId = key;
         tab.onclick = () => switchStickerPack(key);
         tabs.appendChild(tab);
     }
-    
+
     picker.appendChild(tabs);
-    
-    // Контейнер для стикеров
+
     const container = document.createElement('div');
     container.id = 'sticker-container';
-    container.style.cssText = 'padding: 12px; display: grid; grid-template-columns: repeat(8, 1fr); gap: 6px; height: calc(450px - 60px); overflow-y: auto;';
-    
+    container.className = 'sticker-grid';
+
     renderStickers(container, currentStickerPack);
     picker.appendChild(container);
-    
+
     return picker;
 }
 
 function switchStickerPack(packId) {
     currentStickerPack = packId;
-    
-    // Обновляем вкладки
-    const tabs = document.querySelectorAll('#sticker-picker button');
-    tabs.forEach((tab, index) => {
-        const keys = Object.keys(stickerPacks);
-        tab.style.background = keys[index] === packId ? 'var(--color-primary)' : 'transparent';
+
+    document.querySelectorAll('#sticker-picker .sticker-tab').forEach((tab) => {
+        tab.classList.toggle('active', tab.dataset.packId === packId);
     });
-    
-    // Обновляем стикеры
+
     const container = document.getElementById('sticker-container');
     if (container) {
         renderStickers(container, packId);
@@ -1213,50 +1218,45 @@ function switchStickerPack(packId) {
 function renderStickers(container, packId) {
     container.innerHTML = '';
     const pack = stickerPacks[packId];
-    
+
     if (!pack) return;
-    
-    pack.stickers.forEach(sticker => {
+
+    pack.icons.forEach((iconId) => {
+        const svgMarkup = STICKER_ICONS[iconId];
+        if (!svgMarkup) return;
+
         const btn = document.createElement('button');
-        btn.textContent = sticker;
-        btn.style.cssText = `
-            font-size: 32px;
-            background: transparent;
-            border: none;
-            cursor: pointer;
-            padding: 10px;
-            border-radius: var(--radius-md);
-            transition: all 0.2s ease;
-            aspect-ratio: 1;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            min-height: 48px;
-        `;
-        btn.onmouseenter = (e) => e.target.style.transform = 'scale(1.3)';
-        btn.onmouseleave = (e) => e.target.style.transform = 'scale(1)';
-        btn.onclick = () => sendSticker(sticker);
+        btn.type = 'button';
+        btn.className = 'sticker-option';
+        btn.innerHTML = svgMarkup;
+        btn.dataset.stickerId = iconId;
+        btn.onclick = () => sendSticker(iconId);
         container.appendChild(btn);
     });
 }
 
-function sendSticker(sticker) {
+function sendSticker(stickerId) {
     if (!currentRoomId) {
         alert('Выберите чат');
         return;
     }
-    
-    // Отправляем стикер как обычное сообщение
+
+    if (!STICKER_ICONS[stickerId]) {
+        console.warn('Неизвестный стикер', stickerId);
+        return;
+    }
+
     socket.emit('send_message', {
         room_id: parseInt(currentRoomId),
-        content: sticker
+        content: stickerId,
+        message_type: 'sticker'
     });
-    
+
     // Закрываем пикер
     const picker = document.getElementById('sticker-picker');
     if (picker) picker.style.display = 'none';
-    
-    console.log('Стикер отправлен:', sticker);
+
+    console.log('Стикер отправлен:', stickerId);
 }
 
 // Голосовые сообщения
@@ -1844,7 +1844,7 @@ function displayMessage(data) {
 
     const messageElement = document.createElement('div');
     messageElement.classList.add('message');
-    
+
     const isSent = data.sender_id == CURRENT_USER_ID;
     messageContainer.classList.add(isSent ? 'sent' : 'received');
     innerContainer.classList.add(isSent ? 'sent' : 'received'); // For alignment
@@ -1879,6 +1879,11 @@ function displayMessage(data) {
     }
 
     const isPollMessage = data.message_type === 'poll';
+    const isStickerMessage = data.message_type === 'sticker';
+
+    if (isStickerMessage) {
+        messageElement.classList.add('sticker');
+    }
 
     if (isPollMessage) {
         messageElement.classList.add('poll-message');
@@ -1931,7 +1936,7 @@ function displayMessage(data) {
     }
 
     // НОВОЕ: Обработка галереи медиа
-    if (!isPollMessage && data.media_items && data.media_items.length > 0) {
+    if (!isPollMessage && !isStickerMessage && data.media_items && data.media_items.length > 0) {
         const visualItems = [];
         const fileItems = [];
 
@@ -2020,7 +2025,19 @@ function displayMessage(data) {
     }
     
     // Добавляем текст если есть
-    if (!isPollMessage && data.content) {
+    if (isStickerMessage) {
+        const markup = STICKER_ICONS[data.content];
+        if (markup) {
+            const stickerWrap = document.createElement('div');
+            stickerWrap.className = 'sticker-wrapper';
+            stickerWrap.innerHTML = markup;
+            messageElement.appendChild(stickerWrap);
+        } else if (data.content) {
+            const fallback = document.createElement('p');
+            fallback.textContent = data.content;
+            messageElement.appendChild(fallback);
+        }
+    } else if (!isPollMessage && data.content) {
         const textNode = document.createElement('p');
         textNode.textContent = data.content;
         messageElement.appendChild(textNode);
@@ -2029,7 +2046,8 @@ function displayMessage(data) {
     if (!isPollMessage && currentRoomType === 'channel') {
         const threadActions = document.createElement('div');
         threadActions.className = 'message-thread-actions';
-        const commentBtn = createThreadButton(data.id, 'message', data.content || '', data.thread_comment_count || 0);
+        const preview = isStickerMessage ? 'Стикер' : (data.content || '');
+        const commentBtn = createThreadButton(data.id, 'message', preview, data.thread_comment_count || 0);
         threadActions.appendChild(commentBtn);
         messageElement.appendChild(threadActions);
     }
@@ -4637,6 +4655,7 @@ function openModal(id) {
                 mobileNav.classList.add('hidden');
                 mobileNav.style.animation = 'none'; // отключаем CSS-анимацию, которая может снимать класс
             }
+            updateViewportMetrics();
         }
     } catch {}
 }
@@ -4676,6 +4695,7 @@ function closeModal(event) {
                     mobileNav.classList.remove('hidden');
                     mobileNav.style.animation = ''; // вернем анимации
                 }
+                updateViewportMetrics();
             }
         }
     } catch {}
@@ -4768,9 +4788,9 @@ async function removeAvatar() {
 }
 
 function loadGlassSettings() {
-    const opacity = localStorage.getItem('glassOpacity') || '0.15';
+    const opacity = localStorage.getItem('glassOpacity') || '0.18';
     const blur = localStorage.getItem('glassBlur') || '40';
-    const border = localStorage.getItem('glassBorder') || '0.2';
+    const border = localStorage.getItem('glassBorder') || '0.24';
     
     const opacityInput = document.getElementById('glassOpacity');
     const blurInput = document.getElementById('glassBlur');
@@ -4816,16 +4836,16 @@ function applyGlassSettings(opacity, blur, border) {
     root.style.setProperty('--glass-border-opacity', border);
     
     // Пересчет производных значений
-    const hoverOpacity = parseFloat(opacity) + 0.05;
+    const hoverOpacity = Math.min(parseFloat(opacity) + 0.05, 0.95);
     root.style.setProperty('--glass-bg', `rgba(255, 255, 255, ${opacity})`);
     root.style.setProperty('--glass-border', `rgba(255, 255, 255, ${border})`);
     root.style.setProperty('--glass-bg-hover', `rgba(255, 255, 255, ${hoverOpacity})`);
 }
 
 function resetGlassEffect() {
-    document.getElementById('glassOpacity').value = '0.15';
+    document.getElementById('glassOpacity').value = '0.18';
     document.getElementById('glassBlur').value = '40';
-    document.getElementById('glassBorder').value = '0.2';
+    document.getElementById('glassBorder').value = '0.24';
     
     updateGlassEffect();
     
@@ -4862,6 +4882,7 @@ function openInlineSettings() {
             window._mobileNavLock = true;
             const mobileNav = document.getElementById('telegram-mobile-nav');
             if (mobileNav) mobileNav.classList.add('hidden');
+            updateViewportMetrics();
         }
     } catch {}
 }
@@ -4886,7 +4907,9 @@ function closeInlineSettings() {
             mobileNav.classList.remove('hidden');
         }
         window._mobileNavLock = false;
-        
+
+        updateViewportMetrics();
+
         // Активируем кнопку "Чаты" в навигации
         document.querySelectorAll('.telegram-nav-item').forEach(item => {
             item.classList.remove('active');
@@ -4916,9 +4939,9 @@ function selectTheme(theme) {
 }
 
 function loadGlassSettingsInline() {
-    const opacity = localStorage.getItem('glassOpacity') || '0.15';
+    const opacity = localStorage.getItem('glassOpacity') || '0.18';
     const blur = localStorage.getItem('glassBlur') || '40';
-    const border = localStorage.getItem('glassBorder') || '0.2';
+    const border = localStorage.getItem('glassBorder') || '0.24';
     
     const opacityInput = document.getElementById('inline-glassOpacity');
     const blurInput = document.getElementById('inline-glassBlur');
@@ -4951,9 +4974,9 @@ function updateGlassEffectInline() {
 }
 
 function resetGlassEffectInline() {
-    document.getElementById('inline-glassOpacity').value = '0.15';
+    document.getElementById('inline-glassOpacity').value = '0.18';
     document.getElementById('inline-glassBlur').value = '40';
-    document.getElementById('inline-glassBorder').value = '0.2';
+    document.getElementById('inline-glassBorder').value = '0.24';
     
     updateGlassEffectInline();
     
@@ -5302,7 +5325,9 @@ function closeMobileChat() {
         if (mobileNav) {
             mobileNav.classList.remove('hidden');
         }
-        
+
+        updateViewportMetrics();
+
         // Активируем кнопку "Чаты" в навигации
         document.querySelectorAll('.telegram-nav-item').forEach(item => {
             item.classList.remove('active');
@@ -5391,6 +5416,7 @@ function selectRoom(element) {
             mobileNav.style.animation = 'none';
         }
         window._mobileNavLock = true;
+        updateViewportMetrics();
     }
     
     if (!messageInput.disabled) {
