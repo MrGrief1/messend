@@ -796,7 +796,7 @@ function addPollOption(value = '') {
     const input = document.createElement('input');
     input.type = 'text';
     input.className = 'poll-option-input';
-    input.placeholder = Вариант ;
+    input.placeholder = `Вариант ${rows.length + 1}`;
     input.maxLength = 100;
     input.value = value;
     input.addEventListener('input', updatePollPreview);
@@ -906,7 +906,7 @@ function refreshPollOptionPlaceholders() {
 
     const inputs = container.querySelectorAll('.poll-option-input');
     inputs.forEach((input, index) => {
-        input.placeholder = Вариант ;
+        input.placeholder = `Вариант ${index + 1}`;
     });
 }
 
@@ -929,24 +929,56 @@ function updatePollPreview() {
         return;
     }
 
-    const optionsHtml = options.map((option) => `
-        <div class="poll-preview-option">
-            <span></span>
-            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M9 6l6 6-6 6" stroke-linecap="round" stroke-linejoin="round"></path>
-            </svg>
-        </div>
-    `).join('');
-
     const footerParts = [];
     footerParts.push(multiple ? 'Можно выбрать несколько вариантов' : 'Один голос на участника');
     if (anonymous) footerParts.push('Голоса анонимные');
 
-    preview.innerHTML = `
-        <div class="poll-preview-question"></div>
-        <div class="poll-preview-options"></div>
-        <div class="poll-preview-footer"></div>
-    `;
+    preview.innerHTML = '';
+
+    const questionEl = document.createElement('div');
+    questionEl.className = 'poll-preview-question';
+    questionEl.textContent = question || 'Вопрос появится здесь';
+    if (!question) {
+        questionEl.classList.add('placeholder');
+    }
+
+    const optionsContainer = document.createElement('div');
+    optionsContainer.className = 'poll-preview-options';
+
+    options.forEach((option) => {
+        const optionRow = document.createElement('div');
+        optionRow.className = 'poll-preview-option';
+
+        const optionText = document.createElement('span');
+        optionText.textContent = option;
+
+        const optionIcon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        optionIcon.setAttribute('viewBox', '0 0 24 24');
+        optionIcon.setAttribute('width', '18');
+        optionIcon.setAttribute('height', '18');
+        optionIcon.setAttribute('fill', 'none');
+        optionIcon.setAttribute('stroke', 'currentColor');
+        optionIcon.setAttribute('stroke-width', '2');
+
+        const iconPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        iconPath.setAttribute('d', 'M9 6l6 6-6 6');
+        iconPath.setAttribute('stroke-linecap', 'round');
+        iconPath.setAttribute('stroke-linejoin', 'round');
+
+        optionIcon.appendChild(iconPath);
+
+        optionRow.appendChild(optionText);
+        optionRow.appendChild(optionIcon);
+        optionsContainer.appendChild(optionRow);
+    });
+
+    const footer = document.createElement('div');
+    footer.className = 'poll-preview-footer';
+    footer.textContent = footerParts.join(' • ');
+
+    preview.appendChild(questionEl);
+    preview.appendChild(optionsContainer);
+    preview.appendChild(footer);
 }
 
 function closePollBuilder() {
