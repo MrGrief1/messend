@@ -278,10 +278,26 @@ class MessageMedia(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     message_id = db.Column(db.Integer, db.ForeignKey('message.id'), nullable=False)
     url = db.Column(db.String(512), nullable=False)
-    type = db.Column(db.String(20), nullable=False)  # 'image' or 'video'
+    type = db.Column(db.String(20), nullable=False)  # 'image', 'video' или 'file'
 
     def to_dict(self):
-        return {'url': self.url, 'type': self.type}
+        data = {'url': self.url, 'type': self.type}
+        try:
+            filename = os.path.basename(self.url)
+            if filename and filename.count('_') >= 2:
+                data['name'] = filename.split('_', 2)[-1]
+            else:
+                data['name'] = filename
+        except Exception:
+            data['name'] = None
+
+        try:
+            absolute_path = os.path.join(BASE_DIR, self.url.lstrip('/'))
+            data['size'] = os.path.getsize(absolute_path)
+        except Exception:
+            data['size'] = None
+
+        return data
 
 class BlockedUser(db.Model):
     __tablename__ = 'blocked_user'
@@ -1404,19 +1420,22 @@ def send_media():
         
         media_items_added = []
         
-        for file in files:
+        for index, file in enumerate(files):
             if not file or not file.filename:
                 continue
 
             filename = secure_filename(file.filename)
             ext = filename.rsplit('.', 1)[1].lower() if '.' in filename else ''
-            
-            media_type = None
-            if ext in ALLOWED_IMAGE_EXTENSIONS: media_type = 'image'
-            elif ext in ALLOWED_VIDEO_EXTENSIONS: media_type = 'video'
-            else: continue
-            
-            unique_name = f"m{sender_id}_{int(time.time())}_{filename}"
+
+            if ext in ALLOWED_IMAGE_EXTENSIONS:
+                media_type = 'image'
+            elif ext in ALLOWED_VIDEO_EXTENSIONS:
+                media_type = 'video'
+            else:
+                media_type = 'file'
+
+            unique_suffix = f"{int(time.time() * 1000)}_{index}"
+            unique_name = f"m{sender_id}_{unique_suffix}_{filename}"
             save_path = os.path.join(UPLOAD_MEDIA_DIR, unique_name)
             
             # Ограничим размер файла вручную на случай отсутствия Content-Length

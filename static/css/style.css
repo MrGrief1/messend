@@ -967,9 +967,10 @@ label {
 
 /* Медиа в сообщениях */
 .message-media {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
     margin-top: 8px;
-    border-radius: var(--radius-md);
-    overflow: hidden;
     max-width: 100%;
 }
 
@@ -989,9 +990,53 @@ label {
 .message-media-gallery {
     display: grid;
     gap: 4px;
-    margin-top: 8px;
+    margin-top: 0;
     border-radius: var(--radius-md);
     overflow: hidden;
+}
+
+.message-file-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.message-file-attachment {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: var(--glass-bg-hover);
+    border-radius: var(--radius-md);
+    padding: 10px 12px;
+    text-decoration: none;
+    color: inherit;
+    transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.message-file-attachment:hover {
+    background: var(--glass-bg);
+    transform: translateY(-1px);
+}
+
+.message-file-attachment .material-icons-round {
+    font-size: 28px;
+    opacity: 0.8;
+}
+
+.message-file-details {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.message-file-name {
+    font-weight: 500;
+    word-break: break-word;
+}
+
+.message-file-size {
+    font-size: 12px;
+    opacity: 0.7;
 }
 
 .message-media-gallery img,

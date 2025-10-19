@@ -793,7 +793,7 @@ function addPollOption(value = '') {
     const input = document.createElement('input');
     input.type = 'text';
     input.className = 'poll-option-input';
-    input.placeholder = Вариант ;
+    input.placeholder = `Вариант ${rows.length + 1}`;
     input.maxLength = 100;
     input.value = value;
     input.addEventListener('input', updatePollPreview);
@@ -903,7 +903,7 @@ function refreshPollOptionPlaceholders() {
 
     const inputs = container.querySelectorAll('.poll-option-input');
     inputs.forEach((input, index) => {
-        input.placeholder = Вариант ;
+        input.placeholder = `Вариант ${index + 1}`;
     });
 }
 
@@ -1243,10 +1243,20 @@ function stopVoiceRecording(event) {
 }
 
 function closeAllMenus(exceptId = null) {
-    const menus = document.querySelectorAll('.attach-menu, .call-dropdown-menu, .device-menu');
-    menus.forEach(menu => {
+    const attachMenu = document.getElementById('attach-menu');
+    if (attachMenu && (!exceptId || attachMenu.id !== exceptId)) {
+        attachMenu.style.display = 'none';
+    }
+
+    document.querySelectorAll('.call-dropdown-menu').forEach(menu => {
         if (!exceptId || menu.id !== exceptId) {
-            menu.style.display = 'none';
+            menu.classList.remove('show');
+        }
+    });
+
+    document.querySelectorAll('.device-menu').forEach(menu => {
+        if (!exceptId || menu.id !== exceptId) {
+            menu.classList.remove('show');
         }
     });
 }
@@ -1806,30 +1816,83 @@ function displayMessage(data) {
         return;
     }
 
-    // НОВОЕ: Обработка галереи медиа
+    // НОВОЕ: Обработка медиа и файловых вложений
     if (data.media_items && data.media_items.length > 0) {
-        const gallery = document.createElement('div');
-        gallery.className = 'message-media-gallery';
-        if (data.media_items.length > 1) {
-            gallery.classList.add(`gallery-grid-${Math.min(data.media_items.length, 4)}`);
+        const attachmentsWrapper = document.createElement('div');
+        attachmentsWrapper.className = 'message-media';
+
+        const visualItems = data.media_items.filter(item => item.type === 'image' || item.type === 'video');
+        if (visualItems.length > 0) {
+            const gallery = document.createElement('div');
+            gallery.className = 'message-media-gallery';
+            if (visualItems.length > 1) {
+                gallery.classList.add(`gallery-grid-${Math.min(visualItems.length, 4)}`);
+            }
+
+            visualItems.forEach(item => {
+                if (item.type === 'image') {
+                    const img = document.createElement('img');
+                    img.src = item.url;
+                    img.alt = item.name || 'Изображение';
+                    img.onclick = () => window.open(item.url, '_blank');
+                    gallery.appendChild(img);
+                } else if (item.type === 'video') {
+                    const video = document.createElement('video');
+                    video.src = item.url;
+                    video.controls = true;
+                    video.preload = 'metadata';
+                    gallery.appendChild(video);
+                }
+            });
+
+            attachmentsWrapper.appendChild(gallery);
         }
 
-        data.media_items.forEach(item => {
-            if (item.type === 'image') {
-                const img = document.createElement('img');
-                img.src = item.url;
-                img.alt = 'Изображение';
-                img.onclick = () => window.open(item.url, '_blank');
-                gallery.appendChild(img);
-            } else if (item.type === 'video') {
-                const video = document.createElement('video');
-                video.src = item.url;
-                video.controls = true;
-                video.preload = 'metadata';
-                gallery.appendChild(video);
-            }
-        });
-        messageElement.appendChild(gallery);
+        const fileItems = data.media_items.filter(item => item.type === 'file');
+        if (fileItems.length > 0) {
+            const fileList = document.createElement('div');
+            fileList.className = 'message-file-list';
+
+            fileItems.forEach(item => {
+                const link = document.createElement('a');
+                link.className = 'message-file-attachment';
+                link.href = item.url;
+                link.target = '_blank';
+                link.rel = 'noopener noreferrer';
+                if (item.name) {
+                    link.download = item.name;
+                }
+
+                const icon = document.createElement('span');
+                icon.className = 'material-icons-round';
+                icon.textContent = 'description';
+
+                const details = document.createElement('div');
+                details.className = 'message-file-details';
+
+                const nameEl = document.createElement('div');
+                nameEl.className = 'message-file-name';
+                nameEl.textContent = item.name || 'Файл';
+                details.appendChild(nameEl);
+
+                if (item.size !== null && item.size !== undefined) {
+                    const sizeEl = document.createElement('div');
+                    sizeEl.className = 'message-file-size';
+                    sizeEl.textContent = formatFileSize(item.size);
+                    details.appendChild(sizeEl);
+                }
+
+                link.appendChild(icon);
+                link.appendChild(details);
+                fileList.appendChild(link);
+            });
+
+            attachmentsWrapper.appendChild(fileList);
+        }
+
+        if (attachmentsWrapper.childElementCount > 0) {
+            messageElement.appendChild(attachmentsWrapper);
+        }
     }
     
     // Добавляем текст если есть
