@@ -278,10 +278,32 @@ class MessageMedia(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     message_id = db.Column(db.Integer, db.ForeignKey('message.id'), nullable=False)
     url = db.Column(db.String(512), nullable=False)
-    type = db.Column(db.String(20), nullable=False)  # 'image' or 'video'
+    type = db.Column(db.String(20), nullable=False)  # 'image', 'video' или 'file'
 
     def to_dict(self):
-        return {'url': self.url, 'type': self.type}
+        result = {'url': self.url, 'type': self.type}
+
+        try:
+            filename = os.path.basename(self.url or '')
+        except Exception:
+            filename = ''
+
+        if filename:
+            # Имя файла сохраняется в формате m{user}_{timestamp}_{original}
+            if filename.count('_') >= 2:
+                result['name'] = filename.split('_', 2)[-1]
+            else:
+                result['name'] = filename
+
+        media_path = (self.url or '').lstrip('/')
+        if media_path:
+            full_path = os.path.join(BASE_DIR, media_path)
+            try:
+                result['size'] = os.path.getsize(full_path)
+            except OSError:
+                pass
+
+        return result
 
 class BlockedUser(db.Model):
     __tablename__ = 'blocked_user'
@@ -1410,15 +1432,17 @@ def send_media():
 
             filename = secure_filename(file.filename)
             ext = filename.rsplit('.', 1)[1].lower() if '.' in filename else ''
-            
-            media_type = None
-            if ext in ALLOWED_IMAGE_EXTENSIONS: media_type = 'image'
-            elif ext in ALLOWED_VIDEO_EXTENSIONS: media_type = 'video'
-            else: continue
-            
+
+            if ext in ALLOWED_IMAGE_EXTENSIONS:
+                media_type = 'image'
+            elif ext in ALLOWED_VIDEO_EXTENSIONS:
+                media_type = 'video'
+            else:
+                media_type = 'file'
+
             unique_name = f"m{sender_id}_{int(time.time())}_{filename}"
             save_path = os.path.join(UPLOAD_MEDIA_DIR, unique_name)
-            
+
             # Ограничим размер файла вручную на случай отсутствия Content-Length
             file.seek(0, os.SEEK_END)
             size = file.tell()
@@ -1436,9 +1460,9 @@ def send_media():
                 type=media_type
             )
             media_items_added.append(media_item)
-        
+
         if not media_items_added and not caption:
-             return jsonify({'success': False, 'message': 'Нет контента для отправки'}), 400
+            return jsonify({'success': False, 'message': 'Нет контента для отправки'}), 400
 
         if media_items_added:
             db.session.add_all(media_items_added)

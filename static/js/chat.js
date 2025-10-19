@@ -759,6 +759,9 @@ function createPoll() {
     });
 
     document.body.appendChild(modal);
+    requestAnimationFrame(() => {
+        modal.style.display = 'flex';
+    });
 
     const questionInput = document.getElementById('pollQuestion');
     if (questionInput) {
@@ -1245,7 +1248,14 @@ function stopVoiceRecording(event) {
 function closeAllMenus(exceptId = null) {
     const menus = document.querySelectorAll('.attach-menu, .call-dropdown-menu, .device-menu');
     menus.forEach(menu => {
-        if (!exceptId || menu.id !== exceptId) {
+        if (exceptId && menu.id === exceptId) {
+            return;
+        }
+
+        if (menu.classList.contains('call-dropdown-menu') || menu.classList.contains('device-menu')) {
+            menu.classList.remove('show');
+            menu.style.display = '';
+        } else {
             menu.style.display = 'none';
         }
     });
@@ -1808,28 +1818,91 @@ function displayMessage(data) {
 
     // НОВОЕ: Обработка галереи медиа
     if (data.media_items && data.media_items.length > 0) {
-        const gallery = document.createElement('div');
-        gallery.className = 'message-media-gallery';
-        if (data.media_items.length > 1) {
-            gallery.classList.add(`gallery-grid-${Math.min(data.media_items.length, 4)}`);
-        }
+        const visualItems = [];
+        const fileItems = [];
 
         data.media_items.forEach(item => {
-            if (item.type === 'image') {
-                const img = document.createElement('img');
-                img.src = item.url;
-                img.alt = 'Изображение';
-                img.onclick = () => window.open(item.url, '_blank');
-                gallery.appendChild(img);
-            } else if (item.type === 'video') {
-                const video = document.createElement('video');
-                video.src = item.url;
-                video.controls = true;
-                video.preload = 'metadata';
-                gallery.appendChild(video);
+            if (item.type === 'image' || item.type === 'video') {
+                visualItems.push(item);
+            } else {
+                fileItems.push(item);
             }
         });
-        messageElement.appendChild(gallery);
+
+        if (visualItems.length > 0) {
+            const gallery = document.createElement('div');
+            gallery.className = 'message-media-gallery';
+            if (visualItems.length > 1) {
+                gallery.classList.add(`gallery-grid-${Math.min(visualItems.length, 4)}`);
+            }
+
+            visualItems.forEach(item => {
+                if (item.type === 'image') {
+                    const img = document.createElement('img');
+                    img.src = item.url;
+                    img.alt = 'Изображение';
+                    img.onclick = () => window.open(item.url, '_blank');
+                    gallery.appendChild(img);
+                } else if (item.type === 'video') {
+                    const video = document.createElement('video');
+                    video.src = item.url;
+                    video.controls = true;
+                    video.preload = 'metadata';
+                    gallery.appendChild(video);
+                }
+            });
+
+            messageElement.appendChild(gallery);
+        }
+
+        if (fileItems.length > 0) {
+            const attachmentsContainer = document.createElement('div');
+            attachmentsContainer.className = 'message-attachments';
+
+            fileItems.forEach(item => {
+                const attachmentLink = document.createElement('a');
+                attachmentLink.href = item.url;
+                attachmentLink.target = '_blank';
+                attachmentLink.rel = 'noopener noreferrer';
+                attachmentLink.className = 'message-attachment';
+                if (item.name) {
+                    attachmentLink.download = item.name;
+                }
+
+                const iconWrapper = document.createElement('span');
+                iconWrapper.className = 'message-attachment-icon';
+                iconWrapper.innerHTML = `
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path>
+                        <polyline points="14 3 14 9 20 9"></polyline>
+                        <path d="M16 13H8"></path>
+                        <path d="M16 17H8"></path>
+                        <path d="M10 9H9"></path>
+                    </svg>`;
+
+                const infoWrapper = document.createElement('span');
+                infoWrapper.className = 'message-attachment-info';
+
+                const nameEl = document.createElement('span');
+                nameEl.className = 'message-attachment-name';
+                nameEl.textContent = item.name || item.url.split('/').pop();
+
+                infoWrapper.appendChild(nameEl);
+
+                if (item.size !== undefined && item.size !== null) {
+                    const sizeEl = document.createElement('span');
+                    sizeEl.className = 'message-attachment-size';
+                    sizeEl.textContent = formatFileSize(item.size);
+                    infoWrapper.appendChild(sizeEl);
+                }
+
+                attachmentLink.appendChild(iconWrapper);
+                attachmentLink.appendChild(infoWrapper);
+                attachmentsContainer.appendChild(attachmentLink);
+            });
+
+            messageElement.appendChild(attachmentsContainer);
+        }
     }
     
     // Добавляем текст если есть
@@ -6412,9 +6485,12 @@ function toggleCallDropdown(event) {
         // вместо мгновенного скрытия дадим возможность повторного открытия без конфликтов
         menu.classList.remove('show');
         // не выходим, чтобы переустановить обработчик внешнего клика корректно
+        menu.style.display = '';
+        return;
     }
-    
+
     menu.classList.add('show');
+    menu.style.display = '';
     
     // Закрыть при клике вне меню
     setTimeout(() => {

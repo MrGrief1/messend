@@ -1003,6 +1003,59 @@ label {
     background: #000;
 }
 
+.message-attachments {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.message-attachment {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+    border-radius: var(--radius-md);
+    background: rgba(255, 255, 255, 0.08);
+    color: inherit;
+    text-decoration: none;
+    transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.message-attachment:hover {
+    background: rgba(255, 255, 255, 0.14);
+    transform: translateY(-1px);
+}
+
+.message-attachment-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: var(--radius-sm);
+    background: rgba(255, 255, 255, 0.12);
+    color: var(--color-primary);
+}
+
+.message-attachment-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: 13px;
+    line-height: 1.3;
+}
+
+.message-attachment-name {
+    font-weight: 600;
+    word-break: break-word;
+}
+
+.message-attachment-size {
+    font-size: 12px;
+    opacity: 0.65;
+}
+
 .gallery-grid-2 { grid-template-columns: 1fr 1fr; }
 .gallery-grid-3 { grid-template-columns: 1fr 1fr; }
 .gallery-grid-4 { grid-template-columns: 1fr 1fr; }
