@@ -142,6 +142,15 @@ if (threadSearchClear) {
     });
 }
 
+if (threadInput) {
+    threadInput.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter' && !event.shiftKey) {
+            event.preventDefault();
+            sendThreadComment();
+        }
+    });
+}
+
 function renderMessageStatusIcon(status) {
     return MESSAGE_STATUS_ICONS[status] || MESSAGE_STATUS_ICONS.delivered;
 }
@@ -732,6 +741,12 @@ let editingMessage = null;
 let selectionMode = false;
 let currentTab = 'chats'; // 'chats' или 'archive'
 
+function getNumericRoomId(value = currentRoomId) {
+    if (!value && value !== 0) return null;
+    const numeric = Number.parseInt(value, 10);
+    return Number.isFinite(numeric) ? numeric : null;
+}
+
 // ========== Функции для вкладок Чаты/Архив ==========
 
 function switchToTab(tab) {
@@ -1242,8 +1257,14 @@ function submitPoll() {
         return;
     }
 
+    const roomId = getNumericRoomId();
+    if (!roomId) {
+        alert('Некорректная комната для голосования.');
+        return;
+    }
+
     socket.emit('send_poll', {
-        room_id: currentRoomId,
+        room_id: roomId,
         question: question,
         options: options,
         multiple_choice: multiple,
@@ -1692,14 +1713,15 @@ function closeAllMenus(exceptId = null) {
 
 // Отправка голосового сообщения на сервер
 async function sendVoiceMessage(audioBlob) {
-    if (!currentRoomId) {
+    const numericRoomId = getNumericRoomId();
+    if (!numericRoomId) {
         alert('Выберите чат для отправки');
         return;
     }
-    
+
     try {
         const formData = new FormData();
-        formData.append('room_id', currentRoomId);
+        formData.append('room_id', String(numericRoomId));
         formData.append('audio', audioBlob, `voice_${Date.now()}.webm`);
         
         console.log('📤 Отправка голосового сообщения...');
@@ -2056,8 +2078,13 @@ async function sendMessage() {
 }
 
 async function sendFilesMessage(caption) {
+    const roomId = getNumericRoomId();
+    if (!roomId) {
+        alert('Выберите чат для отправки файлов.');
+        return;
+    }
     const formData = new FormData();
-    formData.append('room_id', currentRoomId);
+    formData.append('room_id', String(roomId));
     formData.append('caption', caption || '');
     
     selectedFiles.forEach(file => {
@@ -2259,6 +2286,7 @@ function displayMessage(data) {
     const isStickerMessage = data.message_type === 'sticker';
 
     if (isPollMessage) {
+        messageContainer.classList.add('poll-message-container');
         messageElement.classList.add('poll-message');
 
         const poll = data.poll || {};
@@ -3539,12 +3567,23 @@ function getAudioContext() {
     return audioContext;
 }
 
+function ensureAudioContextRunning(ctx) {
+    if (ctx && ctx.state === 'suspended') {
+        try {
+            ctx.resume().catch(() => {});
+        } catch (error) {
+            console.warn('Не удалось активировать AudioContext', error);
+        }
+    }
+}
+
 // Воспроизводим входящий звонок
 function playRingtone() {
     try {
         stopRingtone();
-        
+
         const ctx = getAudioContext();
+        ensureAudioContextRunning(ctx);
         const ringtone = ringtones[currentRingtone] || ringtones.marimba;
         
         const playRingtoneTone = () => {
@@ -3598,6 +3637,7 @@ function stopRingtone() {
 function playMessageSound() {
     try {
         const ctx = getAudioContext();
+        ensureAudioContextRunning(ctx);
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
         
@@ -3630,6 +3670,7 @@ function previewRingtone() {
         // проигрываем короткий предпросмотр
         stopRingtone();
         const ctx = getAudioContext();
+        ensureAudioContextRunning(ctx);
         const ring = ringtones[currentRingtone] || ringtones.marimba;
         ring.notes.forEach(note => {
             const osc = ctx.createOscillator();
@@ -6349,8 +6390,10 @@ function drawShapeCircle(startX, startY, endX, endY) {
 
 function emitWhiteboardSegment(fromX, fromY, toX, toY, color, size) {
     if (!whiteboardCanvas) return;
+    const roomId = getNumericRoomId();
+    if (!roomId) return;
     socket.emit('whiteboard_draw', {
-        room_id: currentRoomId,
+        room_id: roomId,
         fromX: fromX / whiteboardCanvas.width,
         fromY: fromY / whiteboardCanvas.height,
         toX: toX / whiteboardCanvas.width,
@@ -6412,8 +6455,10 @@ function clearWhiteboard() {
         whiteboardOverlayCtx.clearRect(0, 0, whiteboardOverlay.width, whiteboardOverlay.height);
     }
     if (currentRoomId && socket) {
+        const roomId = getNumericRoomId();
+        if (!roomId) return;
         socket.emit('whiteboard_clear', {
-            room_id: currentRoomId
+            room_id: roomId
         });
     }
 }
@@ -6439,9 +6484,10 @@ function openDocuments() {
             if (documentSyncTimeout) clearTimeout(documentSyncTimeout);
 
             documentSyncTimeout = setTimeout(() => {
-                if (currentRoomId && socket) {
+                const roomId = getNumericRoomId();
+                if (roomId && socket) {
                     socket.emit('document_update', {
-                        room_id: currentRoomId,
+                        room_id: roomId,
                         content: documentContent
                     });
                 }
@@ -7227,8 +7273,10 @@ function deleteSlide() {
 
 function syncSlideChange() {
     if (currentRoomId && socket) {
+        const roomId = getNumericRoomId();
+        if (!roomId) return;
         socket.emit('presentation_slide_change', {
-            room_id: currentRoomId,
+            room_id: roomId,
             slide_index: currentSlideIndex
         });
     }
@@ -7365,7 +7413,8 @@ async function exportCurrentSlideAsBlob() {
 }
 
 async function sharePresentation() {
-    if (!currentRoomId) {
+    const roomId = getNumericRoomId();
+    if (!roomId) {
         alert('Выберите чат, чтобы отправить слайд.');
         return;
     }
@@ -7375,7 +7424,7 @@ async function sharePresentation() {
         return;
     }
     const formData = new FormData();
-    formData.append('room_id', currentRoomId);
+    formData.append('room_id', String(roomId));
     formData.append('caption', slides[currentSlideIndex] && slides[currentSlideIndex].name ? slides[currentSlideIndex].name : 'Слайд презентации');
     formData.append('files', new File([blob], `slide-${currentSlideIndex + 1}.png`, { type: 'image/png' }));
     try {
@@ -7404,7 +7453,12 @@ async function uploadRoomAvatarFile(event) {
     
     const form = new FormData();
     form.append('avatar', files[0]);
-    form.append('room_id', roomId);
+    const numericRoomId = getNumericRoomId(roomId);
+    if (!numericRoomId) {
+        alert('Некорректный ID комнаты.');
+        return;
+    }
+    form.append('room_id', String(numericRoomId));
     
     const messageBox = document.getElementById('roomAvatarMessage');
     

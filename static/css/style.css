@@ -1298,6 +1298,10 @@ label {
     transition: all var(--transition-normal) var(--easing-smooth);
 }
 
+.message-container.poll-message-container {
+    max-width: min(640px, 100%);
+}
+
 .message-container-inner {
     display: flex;
     flex-direction: column;
@@ -1324,6 +1328,10 @@ label {
 .message-container.received .message-container-inner {
     align-self: flex-start;
     align-items: flex-start;
+}
+
+.message-container.poll-message-container .message-container-inner {
+    width: 100%;
 }
 
 
@@ -1396,6 +1404,11 @@ label {
     position: relative;
     font-size: 15px;
     display: inline-block; /* ведёт себя как пузырь, ширина = содержимому */
+}
+
+.message.poll-message {
+    display: block;
+    width: 100%;
 }
 
 .message p {
@@ -3915,6 +3928,7 @@ html {
     overflow: hidden;
     color: inherit;
     box-shadow: var(--menu-shadow);
+    width: min(640px, 100%);
 }
 
 .poll-question {
@@ -3937,7 +3951,9 @@ html {
     border-radius: var(--radius-lg);
     overflow: hidden;
     background: var(--glass-bg);
-    border: 1px solid var(--glass-border);
+    border: none;
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--glass-border) 60%, transparent);
+    background-clip: padding-box;
     transition: background var(--transition-fast), box-shadow var(--transition-fast), border-color var(--transition-fast);
     padding: 14px 16px;
     cursor: pointer;
@@ -3948,6 +3964,11 @@ html {
 .poll-option-row:hover {
     background: var(--glass-bg-hover);
     box-shadow: 0 10px 24px rgba(0, 0, 0, 0.25);
+}
+
+.poll-option-row,
+.poll-option-row * {
+    user-select: none;
 }
 
 .poll-bar {
@@ -4005,8 +4026,7 @@ html {
 }
 
 .poll-option-selected {
-    border-color: var(--color-primary);
-    box-shadow: 0 12px 32px rgba(0, 36, 120, 0.35);
+    box-shadow: inset 0 0 0 1px var(--color-primary), 0 12px 32px rgba(0, 36, 120, 0.35);
 }
 
 .poll-option-selected .poll-option-check {
@@ -4330,6 +4350,7 @@ html {
     width: min(720px, 100%);
 }
 
+
 .thread-input-area {
     margin-top: auto;
     padding: 0;
@@ -4344,13 +4365,13 @@ html {
     pointer-events: none;
 }
 
-.thread-input-pill {
+.thread-input-area .thread-composer {
     pointer-events: auto;
-    display: flex;
-    align-items: center;
-    gap: 12px;
     width: min(680px, calc(100% - 16px));
     padding: 12px clamp(16px, 4vw, 22px);
+    display: flex;
+    align-items: center;
+    gap: 14px;
     border-radius: var(--radius-full);
     border: 1px solid color-mix(in srgb, var(--glass-border) 60%, transparent);
     background: color-mix(in srgb, var(--surface-elevated) 92%, transparent);
@@ -4359,31 +4380,43 @@ html {
     -webkit-backdrop-filter: blur(calc(var(--glass-blur) * 0.9)) saturate(170%);
 }
 
-.thread-input-area textarea {
+.thread-input-area .thread-composer input[type="text"] {
     flex: 1;
-    resize: none;
     border: none;
     background: transparent;
-    color: inherit;
+    color: var(--text-color);
     font-size: 15px;
-    line-height: 1.45;
-    min-height: 44px;
-    max-height: 180px;
-    padding: 4px 0;
+    min-width: 0;
+    padding: 0;
 }
 
-.thread-input-area textarea::placeholder {
-    color: var(--text-color-muted);
+.thread-input-area .thread-composer input[type="text"]::placeholder {
+    color: color-mix(in srgb, var(--text-color-muted) 80%, transparent);
 }
 
-.thread-input-area textarea:focus {
+.thread-input-area .thread-composer input[type="text"]:focus {
     outline: none;
 }
 
-.thread-input-actions {
+.thread-input-area .composer-actions {
     display: flex;
-    gap: 8px;
     align-items: center;
+    gap: 8px;
+}
+
+.thread-input-area .composer-actions .icon-btn[disabled] {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+.thread-input-area .composer-actions .composer-icon.primary {
+    background: var(--color-primary);
+    color: #fff;
+    border-color: transparent;
+}
+
+.thread-input-area .composer-actions .composer-icon.primary:hover {
+    filter: brightness(1.05);
 }
 
 @media (max-width: 768px) {
@@ -4398,20 +4431,6 @@ html {
         top: clamp(8px, env(safe-area-inset-top, 0) + 8px, 18px);
     }
 
-    .thread-search-wrapper {
-        margin-top: 4px;
-    }
-
-    .thread-search-pill {
-        width: calc(100% - 8px);
-        padding: 12px clamp(14px, 6vw, 18px);
-        box-shadow: 0 20px 42px rgba(0, 0, 0, 0.28);
-    }
-
-    .thread-search-empty {
-        width: 100%;
-    }
-
     .thread-comments,
     #thread-view > .thread-comments,
     #thread-view > .thread-header,
@@ -4423,7 +4442,7 @@ html {
         bottom: calc(env(safe-area-inset-bottom, 0) + 12px);
     }
 
-    .thread-input-pill {
+    .thread-input-area .thread-composer {
         width: calc(100% - 8px);
         padding: 12px clamp(14px, 6vw, 18px);
     }
