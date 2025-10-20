@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Чат с AI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        #chat-window {
+            scroll-behavior: smooth;
+        }
+        .chat-bubble {
+            max-width: 75%;
+            word-wrap: break-word;
+        }
+        .user-bubble {
+            background-color: #3b82f6; /* blue-500 */
+            color: white;
+        }
+        .ai-bubble {
+            background-color: #e5e7eb; /* gray-200 */
+            color: #1f2937; /* gray-800 */
+        }
+    </style>
+</head>
+<body class="bg-gray-100 flex flex-col items-center justify-center h-screen">
+
+    <div class="w-full max-w-2xl h-full md:h-[90vh] flex flex-col bg-white shadow-2xl rounded-lg">
+        <header class="bg-gray-800 text-white p-4 rounded-t-lg">
+            <h1 class="text-xl font-bold text-center">Ваш личный AI-ассистент</h1>
+        </header>
+
+        <!-- Окно чата -->
+        <div id="chat-window" class="flex-1 p-6 overflow-y-auto">
+            <!-- Сообщения будут добавляться сюда -->
+            <div class="flex justify-start mb-4">
+                <div class="chat-bubble ai-bubble py-2 px-4 rounded-lg">
+                    <p>Здравствуйте! Я ваш AI-собеседник. Задайте мне любой вопрос на русском языке.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Индикатор загрузки -->
+        <div id="loading-indicator" class="px-6 pb-2 hidden">
+            <div class="flex justify-start">
+                <div class="chat-bubble ai-bubble py-2 px-4 rounded-lg">
+                    <div class="flex items-center justify-center space-x-2">
+                        <div class="w-2 h-2 rounded-full bg-gray-500 animate-pulse"></div>
+                        <div class="w-2 h-2 rounded-full bg-gray-500 animate-pulse" style="animation-delay: 0.2s;"></div>
+                        <div class="w-2 h-2 rounded-full bg-gray-500 animate-pulse" style="animation-delay: 0.4s;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Поле ввода -->
+        <footer class="p-4 border-t border-gray-200">
+            <div class="flex">
+                <input type="text" id="user-input" class="flex-1 p-2 border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Напишите ваше сообщение...">
+                <button id="send-button" class="bg-blue-500 text-white px-6 py-2 rounded-r-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    Отправить
+                </button>
+            </div>
+        </footer>
+    </div>
+
+    <script>
+        const chatWindow = document.getElementById('chat-window');
+        const userInput = document.getElementById('user-input');
+        const sendButton = document.getElementById('send-button');
+        const loadingIndicator = document.getElementById('loading-indicator');
+
+        // История чата для отправки в API
+        let chatHistory = [];
+
+        // Функция для добавления сообщения в окно чата
+        function addMessage(message, sender) {
+            const bubble = document.createElement('div');
+            bubble.className = `chat-bubble py-2 px-4 rounded-lg`;
+
+            const messageWrapper = document.createElement('div');
+            messageWrapper.className = `flex mb-4`;
+
+            if (sender === 'user') {
+                bubble.classList.add('user-bubble');
+                messageWrapper.classList.add('justify-end');
+            } else {
+                bubble.classList.add('ai-bubble');
+                messageWrapper.classList.add('justify-start');
+            }
+            
+            // Преобразуем Markdown-подобные переносы строк в HTML
+            bubble.innerHTML = message.replace(/\n/g, '<br>');
+            messageWrapper.appendChild(bubble);
+            chatWindow.appendChild(messageWrapper);
+
+            // Автоматическая прокрутка вниз
+            chatWindow.scrollTop = chatWindow.scrollHeight;
+        }
+
+        // Функция для вызова Gemini API
+        async function callGemini(prompt) {
+            const apiKey = ""; // API-ключ будет обработан окружением
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+            
+            // Добавляем новое сообщение пользователя в историю
+            chatHistory.push({ role: "user", parts: [{ text: prompt }] });
+
+            const payload = {
+                contents: chatHistory,
+                // Настройки для более креативных и разнообразных ответов
+                generationConfig: {
+                    temperature: 0.7,
+                    topP: 0.9,
+                    topK: 40,
+                }
+            };
+
+            try {
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Ошибка сети: ${response.status}`);
+                }
+
+                const result = await response.json();
+
+                if (result.candidates && result.candidates[0].content && result.candidates[0].content.parts) {
+                    const aiResponse = result.candidates[0].content.parts[0].text;
+                    // Добавляем ответ AI в историю
+                    chatHistory.push({ role: "model", parts: [{ text: aiResponse }] });
+                    return aiResponse;
+                } else {
+                    // Если нет ответа, удаляем последнее сообщение пользователя из истории
+                    chatHistory.pop();
+                    return "Извините, я не смог сгенерировать ответ. Попробуйте переформулировать.";
+                }
+            } catch (error) {
+                console.error("Ошибка при вызове Gemini API:", error);
+                // Если произошла ошибка, удаляем последнее сообщение пользователя из истории
+                chatHistory.pop();
+                return `Произошла ошибка: ${error.message}. Попробуйте еще раз.`;
+            }
+        }
+
+        // Обработчик отправки сообщения
+        async function handleSend() {
+            const message = userInput.value.trim();
+            if (!message) return;
+
+            addMessage(message, 'user');
+            userInput.value = '';
+            loadingIndicator.classList.remove('hidden');
+
+            const aiResponse = await callGemini(message);
+            
+            loadingIndicator.classList.add('hidden');
+            addMessage(aiResponse, 'ai');
+        }
+
+        // Навешиваем события
+        sendButton.addEventListener('click', handleSend);
+        userInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                handleSend();
+            }
+        });
+
+    </script>
+</body>
+</html>

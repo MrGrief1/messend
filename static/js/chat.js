@@ -19,6 +19,19 @@ const membersBtn = document.getElementById('room-members-btn');
 const roomSettingsBtn = document.getElementById('room-settings-btn');
 const reactionPicker = document.getElementById('reaction-picker');
 const unknownBanner = document.getElementById('unknown-contact-banner');
+const pollCommentBanner = document.getElementById('poll-comment-banner');
+const pollCommentText = document.getElementById('poll-comment-text');
+const threadView = document.getElementById('thread-view');
+const threadTitleEl = document.getElementById('thread-title');
+const threadSubtitleEl = document.getElementById('thread-subtitle');
+const threadMetaEl = document.getElementById('thread-meta');
+const threadRootCard = document.getElementById('thread-root-card');
+const threadCommentsEl = document.getElementById('thread-comments');
+const threadEmptyEl = document.getElementById('thread-empty');
+const threadInputArea = document.getElementById('thread-input-area');
+const threadInput = document.getElementById('thread-input');
+const chatViewContainer = document.getElementById('chat-view');
+const settingsViewContainer = document.getElementById('settings-view-inline');
 // Вызовы
 let localStream = null;
 let isMicEnabled = true;
@@ -49,6 +62,56 @@ let isDialModalOpen = false;
 let isCallModalOpen = false;
 
 let reactionTargetMessageId = null; // ID сообщения, на которое мы реагируем
+
+const reactionIconTemplates = {
+    '👍': `<svg class="reaction-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 11v8a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-6a2 2 0 0 1 2-2h3Z"></path><path d="M7 11V6.5A3.5 3.5 0 0 1 10.5 3h0a1 1 0 0 1 .95.68L12.5 7H18a2 2 0 0 1 1.94 2.5l-1.33 5.02A2 2 0 0 1 16.68 16H11"></path></svg>`,
+    '👎': `<svg class="reaction-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 13V5a2 2 0 0 1 2-2h1a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2h-3Z"></path><path d="M17 13v4.5A3.5 3.5 0 0 1 13.5 21h0a1 1 0 0 1-.95-.68L11.5 17H6a2 2 0 0 1-1.94-2.5l1.33-5.02A2 2 0 0 1 7.32 8H13"></path></svg>`,
+    '❤️': `<svg class="reaction-svg" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"><path d="M12 20.5c-4.4-3.6-6.5-5.8-6.5-9A3.5 3.5 0 0 1 9 8a3.6 3.6 0 0 1 3 1.6A3.6 3.6 0 0 1 15 8a3.5 3.5 0 0 1 3.5 3.5c0 3.2-2.1 5.4-6.5 9Z"></path></svg>`,
+    '😂': `<svg class="reaction-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"></circle><path d="M8.2 10.4c.4-.7 1-.7 1.4 0"></path><path d="M14.4 10.4c.4-.7 1-.7 1.4 0"></path><path d="M7.5 13.5c1.4 1.4 3 2.1 4.5 2.1s3.1-.7 4.5-2.1"></path><path d="M6 13.6c-.8.1-1.4.6-1.4 1.3 0 .6.5 1.1 1.6.9"></path><path d="M18 13.6c.8.1 1.4.6 1.4 1.3 0 .6-.5 1.1-1.6.9"></path></svg>`,
+    '😮': `<svg class="reaction-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"></circle><circle cx="9" cy="10" r="1.1" fill="currentColor" stroke="none"></circle><circle cx="15" cy="10" r="1.1" fill="currentColor" stroke="none"></circle><circle cx="12" cy="15" r="2.2"></circle></svg>`,
+    '😢': `<svg class="reaction-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"></circle><path d="M8.2 10.4c.4-.7 1-.7 1.4 0"></path><path d="M14.4 10.4c.4-.7 1-.7 1.4 0"></path><path d="M8.5 15c1 .8 2.2 1.2 3.5 1.2s2.5-.4 3.5-1.2"></path><path d="M16.1 14.8c.8.7 1.4 1.7 1.4 2.6 0 .9-.6 1.6-1.4 1.6-.7 0-1.2-.5-1.2-1.1 0-.9 1.2-2.1 1.2-2.1Z" fill="currentColor" stroke="none"></path></svg>`,
+    '🔥': `<svg class="reaction-svg" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21c-3.5-1.5-5-3.8-5-6.2 0-2.4 1.7-4 3-5.4 1.2-1.3 2.2-2.6 2.2-4.4 1.6 1.1 4.1 3.4 4.1 6.1 0 1.1-.4 2.1-1 3 1.6.8 2.7 2.2 2.7 3.8 0 1.9-1.3 3.4-3.5 4.4Z"></path></svg>`
+};
+
+const reactionLabels = {
+    '👍': 'Нравится',
+    '👎': 'Не нравится',
+    '❤️': 'Любовь',
+    '😂': 'Смешно',
+    '😮': 'Удивление',
+    '😢': 'Печально',
+    '🔥': 'Огонь'
+};
+
+const reactionTemplateCache = new Map();
+
+function getReactionIconTemplate(emoji) {
+    return reactionIconTemplates[emoji] || null;
+}
+
+function createReactionSvgElement(emoji) {
+    const template = getReactionIconTemplate(emoji);
+    if (!template) {
+        return null;
+    }
+    if (!reactionTemplateCache.has(emoji)) {
+        const tpl = document.createElement('template');
+        tpl.innerHTML = template.trim();
+        reactionTemplateCache.set(emoji, tpl);
+    }
+    return reactionTemplateCache.get(emoji).content.firstElementChild.cloneNode(true);
+}
+
+function getReactionLabel(emoji) {
+    return reactionLabels[emoji] || '';
+}
+
+const pollUserSelections = new Map();
+const pollSelectionPromises = new Map();
+const pollTipTimers = new Map();
+let pollCommentContext = null;
+let pollCommentPreviousPlaceholder = null;
+let activeThreadContext = null;
 
 // ========== Browser Push Notifications ==========
 let notificationsEnabled = false;
@@ -118,9 +181,11 @@ document.addEventListener('DOMContentLoaded', (event) => {
     
     // Запрашиваем разрешение на уведомления
     requestNotificationPermission();
-    
+
     // Подключаемся к Socket.IO по текущему origin. Разрешаем стандартный апгрейд (polling -> websocket).
     socket = io({ transports: ['polling'], upgrade: false });
+
+    initializeReactionPicker();
 
     socket.on('connect', () => console.log('WebSocket подключен!'));
 
@@ -175,6 +240,24 @@ document.addEventListener('DOMContentLoaded', (event) => {
         const pollEl = container.querySelector('.poll-container');
         if (!pollEl) return;
         renderPollResults(pollEl, data.message_id, data.poll);
+    });
+
+    socket.on('poll_vote_ack', (data) => {
+        if (!data || typeof data.message_id === 'undefined') return;
+        const messageId = String(data.message_id);
+        const selection = Array.isArray(data.selected) ? data.selected.map((n) => parseInt(n, 10)).filter((n) => !Number.isNaN(n)) : [];
+        pollUserSelections.set(messageId, selection);
+
+        const container = document.querySelector(`.message-container[data-message-id='${messageId}']`);
+        if (!container) return;
+        const pollEl = container.querySelector('.poll-container');
+        if (!pollEl) return;
+
+        if (typeof data.locked !== 'undefined') {
+            pollEl.dataset.locked = data.locked ? '1' : '0';
+        }
+
+        updatePollOptionState(pollEl, data.message_id);
     });
 
     // Присутствие и печатает
@@ -419,6 +502,14 @@ document.addEventListener('DOMContentLoaded', (event) => {
 
     document.getElementById('cancel-editing-btn').onclick = cancelEditing;
 
+    const cancelCommentBtn = document.getElementById('cancel-poll-comment-btn');
+    if (cancelCommentBtn) {
+        cancelCommentBtn.onclick = (event) => {
+            event.stopPropagation();
+            cancelPollComment();
+        };
+    }
+
     document.getElementById('cancel-selection-btn').onclick = (event) => {
         event.stopPropagation();
         toggleSelectionMode(false);
@@ -441,6 +532,7 @@ document.addEventListener('DOMContentLoaded', (event) => {
         if (event.key === 'Escape') {
             if (editingMessage) cancelEditing();
             if (selectionMode) toggleSelectionMode(false);
+            if (pollCommentContext) cancelPollComment();
         }
     });
 
@@ -796,7 +888,7 @@ function addPollOption(value = '') {
     const input = document.createElement('input');
     input.type = 'text';
     input.className = 'poll-option-input';
-    input.placeholder = Вариант ;
+    input.placeholder = `Вариант ${rows.length + 1}`;
     input.maxLength = 100;
     input.value = value;
     input.addEventListener('input', updatePollPreview);
@@ -906,7 +998,7 @@ function refreshPollOptionPlaceholders() {
 
     const inputs = container.querySelectorAll('.poll-option-input');
     inputs.forEach((input, index) => {
-        input.placeholder = Вариант ;
+        input.placeholder = `Вариант ${index + 1}`;
     });
 }
 
@@ -917,36 +1009,69 @@ function updatePollPreview() {
     const questionInput = document.getElementById('pollQuestion');
     const question = questionInput ? questionInput.value.trim() : '';
 
-    const options = Array.from(document.querySelectorAll('#pollOptionsList .poll-option-input'))
+    const optionInputs = Array.from(document.querySelectorAll('#pollOptionsList .poll-option-input'));
+    const options = optionInputs
         .map((input) => input.value.trim())
         .filter((text) => text.length > 0);
 
     const multiple = !!(document.getElementById('pollMultiple') && document.getElementById('pollMultiple').checked);
     const anonymous = !!(document.getElementById('pollAnonymous') && document.getElementById('pollAnonymous').checked);
 
+    preview.innerHTML = '';
+
     if (options.length === 0) {
-        preview.innerHTML = `<div class="poll-preview-placeholder">Добавьте варианты, чтобы увидеть, как участники будут голосовать.</div>`;
+        const placeholder = document.createElement('div');
+        placeholder.className = 'poll-preview-placeholder';
+        placeholder.textContent = 'Добавьте варианты, чтобы увидеть, как участники будут голосовать.';
+        preview.appendChild(placeholder);
         return;
     }
 
-    const optionsHtml = options.map((option) => `
-        <div class="poll-preview-option">
-            <span></span>
-            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M9 6l6 6-6 6" stroke-linecap="round" stroke-linejoin="round"></path>
-            </svg>
-        </div>
-    `).join('');
+    const questionEl = document.createElement('div');
+    questionEl.className = 'poll-preview-question';
+    questionEl.textContent = question || 'Без названия';
+    preview.appendChild(questionEl);
+
+    const optionsWrapper = document.createElement('div');
+    optionsWrapper.className = 'poll-preview-options';
+
+    options.forEach((optionText) => {
+        const optionRow = document.createElement('div');
+        optionRow.className = 'poll-preview-option';
+
+        const textSpan = document.createElement('span');
+        textSpan.textContent = optionText;
+        optionRow.appendChild(textSpan);
+
+        const arrow = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        arrow.setAttribute('viewBox', '0 0 24 24');
+        arrow.setAttribute('width', '18');
+        arrow.setAttribute('height', '18');
+        arrow.setAttribute('fill', 'none');
+        arrow.setAttribute('stroke', 'currentColor');
+        arrow.setAttribute('stroke-width', '2');
+
+        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        path.setAttribute('d', 'M9 6l6 6-6 6');
+        path.setAttribute('stroke-linecap', 'round');
+        path.setAttribute('stroke-linejoin', 'round');
+        arrow.appendChild(path);
+
+        optionRow.appendChild(arrow);
+        optionsWrapper.appendChild(optionRow);
+    });
+
+    preview.appendChild(optionsWrapper);
+
+    const footer = document.createElement('div');
+    footer.className = 'poll-preview-footer';
 
     const footerParts = [];
     footerParts.push(multiple ? 'Можно выбрать несколько вариантов' : 'Один голос на участника');
     if (anonymous) footerParts.push('Голоса анонимные');
 
-    preview.innerHTML = `
-        <div class="poll-preview-question"></div>
-        <div class="poll-preview-options"></div>
-        <div class="poll-preview-footer"></div>
-    `;
+    footer.textContent = footerParts.join(' · ');
+    preview.appendChild(footer);
 }
 
 function closePollBuilder() {
@@ -995,33 +1120,110 @@ function submitPoll() {
 }
 // ========== СТИКЕРЫ ==========
 
-// Встроенные стикер-паки
-const stickerPacks = {
-    emotions: {
-        name: '😊 Эмоции',
-        stickers: ['😀', '😂', '🤣', '😊', '😇', '🙂', '😉', '😍', '🥰', '😘', '😋', '😜', '🤪', '😎', '🤩', '🥳', '😏', '😒', '😞', '😔', '😢', '😭', '😤', '😠', '😱', '😨', '🤯', '😳', '🥺', '😬', '🙄', '😴', '🤤', '😷', '🤒', '🤕', '🤢', '🤮', '🤧', '🥵', '🥶', '😵', '🤠', '🥴', '😖', '😣', '😫', '😩', '🥱']
+const stickerDefinitions = {
+    smile: {
+        label: 'Улыбка',
+        color: '#F6B73C',
+        svg: `<svg class="sticker-icon" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M15.182 15.182a4.5 4.5 0 0 1-6.364 0"/><path d="M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/><path d="M9.75 9.75c0 .414-.168.75-.375.75S9 10.164 9 9.75 9.168 9 9.375 9s.375.336.375.75Zm5.625 0c0 .414-.168.75-.375.75s-.375-.336-.375-.75.168-.75.375-.75.375.336.375.75Z"/></svg>`
     },
-    hands: {
-        name: '👋 Жесты',
-        stickers: ['👋', '🤚', '🖐', '✋', '🖖', '👌', '🤌', '🤏', '✌', '🤞', '🤟', '🤘', '🤙', '👈', '👉', '👆', '🖕', '👇', '☝', '👍', '👎', '✊', '👊', '🤛', '🤜', '👏', '🙌', '👐', '🤲', '🤝', '🙏', '✍', '💅', '🤳', '💪', '🦾', '🦿', '🦵', '🦶']
+    sad: {
+        label: 'Грусть',
+        color: '#4C6EF5',
+        svg: `<svg class="sticker-icon" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M15.182 16.318A4.486 4.486 0 0 0 12.016 15a4.486 4.486 0 0 0-3.198 1.318"/><path d="M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/><path d="M9.75 9.75c0 .414-.168.75-.375.75S9 10.164 9 9.75 9.168 9 9.375 9s.375.336.375.75Zm5.625 0c0 .414-.168.75-.375.75s-.375-.336-.375-.75.168-.75.375-.75.375.336.375.75Z"/></svg>`
     },
-    animals: {
-        name: '🐶 Животные',
-        stickers: ['🐶', '🐱', '🐭', '🐹', '🐰', '🦊', '🐻', '🐼', '🐨', '🐯', '🦁', '🐮', '🐷', '🐸', '🐵', '🙈', '🙉', '🙊', '🐒', '🐔', '🐧', '🐦', '🐤', '🐣', '🐥', '🦆', '🦅', '🦉', '🦇', '🐺', '🐗', '🐴', '🦄', '🐝', '🐛', '🦋', '🐌', '🐞', '🐜', '🦟', '🦗', '🕷', '🦂', '🐢', '🐍', '🦎', '🦖', '🦕']
+    sparkles: {
+        label: 'Искры',
+        color: '#F472B6',
+        svg: `<svg class="sticker-icon" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09Z"/><path d="M18.259 8.715 18 9.75l-.259-1.035a3.375 3.375 0 0 0-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 0 0 2.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 0 0 2.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 0 0-2.456 2.456Z"/><path d="M16.894 20.567 16.5 21.75l-.394-1.183a2.25 2.25 0 0 0-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 0 0 1.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 0 0 1.423 1.423l1.183.394-1.183.394a2.25 2.25 0 0 0-1.423 1.423Z"/></svg>`
     },
-    food: {
-        name: '🍕 Еда',
-        stickers: ['🍏', '🍎', '🍐', '🍊', '🍋', '🍌', '🍉', '🍇', '🍓', '🍈', '🍒', '🍑', '🥭', '🍍', '🥥', '🥝', '🍅', '🍆', '🥑', '🥦', '🥬', '🥒', '🌶', '🌽', '🥕', '🥔', '🍠', '🥐', '🥯', '🍞', '🥖', '🥨', '🧀', '🥚', '🍳', '🥞', '🧇', '🥓', '🥩', '🍗', '🍖', '🦴', '🌭', '🍔', '🍟', '🍕', '🥪', '🥙', '🌮']
+    idea: {
+        label: 'Идея',
+        color: '#FACC15',
+        svg: `<svg class="sticker-icon" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M12 18v-5.25"/><path d="M10.5 12.75a6.01 6.01 0 0 0 3 0"/><path d="M15.75 18v-.192c0-.983.658-1.823 1.508-2.316a7.5 7.5 0 1 0-7.517 0c.85.493 1.509 1.333 1.509 2.316V18"/><path d="M11.25 21.728a14.406 14.406 0 0 0 3 0"/><path d="M12.75 19.289a12.06 12.06 0 0 0 4.5 0"/></svg>`
     },
-    activities: {
-        name: '⚽ Активности',
-        stickers: ['⚽', '🏀', '🏈', '⚾', '🥎', '🎾', '🏐', '🏉', '🥏', '🎱', '🪀', '🏓', '🏸', '🏒', '🏑', '🥍', '🏏', '🥅', '⛳', '🪁', '🏹', '🎣', '🤿', '🥊', '🥋', '🎽', '🛹', '🛼', '🛷', '⛸', '🥌', '🎿', '⛷', '🏂', '🪂', '🏋', '🤼', '🤸', '🤺', '⛹', '🤾', '🏌', '🏇', '🧘', '🏊', '🤽', '🚣', '🧗', '🚴']
+    thumbsUp: {
+        label: 'Лайк',
+        color: '#34D399',
+        svg: `<svg class="sticker-icon" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M6.633 10.25c.806 0 1.533-.446 2.031-1.08a9.041 9.041 0 0 1 2.861-2.4c.723-.384 1.35-.956 1.653-1.715a4.498 4.498 0 0 0 .322-1.672V2.75a.75.75 0 0 1 .75-.75 2.25 2.25 0 0 1 2.25 2.25c0 1.152-.26 2.243-.723 3.218-.266.558.107 1.282.725 1.282"/><path d="M15.483 8.75h3.126c1.026 0 1.945.694 2.054 1.715.045.422.068.85.068 1.285a11.95 11.95 0 0 1-2.649 7.521c-.388.482-.987.729-1.605.729H13.48a4.5 4.5 0 0 1-1.423-.23l-3.114-1.04a4.501 4.501 0 0 0-1.423-.23H5.904"/><path d="M5.904 18.5a5.87 5.87 0 0 1-.253-.602"/><path d="M5.904 18.5H4.996a2.25 2.25 0 0 1-2.07-1.368 12 12 0 0 1-.521-3.507c0-1.553.295-3.036.831-4.398C3.387 9.953 4.167 9.5 5 9.5h1.053c.472 0 .745.556.5.96a8.958 8.958 0 0 0-1.302 4.665c0 1.194.232 2.333.654 3.375"/></svg>`
     },
-    symbols: {
-        name: '❤️ Символы',
-        stickers: ['❤️', '🧡', '💛', '💚', '💙', '💜', '🖤', '🤍', '🤎', '💔', '❣️', '💕', '💞', '💓', '💗', '💖', '💘', '💝', '💟', '☮', '✝', '☪', '🕉', '☸', '✡', '🔯', '🕎', '☯', '☦', '🛐', '⛎', '♈', '♉', '♊', '♋', '♌', '♍', '♎', '♏', '♐', '♑', '♒', '♓', '🆔', '⚛', '🉑', '☢', '☣', '📴']
+    thumbsDown: {
+        label: 'Дизлайк',
+        color: '#F97316',
+        svg: `<svg class="sticker-icon" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M7.498 15.25H4.372c-1.026 0-1.945-.694-2.054-1.715a12.137 12.137 0 0 1-.068-1.285c0-2.848.992-5.464 2.649-7.521C5.287 4.247 5.886 4 6.504 4h4.016a4.5 4.5 0 0 1 1.423.23l3.114 1.04a4.5 4.5 0 0 0 1.423.23h1.294"/><path d="M7.498 15.25c.618 0 .991.724.725 1.282A7.471 7.471 0 0 0 7.5 19.75 2.25 2.25 0 0 0 9.75 22a.75.75 0 0 0 .75-.75v-.633c0-.573.11-1.14.322-1.672.304-.76.93-1.33 1.653-1.715a9.04 9.04 0 0 0 2.861-2.4c.498-.634 1.226-1.08 2.032-1.08h.384"/><path d="M5.904 18.5H4.996a2.25 2.25 0 0 1-2.07-1.368 12 12 0 0 1-.521-3.507c0-1.553.295-3.036.831-4.398C3.387 9.953 4.167 9.5 5 9.5h1.053c.472 0 .745.556.5.96a8.958 8.958 0 0 0-1.302 4.665c0 1.194.232 2.333.654 3.375"/><path d="M18.096 7.75c.01.05.027.1.05.148.593 1.2.925 2.55.925 3.977 0 1.487-.36 2.89-.999 4.125"/><path d="M18.072 7.75c-.076-.365.183-.75.575-.75h.908a2.25 2.25 0 0 1 2.07 1.368c.339 1.11.521 2.287.521 3.507 0 1.553-.295 3.036-.831 4.398-.306.774-1.086 1.227-1.918 1.227h-1.053c-.472 0-.745-.556-.5-.96.11-.194.214-.39.303-.54"/></svg>`
+    },
+    wave: {
+        label: 'Привет',
+        color: '#60A5FA',
+        svg: `<svg class="sticker-icon" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M10.05 4.575a1.575 1.575 0 1 0-3.15 0v3"/><path d="M10.05 4.575v-1.5a1.575 1.575 0 0 1 3.15 0v1.5"/><path d="M10.125 10.5 10.2 4.575"/><path d="M13.2 11.25V4.575a1.575 1.575 0 0 1 3.15 0V15"/><path d="M6.9 7.575a1.575 1.575 0 1 0-3.15 0v8.175a6.75 6.75 0 0 0 6.75 6.75h2.018a5.25 5.25 0 0 0 3.712-1.538l1.732-1.732a5.25 5.25 0 0 0 1.538-3.712l.003-2.024a.668.668 0 0 1 .198-.471 1.575 1.575 0 1 0-2.228-2.228 3.818 3.818 0 0 0-1.12 2.687"/><path d="M6.9 7.575V12"/><path d="M13.17 16.068A4.49 4.49 0 0 1 16.35 15"/></svg>`
+    },
+    heart: {
+        label: 'Сердце',
+        color: '#F43F5E',
+        svg: `<svg class="sticker-icon" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733C11.285 4.876 9.623 3.75 7.687 3.75 5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12Z"/></svg>`
+    },
+    fire: {
+        label: 'Огонь',
+        color: '#FB923C',
+        svg: `<svg class="sticker-icon" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M15.362 5.214A8.252 8.252 0 0 1 12 21 8.25 8.25 0 0 1 6.038 7.047 8.287 8.287 0 0 0 9 9.601a8.983 8.983 0 0 1 3.361-6.867 8.21 8.21 0 0 0 3 2.48Z"/><path d="M12 18a3.75 3.75 0 0 0 .495-7.468 5.99 5.99 0 0 0-1.925 3.547 5.975 5.975 0 0 1-2.133-1.001A3.75 3.75 0 0 0 12 18Z"/></svg>`
+    },
+    star: {
+        label: 'Звезда',
+        color: '#FCD34D',
+        svg: `<svg class="sticker-icon" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M11.48 3.499a.562.562 0 0 1 1.04 0l2.125 5.111a.563.563 0 0 0 .475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 0 0-.182.557l1.285 5.385a.562.562 0 0 1-.84.61l-4.725-2.885a.562.562 0 0 0-.586 0L6.982 20.54a.562.562 0 0 1-.84-.61l1.285-5.386a.562.562 0 0 0-.182-.557l-4.204-3.602a.562.562 0 0 1 .321-.988l5.518-.442a.563.563 0 0 0 .475-.345L11.48 3.5Z"/></svg>`
+    },
+    gift: {
+        label: 'Подарок',
+        color: '#A855F7',
+        svg: `<svg class="sticker-icon" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M20.625 11.505v8.25a1.5 1.5 0 0 1-1.5 1.5H4.875a1.5 1.5 0 0 1-1.5-1.5v-8.25"/><path d="M11.25 5.13A2.625 2.625 0 1 0 9 7.755h2.625"/><path d="M12 5.13v2.625"/><path d="M12 5.13a2.625 2.625 0 1 1 2.625 2.625H12"/><path d="M12 7.755v13.5"/><path d="M3 11.505h18c.621 0 1.125-.504 1.125-1.125v-1.5c0-.622-.504-1.125-1.125-1.125H3c-.621 0-1.125.503-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125Z"/></svg>`
+    },
+    rocket: {
+        label: 'Ракета',
+        color: '#38BDF8',
+        svg: `<svg class="sticker-icon" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M15.59 14.37a6 6 0 0 1-5.84 7.38v-4.8"/><path d="M15.59 14.37a14.98 14.98 0 0 0 6.16-12.12A14.98 14.98 0 0 0 9.631 8.41"/><path d="M15.59 14.37a14.926 14.926 0 0 1-5.841 2.58"/><path d="M9.749 8.41a6 6 0 0 0-7.381 5.84h4.8"/><path d="M7.168 14.25a14.927 14.927 0 0 0-2.58 5.84"/><path d="M7.287 20.89a4.493 4.493 0 0 0-1.757 4.306 4.493 4.493 0 0 0 4.306-1.758"/><path d="M16.5 9a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0Z"/></svg>`
     }
 };
+
+const stickerPacks = {
+    emotions: { name: '😊 Эмоции', stickers: ['smile', 'sparkles', 'sad', 'idea'] },
+    gestures: { name: '👋 Жесты', stickers: ['thumbsUp', 'thumbsDown', 'wave', 'heart'] },
+    symbols: { name: '✨ Символы', stickers: ['fire', 'star', 'gift', 'rocket'] }
+};
+
+const stickerTemplateCache = new Map();
+
+function getStickerDefinition(stickerId) {
+    return stickerDefinitions[stickerId] || null;
+}
+
+function getStickerLabel(stickerId) {
+    const def = getStickerDefinition(stickerId);
+    return def ? def.label : 'Стикер';
+}
+
+function createStickerSvgElement(stickerId) {
+    const def = getStickerDefinition(stickerId);
+    if (!def) return null;
+    if (!stickerTemplateCache.has(stickerId)) {
+        const template = document.createElement('template');
+        template.innerHTML = def.svg.trim();
+        stickerTemplateCache.set(stickerId, template);
+    }
+    const template = stickerTemplateCache.get(stickerId);
+    const element = template.content.firstElementChild.cloneNode(true);
+    element.setAttribute('aria-hidden', 'true');
+    return element;
+}
+
+function getMessagePreviewText(messageData) {
+    if (!messageData) return '';
+    if (messageData.message_type === 'sticker') {
+        return getStickerLabel(messageData.content);
+    }
+    if (messageData.message_type === 'poll' && messageData.poll) {
+        return messageData.poll.question || 'Голосование';
+    }
+    return messageData.content || '';
+}
 
 let currentStickerPack = 'emotions';
 
@@ -1062,68 +1264,61 @@ function createStickerPicker() {
     const picker = document.createElement('div');
     picker.id = 'sticker-picker';
     picker.className = 'sticker-picker glass';
-    picker.style.cssText = `
-        position: fixed;
-        bottom: 80px;
-        left: 20px;
-        width: 380px;
-        height: 450px;
-        max-height: 80vh;
-        background: var(--glass-bg);
-        backdrop-filter: blur(var(--glass-blur)) saturate(180%);
-        border: 1px solid var(--glass-border);
-        border-radius: var(--radius-lg);
-        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-        z-index: 2000;
-        display: none;
-        overflow: hidden;
-    `;
-    
+    picker.style.position = 'fixed';
+    picker.style.bottom = 'calc(96px + env(safe-area-inset-bottom, 0))';
+    picker.style.left = '50%';
+    picker.style.transform = 'translateX(-50%)';
+    picker.style.width = 'min(380px, calc(100vw - 32px))';
+    picker.style.maxHeight = 'min(480px, calc(100vh - 140px))';
+    picker.style.background = 'var(--glass-bg)';
+    const glassBlur = getComputedStyle(document.documentElement).getPropertyValue('--glass-blur') || '20px';
+    picker.style.backdropFilter = `blur(${glassBlur.trim()}) saturate(180%)`;
+    picker.style.webkitBackdropFilter = picker.style.backdropFilter;
+    picker.style.border = '1px solid var(--glass-border)';
+    picker.style.borderRadius = 'var(--radius-lg)';
+    picker.style.boxShadow = '0 8px 32px rgba(0, 0, 0, 0.3)';
+    picker.style.zIndex = '2000';
+    picker.style.display = 'none';
+    picker.style.overflow = 'hidden';
+
     // Вкладки паков
     const tabs = document.createElement('div');
-    tabs.style.cssText = 'display: flex; border-bottom: 1px solid var(--glass-border); padding: 8px; gap: 4px; overflow-x: auto;';
-    
+    tabs.className = 'sticker-tabs';
+
     for (const [key, pack] of Object.entries(stickerPacks)) {
         const tab = document.createElement('button');
-        tab.textContent = pack.name.split(' ')[0];
-        tab.style.cssText = `
-            padding: 6px 12px;
-            border: none;
-            background: ${key === currentStickerPack ? 'var(--color-primary)' : 'transparent'};
-            color: var(--text-color);
-            border-radius: var(--radius-md);
-            cursor: pointer;
-            font-size: 14px;
-            transition: all 0.2s ease;
-        `;
+        tab.type = 'button';
+        tab.className = 'sticker-tab';
+        tab.textContent = pack.name;
+        tab.dataset.pack = key;
+        if (key === currentStickerPack) {
+            tab.classList.add('active');
+        }
         tab.onclick = () => switchStickerPack(key);
         tabs.appendChild(tab);
     }
-    
+
     picker.appendChild(tabs);
-    
+
     // Контейнер для стикеров
     const container = document.createElement('div');
     container.id = 'sticker-container';
-    container.style.cssText = 'padding: 12px; display: grid; grid-template-columns: repeat(8, 1fr); gap: 6px; height: calc(450px - 60px); overflow-y: auto;';
-    
+    container.className = 'sticker-grid';
+
     renderStickers(container, currentStickerPack);
     picker.appendChild(container);
-    
+
     return picker;
 }
 
 function switchStickerPack(packId) {
     currentStickerPack = packId;
-    
-    // Обновляем вкладки
-    const tabs = document.querySelectorAll('#sticker-picker button');
-    tabs.forEach((tab, index) => {
-        const keys = Object.keys(stickerPacks);
-        tab.style.background = keys[index] === packId ? 'var(--color-primary)' : 'transparent';
+
+    const tabs = document.querySelectorAll('#sticker-picker .sticker-tab');
+    tabs.forEach((tab) => {
+        tab.classList.toggle('active', tab.dataset.pack === packId);
     });
-    
-    // Обновляем стикеры
+
     const container = document.getElementById('sticker-container');
     if (container) {
         renderStickers(container, packId);
@@ -1133,50 +1328,55 @@ function switchStickerPack(packId) {
 function renderStickers(container, packId) {
     container.innerHTML = '';
     const pack = stickerPacks[packId];
-    
     if (!pack) return;
-    
-    pack.stickers.forEach(sticker => {
+
+    pack.stickers.forEach((stickerId) => {
+        const definition = getStickerDefinition(stickerId);
+        if (!definition) return;
+
         const btn = document.createElement('button');
-        btn.textContent = sticker;
-        btn.style.cssText = `
-            font-size: 32px;
-            background: transparent;
-            border: none;
-            cursor: pointer;
-            padding: 10px;
-            border-radius: var(--radius-md);
-            transition: all 0.2s ease;
-            aspect-ratio: 1;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            min-height: 48px;
-        `;
-        btn.onmouseenter = (e) => e.target.style.transform = 'scale(1.3)';
-        btn.onmouseleave = (e) => e.target.style.transform = 'scale(1)';
-        btn.onclick = () => sendSticker(sticker);
+        btn.type = 'button';
+        btn.className = 'sticker-btn';
+        btn.dataset.sticker = stickerId;
+        btn.title = definition.label;
+        btn.setAttribute('aria-label', definition.label);
+        btn.style.color = definition.color;
+
+        const icon = createStickerSvgElement(stickerId);
+        if (icon) {
+            btn.appendChild(icon);
+        } else {
+            btn.textContent = definition.label;
+        }
+
+        btn.onclick = () => sendSticker(stickerId);
         container.appendChild(btn);
     });
 }
 
-function sendSticker(sticker) {
+function sendSticker(stickerId) {
     if (!currentRoomId) {
         alert('Выберите чат');
         return;
     }
-    
-    // Отправляем стикер как обычное сообщение
+
+    const definition = getStickerDefinition(stickerId);
+    if (!definition) {
+        console.warn('Неизвестный стикер:', stickerId);
+        return;
+    }
+
     socket.emit('send_message', {
         room_id: parseInt(currentRoomId),
-        content: sticker
+        content: stickerId,
+        message_type: 'sticker'
     });
-    
+
     // Закрываем пикер
     const picker = document.getElementById('sticker-picker');
     if (picker) picker.style.display = 'none';
-    
-    console.log('Стикер отправлен:', sticker);
+
+    console.log('Стикер отправлен:', stickerId);
 }
 
 // Голосовые сообщения
@@ -1423,6 +1623,7 @@ function cancelEditing() {
 
 function setupRoomUI() {
     // По умолчанию разрешаем ввод
+    clearPollCommentContext();
     chatInputArea.style.display = 'flex';
     if (messageInput) messageInput.disabled = false;
     if (sendButton) sendButton.disabled = false;
@@ -1450,6 +1651,8 @@ function setupRoomUI() {
             if (messageInput) messageInput.placeholder = "Только администраторы могут писать в этом канале.";
         }
     }
+
+    document.querySelectorAll('.poll-container').forEach(updatePollCommentAvailability);
 }
 
 function updateUnreadBadge(roomId, count) {
@@ -1589,21 +1792,37 @@ async function sendMessage() {
         cancelEditing();
         return;
     }
-    
-    if (selectedFiles.length > 0) {
+
+    const hasFiles = selectedFiles.length > 0;
+    const hasText = content.length > 0;
+
+    if (!hasFiles && !hasText) {
+        return;
+    }
+
+    let finalContent = content;
+    if (pollCommentContext) {
+        const prefix = `Комментарий к опросу «${pollCommentContext.question}»: `;
+        finalContent = hasText ? `${prefix}${content}` : prefix.trim();
+    }
+
+    if (hasFiles) {
         // Отправка файлов
-        await sendFilesMessage(content);
+        await sendFilesMessage(finalContent);
         selectedFiles = [];
         displayFilePreview();
-    } else if (content && currentRoomId) {
+    } else if (currentRoomId) {
         // Обычное текстовое сообщение
         socket.emit('send_message', {
             room_id: parseInt(currentRoomId),
-            content: content
+            content: finalContent
         });
     }
-    
+
     messageInput.value = '';
+    if (pollCommentContext) {
+        clearPollCommentContext();
+    }
     messageInput.focus();
 }
 
@@ -1633,6 +1852,10 @@ async function sendFilesMessage(caption) {
 }
 
 function displayMessage(data) {
+    if (data && typeof data.thread_root_id !== 'undefined') {
+        handleThreadMessage(data);
+        return;
+    }
     // Проверяем тип сообщения
     if (data.message_type === 'system') {
         // Системное сообщение
@@ -1775,16 +1998,19 @@ function displayMessage(data) {
         messageElement.appendChild(senderName);
     }
 
-    // Опрос
-    if (data.message_type === 'poll') {
-        const container = document.createElement('div');
-        container.className = `message-container ${data.sender_id == CURRENT_USER_ID ? 'sent' : 'received'}`;
-        container.setAttribute('data-message-id', data.id);
-        const inner = document.createElement('div');
-        inner.className = `message ${data.sender_id == CURRENT_USER_ID ? 'sent' : 'received'}`;
-                const poll = data.poll || {};
+    const isPollMessage = data.message_type === 'poll';
+    const isStickerMessage = data.message_type === 'sticker';
+
+    if (isPollMessage) {
+        messageElement.classList.add('poll-message');
+
+        const poll = data.poll || {};
         const pollBox = document.createElement('div');
         pollBox.className = 'poll-container';
+        pollBox.dataset.messageId = String(data.id);
+        pollBox.dataset.multipleChoice = poll.multiple_choice ? '1' : '0';
+        pollBox.dataset.anonymous = poll.anonymous ? '1' : '0';
+        pollBox.dataset.question = poll.question || '';
 
         const questionEl = document.createElement('div');
         questionEl.className = 'poll-question';
@@ -1798,26 +2024,35 @@ function displayMessage(data) {
         const footer = document.createElement('div');
         footer.className = 'poll-footer';
 
+        const info = document.createElement('div');
+        info.className = 'poll-info';
+
         const tip = document.createElement('span');
         tip.className = 'poll-tip';
-        footer.appendChild(tip);
+        info.appendChild(tip);
 
         const total = document.createElement('span');
         total.className = 'poll-total';
-        footer.appendChild(total);
+        info.appendChild(total);
+
+        footer.appendChild(info);
+
+        const actions = document.createElement('div');
+        actions.className = 'poll-actions';
+
+        const commentBtn = createThreadButton(data.id, 'poll', poll.question || 'Голосование', data.thread_comment_count || 0);
+        actions.appendChild(commentBtn);
+
+        footer.appendChild(actions);
 
         pollBox.appendChild(footer);
+        messageElement.appendChild(pollBox);
 
-        container.appendChild(inner);
-        chatWindow.appendChild(container);
-        // Рендерим варианты и текущие результаты
         renderPollOptionsAndResults(pollBox, data.id, poll);
-        chatWindow.scrollTop = chatWindow.scrollHeight;
-        return;
     }
 
     // НОВОЕ: Обработка галереи медиа
-    if (data.media_items && data.media_items.length > 0) {
+    if (!isPollMessage && !isStickerMessage && data.media_items && data.media_items.length > 0) {
         const visualItems = [];
         const fileItems = [];
 
@@ -1906,12 +2141,46 @@ function displayMessage(data) {
     }
     
     // Добавляем текст если есть
-    if (data.content) {
+    if (!isPollMessage && isStickerMessage) {
+        messageElement.classList.add('sticker');
+        const stickerLabel = getStickerLabel(data.content);
+        messageElement.setAttribute('data-sticker-id', data.content || '');
+        messageElement.setAttribute('title', stickerLabel);
+        messageElement.setAttribute('aria-label', stickerLabel);
+        const stickerWrap = document.createElement('div');
+        stickerWrap.className = 'sticker-bubble';
+        const stickerIcon = createStickerSvgElement(data.content);
+        const stickerDefinition = getStickerDefinition(data.content);
+        if (stickerDefinition) {
+            stickerWrap.style.color = stickerDefinition.color;
+        }
+        if (stickerIcon) {
+            stickerWrap.appendChild(stickerIcon);
+        } else {
+            stickerWrap.textContent = getStickerLabel(data.content);
+        }
+        messageElement.appendChild(stickerWrap);
+    }
+
+    if (!isPollMessage && !isStickerMessage && data.content) {
         const textNode = document.createElement('p');
         textNode.textContent = data.content;
         messageElement.appendChild(textNode);
     }
-    
+
+    if (!isPollMessage && currentRoomType === 'channel') {
+        const threadActions = document.createElement('div');
+        threadActions.className = 'message-thread-actions';
+        const commentBtn = createThreadButton(
+            data.id,
+            'message',
+            getMessagePreviewText(data),
+            data.thread_comment_count || 0
+        );
+        threadActions.appendChild(commentBtn);
+        messageElement.appendChild(threadActions);
+    }
+
     // Добавление времени
     const timestampSpan = document.createElement('span');
     timestampSpan.classList.add('message-timestamp');
@@ -1975,6 +2244,10 @@ function openMessageContextMenu(event, messageData) {
     contextTargetMessage = messageData;
 
     const menu = document.getElementById('message-context-menu');
+    const editBtn = document.getElementById('edit-message-btn');
+    if (editBtn) {
+        editBtn.style.display = messageData.message_type === 'sticker' ? 'none' : '';
+    }
     menu.style.display = 'block';
 
     const menuWidth = menu.offsetWidth;
@@ -2020,6 +2293,46 @@ function openReactionPicker(event, messageId, messageElementRef) {
 }
 
 // Вызывается из body.onclick
+function initializeReactionPicker() {
+    if (!reactionPicker) return;
+    const options = reactionPicker.querySelectorAll('.reaction-option[data-emoji]');
+    options.forEach((option) => {
+        const emoji = option.getAttribute('data-emoji');
+        if (!emoji) {
+            return;
+        }
+
+        const label = option.dataset.label || getReactionLabel(emoji);
+        option.innerHTML = '';
+        const icon = createReactionSvgElement(emoji);
+        const wrapper = document.createElement('span');
+        wrapper.className = 'reaction-icon';
+        if (icon) {
+            wrapper.appendChild(icon);
+        } else {
+            wrapper.textContent = emoji;
+        }
+        option.appendChild(wrapper);
+        if (label) {
+            option.setAttribute('aria-label', label);
+            option.setAttribute('title', label);
+        }
+        option.setAttribute('role', 'button');
+        option.tabIndex = 0;
+        option.onclick = (event) => {
+            event.stopPropagation();
+            sendReaction(emoji);
+        };
+        option.onkeydown = (event) => {
+            if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                event.stopPropagation();
+                sendReaction(emoji);
+            }
+        };
+    });
+}
+
 function closeReactionPicker() {
     if (reactionPicker.style.display === 'flex') {
         reactionPicker.style.display = 'none';
@@ -2111,8 +2424,27 @@ function updateMessageReactionsUI(messageId, reactions) {
         if (isReactedByMe) {
             reactionElement.classList.add('reacted-by-me');
         }
-        reactionElement.textContent = `${emoji} ${count}`;
-        
+        reactionElement.dataset.emoji = emoji;
+
+        const iconWrapper = document.createElement('span');
+        iconWrapper.className = 'reaction-icon';
+        const icon = createReactionSvgElement(emoji);
+        if (icon) {
+            iconWrapper.appendChild(icon);
+        } else {
+            iconWrapper.textContent = emoji;
+        }
+        reactionElement.appendChild(iconWrapper);
+
+        const countSpan = document.createElement('span');
+        countSpan.className = 'reaction-count';
+        countSpan.textContent = String(count);
+        reactionElement.appendChild(countSpan);
+
+        const reactionLabel = getReactionLabel(emoji) || emoji;
+        reactionElement.setAttribute('aria-label', `${reactionLabel} — ${count}`);
+        reactionElement.title = `${reactionLabel} · ${count}`;
+
         // Добавляем обработчик клика для переключения реакции
         reactionElement.onclick = (event) => {
             event.stopPropagation(); // Предотвращаем срабатывание пикера сообщения
@@ -2269,17 +2601,18 @@ function openContextSettings() {
 // 1. Настройки Контакта (Переименование)
 async function openContactSettings() {
     if (!currentDMotherUserId) return;
-    
+
+    const contactId = parseInt(currentDMotherUserId, 10);
     const modal = document.getElementById('contactSettingsModal');
-    document.getElementById('contactSettingsId').value = currentDMotherUserId;
-    
+    document.getElementById('contactSettingsId').value = contactId || '';
+
     // Находим текущее кастомное имя и другие данные контакта
     const contactData = USER_CONTACTS.find(c => c.id == currentDMotherUserId);
     if (contactData) {
         // Заполняем username
         const usernameEl = document.getElementById('contactUsername');
         if (usernameEl) usernameEl.textContent = `@${contactData.username}`;
-        
+
         // Заполняем кастомное имя для редактирования
         if (contactData.display_name !== `@${contactData.username}`) {
             document.getElementById('contactCustomName').value = contactData.display_name;
@@ -2287,23 +2620,28 @@ async function openContactSettings() {
             document.getElementById('contactCustomName').value = '';
         }
     }
-    
+
     // Получаем информацию о пользователе (био, аватар, статистику)
-    try {
-        const response = await fetch(`/api/search_user?q=${contactData.username}`);
-        const data = await response.json();
-        
-        if (data.success && data.results && data.results.length > 0) {
-            const user = data.results[0];
-            
-            // Заполняем био
-            const bioEl = document.getElementById('contactBio');
-            if (bioEl) bioEl.textContent = user.bio || 'Био не указано';
+    if (contactData && contactData.username) {
+        try {
+            const response = await fetch(`/api/search_user?q=${encodeURIComponent(contactData.username)}`);
+            const data = await response.json();
+
+            if (data.success && data.results && data.results.length > 0) {
+                const user = data.results[0];
+
+                // Заполняем био
+                const bioEl = document.getElementById('contactBio');
+                if (bioEl) bioEl.textContent = user.bio || 'Био не указано';
+            }
+        } catch (e) {
+            console.log('Не удалось загрузить информацию о контакте:', e);
         }
-    } catch (e) {
-        console.log('Не удалось загрузить информацию о контакте:', e);
+    } else {
+        const bioEl = document.getElementById('contactBio');
+        if (bioEl) bioEl.textContent = 'Био не указано';
     }
-    
+
     // Заполняем аватар (если есть в room-icon)
     const roomElement = document.querySelector(`.room-item[data-dm-other-id="${currentDMotherUserId}"]`);
     if (roomElement) {
@@ -2335,7 +2673,7 @@ async function openContactSettings() {
     try {
         // Простая проверка через попытку отправки сообщения (не выполняется, просто проверяем состояние)
         // Обновляем кнопку блокировки в зависимости от статуса
-        const isBlocked = blockedUsers.has(parseInt(contactId));
+        const isBlocked = blockedUsers.has(contactId);
         updateBlockButton(isBlocked);
     } catch (e) {
         console.log('Не удалось проверить статус блокировки:', e);
@@ -3056,38 +3394,46 @@ function previewRingtone() {
 
 // ===== ОПРОСЫ (UI) =====
 function renderPollOptionsAndResults(pollContainer, messageId, poll) {
+    if (!pollContainer) return;
     const optionsWrap = pollContainer.querySelector('.poll-options');
     if (!optionsWrap) return;
 
+    const isMultiple = !!(poll && poll.multiple_choice);
+    const isAnonymous = !!(poll && poll.anonymous);
+    const question = poll && poll.question ? poll.question : (pollContainer.dataset.question || '');
+    const pollResults = poll && Array.isArray(poll.results) ? poll.results : [];
+    const options = poll && Array.isArray(poll.options) ? poll.options : [];
+
+    const questionEl = pollContainer.querySelector('.poll-question');
+    if (questionEl && question) {
+        questionEl.textContent = question;
+    }
+
+    pollContainer.dataset.multipleChoice = isMultiple ? '1' : '0';
+    pollContainer.dataset.anonymous = isAnonymous ? '1' : '0';
+    pollContainer.dataset.question = question;
+
     optionsWrap.innerHTML = '';
 
-    const footerTip = pollContainer.querySelector('.poll-tip');
     const totalLabel = pollContainer.querySelector('.poll-total');
-    const totalVotes = Array.isArray(poll.results)
-        ? poll.results.reduce((sum, count) => sum + (Number(count) || 0), 0)
-        : 0;
+    const totalVotes = pollResults.reduce((sum, count) => sum + (Number(count) || 0), 0);
+    pollContainer.dataset.totalVotes = String(totalVotes);
 
-    (poll.options || []).forEach((optText, idx) => {
-        const votes = Array.isArray(poll.results) ? (Number(poll.results[idx]) || 0) : 0;
+    options.forEach((optText, idx) => {
+        const votes = pollResults[idx] !== undefined ? (Number(pollResults[idx]) || 0) : 0;
         const percent = totalVotes > 0 ? Math.round((votes / totalVotes) * 100) : 0;
+        const width = totalVotes > 0 ? Math.max(percent, votes > 0 ? 8 : 0) : 0;
 
         const row = document.createElement('div');
         row.className = 'poll-option-row';
+        row.dataset.index = String(idx);
+        row.setAttribute('role', 'button');
+        row.tabIndex = 0;
 
         const bar = document.createElement('div');
         bar.className = 'poll-bar';
-        bar.style.width = `${percent}%`;
+        bar.style.width = `${Math.min(width, 100)}%`;
         row.appendChild(bar);
-
-        const button = document.createElement('button');
-        button.type = 'button';
-        button.className = 'poll-vote-btn';
-        button.innerHTML = `
-            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M9 6l6 6-6 6" stroke-linecap="round" stroke-linejoin="round"></path>
-            </svg>
-        `;
-        row.appendChild(button);
 
         const content = document.createElement('div');
         content.className = 'poll-option-content';
@@ -3104,39 +3450,544 @@ function renderPollOptionsAndResults(pollContainer, messageId, poll) {
 
         row.appendChild(content);
 
+        const check = document.createElement('div');
+        check.className = 'poll-option-check';
+        check.innerHTML = `
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="20 6 10 17 4 11"></polyline>
+            </svg>
+        `;
+        row.appendChild(check);
+
         const castVote = (event) => {
+            event.preventDefault();
             event.stopPropagation();
-            if (!poll.multiple_choice) {
+
+            const key = String(messageId);
+            const currentSelection = pollUserSelections.get(key) || [];
+            const alreadySelected = currentSelection.includes(idx);
+
+            if (!isMultiple) {
+                if (alreadySelected) {
+                    flashPollNotice(pollContainer, key, 'Вы уже выбрали этот вариант');
+                    return;
+                }
+                if (currentSelection.length > 0) {
+                    flashPollNotice(pollContainer, key, 'Вы уже проголосовали');
+                    return;
+                }
+                pollUserSelections.set(key, [idx]);
+                pollContainer.dataset.locked = '1';
                 socket.emit('vote_poll', { message_id: messageId, selected: idx });
             } else {
+                if (alreadySelected) {
+                    flashPollNotice(pollContainer, key, 'Вариант уже выбран');
+                    return;
+                }
+                const updated = new Set(currentSelection);
+                updated.add(idx);
+                pollUserSelections.set(key, Array.from(updated).sort((a, b) => a - b));
                 socket.emit('vote_poll', { message_id: messageId, selected: [idx] });
             }
-            row.classList.add('poll-option-voted');
-            setTimeout(() => row.classList.remove('poll-option-voted'), 420);
+
+            updatePollOptionState(pollContainer, messageId, poll);
         };
 
-        button.addEventListener('click', castVote);
         row.addEventListener('click', castVote);
+        row.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter' || event.key === ' ') {
+                castVote(event);
+            }
+        });
 
         optionsWrap.appendChild(row);
     });
 
-    if (footerTip) {
-        const tips = [];
-        tips.push(poll.multiple_choice ? 'Можно выбрать несколько вариантов' : 'Выберите один вариант');
-        if (poll.anonymous) {
-            tips.push('Голосование анонимное');
-        }
-        footerTip.textContent = tips.join(' · ');
-    }
-
     if (totalLabel) {
         totalLabel.textContent = totalVotes > 0 ? `Голосов: ${totalVotes}` : 'Голосов пока нет';
     }
+
+    updatePollCommentAvailability(pollContainer);
+    updatePollOptionState(pollContainer, messageId, { multiple_choice: isMultiple, anonymous: isAnonymous });
+
+    ensurePollSelection(messageId).then(() => {
+        updatePollOptionState(pollContainer, messageId, { multiple_choice: isMultiple, anonymous: isAnonymous });
+    });
 }
 function renderPollResults(pollContainer, messageId, poll) {
     // Просто переиспользуем общий рендер
     renderPollOptionsAndResults(pollContainer, messageId, poll);
+}
+
+function ensurePollSelection(messageId) {
+    const key = String(messageId);
+    if (pollUserSelections.has(key)) {
+        return Promise.resolve(pollUserSelections.get(key));
+    }
+    if (pollSelectionPromises.has(key)) {
+        return pollSelectionPromises.get(key);
+    }
+
+    const promise = fetch(`/api/poll_vote/${messageId}`)
+        .then((response) => {
+            if (!response.ok) throw new Error('poll vote load failed');
+            return response.json();
+        })
+        .then((data) => {
+            const selection = Array.isArray(data.selected)
+                ? data.selected.map((n) => parseInt(n, 10)).filter((n) => !Number.isNaN(n))
+                : [];
+            pollUserSelections.set(key, selection);
+            return selection;
+        })
+        .catch(() => {
+            pollUserSelections.set(key, []);
+            return [];
+        })
+        .finally(() => {
+            pollSelectionPromises.delete(key);
+        });
+
+    pollSelectionPromises.set(key, promise);
+    return promise;
+}
+
+function updatePollOptionState(pollContainer, messageId, pollMeta = null) {
+    if (!pollContainer) return;
+    const key = String(messageId);
+    const selection = pollUserSelections.get(key) || [];
+    const isMultiple = pollMeta ? !!pollMeta.multiple_choice : pollContainer.dataset.multipleChoice === '1';
+    const anonymous = pollMeta ? !!pollMeta.anonymous : pollContainer.dataset.anonymous === '1';
+
+    const tip = pollContainer.querySelector('.poll-tip');
+    if (tip) {
+        const parts = [];
+        if (isMultiple) {
+            parts.push(selection.length > 0 ? 'Выбранные варианты отмечены' : 'Можно выбрать несколько вариантов');
+        } else {
+            parts.push(selection.length > 0 ? 'Ваш голос учтен' : 'Выберите один вариант');
+        }
+        if (anonymous) {
+            parts.push('Голосование анонимное');
+        }
+        const tipText = parts.join(' · ');
+        pollContainer.dataset.tipDefault = tipText;
+        if (!tip.classList.contains('poll-tip-alert')) {
+            tip.textContent = tipText;
+        }
+    }
+
+    const locked = !isMultiple && selection.length > 0;
+    pollContainer.dataset.locked = locked ? '1' : '0';
+
+    const rows = pollContainer.querySelectorAll('.poll-option-row');
+    rows.forEach((row) => {
+        const idx = parseInt(row.dataset.index, 10);
+        const isSelected = selection.includes(idx);
+        const disable = locked && !isSelected;
+        row.classList.toggle('poll-option-selected', isSelected);
+        row.classList.toggle('poll-option-disabled', disable);
+        row.setAttribute('aria-pressed', isSelected ? 'true' : 'false');
+        row.setAttribute('aria-disabled', disable ? 'true' : 'false');
+        row.tabIndex = disable ? -1 : 0;
+    });
+}
+
+function updatePollCommentAvailability(pollContainer) {
+    const commentBtn = pollContainer.querySelector('.poll-comment-btn');
+    if (!commentBtn) return;
+    if (!currentRoomId) {
+        commentBtn.disabled = true;
+        commentBtn.title = 'Выберите чат, чтобы комментировать';
+        return;
+    }
+    commentBtn.disabled = false;
+    commentBtn.title = 'Открыть комментарии';
+}
+
+function flashPollNotice(pollContainer, key, text) {
+    const tip = pollContainer.querySelector('.poll-tip');
+    if (!tip) return;
+    const defaultText = pollContainer.dataset.tipDefault || tip.textContent || '';
+
+    tip.textContent = text;
+    tip.classList.add('poll-tip-alert');
+
+    if (pollTipTimers.has(key)) {
+        clearTimeout(pollTipTimers.get(key));
+    }
+
+    const timeoutId = setTimeout(() => {
+        tip.textContent = pollContainer.dataset.tipDefault || defaultText;
+        tip.classList.remove('poll-tip-alert');
+        pollTipTimers.delete(key);
+    }, 2400);
+
+    pollTipTimers.set(key, timeoutId);
+}
+
+function formatThreadButtonLabel(count) {
+    const numeric = parseInt(count, 10);
+    return numeric && numeric > 0 ? `💬 ${numeric}` : '💬 Комментировать';
+}
+
+function updateThreadButtonCount(messageId, count) {
+    const button = document.querySelector(`button[data-thread-root-id='${String(messageId)}']`);
+    if (!button) return;
+    const numeric = Math.max(0, parseInt(count, 10) || 0);
+    button.dataset.commentCount = String(numeric);
+    button.textContent = formatThreadButtonLabel(numeric);
+}
+
+function showThreadView() {
+    if (!threadView) return;
+    threadView.style.display = 'flex';
+    if (chatViewContainer) chatViewContainer.style.display = 'none';
+    if (chatInputArea) chatInputArea.style.display = 'none';
+}
+
+function closeThreadView(options = {}) {
+    if (!threadView) return;
+    if (!options.skipReset) {
+        if (threadCommentsEl) threadCommentsEl.innerHTML = '';
+        if (threadRootCard) {
+            threadRootCard.innerHTML = '';
+            threadRootCard.style.display = 'none';
+        }
+        if (threadEmptyEl) threadEmptyEl.style.display = 'none';
+        if (threadMetaEl) threadMetaEl.textContent = '';
+        if (threadSubtitleEl) threadSubtitleEl.textContent = '';
+        if (threadTitleEl) threadTitleEl.textContent = 'Комментарии';
+    }
+    if (threadInput) threadInput.value = '';
+    activeThreadContext = null;
+    threadView.style.display = 'none';
+    if (chatViewContainer) chatViewContainer.style.display = 'flex';
+    if (chatInputArea) {
+        chatInputArea.style.display = currentRoomId ? 'flex' : 'none';
+    }
+    if (!options.skipSetup && currentRoomId) {
+        setupRoomUI();
+    }
+    if (!options.skipFocus && messageInput && !messageInput.disabled) {
+        messageInput.focus();
+    }
+}
+
+function renderThreadError(message) {
+    if (threadCommentsEl) threadCommentsEl.innerHTML = '';
+    if (threadRootCard) {
+        threadRootCard.innerHTML = '';
+        threadRootCard.style.display = 'none';
+    }
+    if (threadEmptyEl) {
+        threadEmptyEl.textContent = message || 'Комментарии недоступны';
+        threadEmptyEl.style.display = 'block';
+    }
+    if (threadMetaEl) threadMetaEl.textContent = '';
+    if (threadInputArea) threadInputArea.style.display = 'none';
+}
+
+function renderThreadRoot(threadData) {
+    if (!threadRootCard || !threadData) return;
+    threadRootCard.style.display = 'flex';
+    threadRootCard.innerHTML = '';
+
+    const header = document.createElement('div');
+    header.className = 'thread-comment-header';
+
+    const author = document.createElement('span');
+    author.className = 'thread-comment-author';
+    author.textContent = threadData.sender_username ? `@${threadData.sender_username}` : 'System';
+    header.appendChild(author);
+
+    const time = document.createElement('span');
+    time.className = 'thread-comment-time';
+    time.textContent = formatThreadTimestamp(threadData.timestamp);
+    header.appendChild(time);
+
+    const title = document.createElement('div');
+    title.className = 'thread-root-title';
+    if (threadData.message_type === 'poll' && threadData.poll) {
+        title.textContent = threadData.poll.question || 'Голосование';
+    } else if (threadData.message_type === 'sticker') {
+        title.textContent = getStickerLabel(threadData.content);
+    } else {
+        title.textContent = (threadData.content || '').trim() || 'Сообщение';
+    }
+
+    const preview = document.createElement('div');
+    preview.className = 'thread-root-preview';
+    if (threadData.message_type === 'poll' && threadData.poll && Array.isArray(threadData.poll.options)) {
+        preview.textContent = threadData.poll.options.map((opt, idx) => `${idx + 1}. ${opt}`).join(' · ');
+    } else if (threadData.message_type === 'sticker') {
+        preview.textContent = '';
+    } else if (threadData.content) {
+        preview.textContent = summarizeThreadPreview(threadData.content);
+    } else {
+        preview.textContent = '';
+    }
+
+    threadRootCard.appendChild(header);
+    threadRootCard.appendChild(title);
+    if (preview.textContent) {
+        threadRootCard.appendChild(preview);
+    }
+}
+
+function renderThreadView(threadData, comments) {
+    if (!threadView) return;
+    const rootId = threadData ? parseInt(threadData.id, 10) : null;
+    if (activeThreadContext && rootId && parseInt(activeThreadContext.messageId, 10) !== rootId) {
+        // if another thread loaded while previous active, reset context
+        activeThreadContext = null;
+    }
+
+    const count = Array.isArray(comments) ? comments.length : 0;
+    if (threadMetaEl) threadMetaEl.textContent = count ? `Комментарии: ${count}` : 'Нет комментариев';
+    if (threadEmptyEl) threadEmptyEl.style.display = count ? 'none' : 'block';
+    if (threadSubtitleEl && threadData) {
+        if (threadData.message_type === 'poll' && threadData.poll) {
+            threadSubtitleEl.textContent = threadData.poll.question || threadSubtitleEl.textContent;
+        } else if (threadData.message_type === 'sticker') {
+            threadSubtitleEl.textContent = getStickerLabel(threadData.content);
+        } else if (threadData.content) {
+            threadSubtitleEl.textContent = summarizeThreadPreview(threadData.content);
+        }
+    }
+    renderThreadRoot(threadData);
+
+    if (threadCommentsEl) {
+        threadCommentsEl.innerHTML = '';
+        comments.forEach(comment => appendThreadCommentCard(comment, false));
+        if (count) {
+            threadCommentsEl.scrollTop = threadCommentsEl.scrollHeight;
+        }
+    }
+
+    if (threadInputArea) threadInputArea.style.display = 'flex';
+    if (threadInput && !threadInput.disabled) {
+        setTimeout(() => threadInput.focus(), 120);
+    }
+
+    if (threadData && typeof threadData.thread_comment_count !== 'undefined') {
+        updateThreadButtonCount(threadData.id, threadData.thread_comment_count);
+    } else if (rootId !== null) {
+        updateThreadButtonCount(rootId, count);
+    }
+}
+
+function formatThreadTimestamp(timestamp) {
+    try {
+        const date = new Date(timestamp);
+        return date.toLocaleString([], { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' });
+    } catch (error) {
+        return '';
+    }
+}
+
+function summarizeThreadPreview(text) {
+    if (!text) return '';
+    const clean = text.replace(/\s+/g, ' ').trim();
+    if (clean.length <= 120) return clean;
+    return clean.slice(0, 117) + '…';
+}
+
+function appendThreadCommentCard(comment, scrollIntoView = true) {
+    if (!threadCommentsEl) return;
+    const card = document.createElement('div');
+    card.className = 'thread-comment-card';
+
+    const header = document.createElement('div');
+    header.className = 'thread-comment-header';
+
+    const author = document.createElement('span');
+    author.className = 'thread-comment-author';
+    author.textContent = comment.sender_username ? `@${comment.sender_username}` : 'System';
+    header.appendChild(author);
+
+    const time = document.createElement('span');
+    time.className = 'thread-comment-time';
+    time.textContent = formatThreadTimestamp(comment.timestamp);
+    header.appendChild(time);
+
+    card.appendChild(header);
+
+    if (comment.content) {
+        const body = document.createElement('div');
+        body.className = 'thread-comment-body';
+        body.textContent = sanitizeThreadContent(comment.content, comment.message_type);
+        card.appendChild(body);
+    }
+
+    threadCommentsEl.appendChild(card);
+    if (threadEmptyEl) threadEmptyEl.style.display = 'none';
+    if (scrollIntoView) {
+        threadCommentsEl.scrollTop = threadCommentsEl.scrollHeight;
+    }
+}
+
+function sanitizeThreadContent(content, type) {
+    if (!content) return '';
+    const trimmed = content.trim();
+    if (type === 'poll_comment') {
+        const marker = 'Комментарий к опросу «';
+        if (trimmed.startsWith(marker)) {
+            const endIdx = trimmed.indexOf('»:');
+            if (endIdx !== -1) {
+                return trimmed.slice(endIdx + 2).trim();
+            }
+        }
+    }
+    return trimmed;
+}
+
+function createThreadButton(messageId, threadType, previewText, count = 0) {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'poll-comment-btn';
+    button.dataset.threadRootId = String(messageId);
+    button.dataset.threadType = threadType;
+    const numericCount = Math.max(0, parseInt(count, 10) || 0);
+    button.dataset.commentCount = String(numericCount);
+    button.textContent = formatThreadButtonLabel(numericCount);
+    button.addEventListener('click', (event) => {
+        event.stopPropagation();
+        openThreadForMessage({
+            messageId,
+            threadType,
+            title: threadType === 'poll' ? 'Комментарии к опросу' : 'Комментарии',
+            subtitle: threadType === 'poll' ? (previewText || 'Голосование').trim() : summarizeThreadPreview(previewText || ''),
+            preview: previewText || ''
+        });
+    });
+    return button;
+}
+
+async function loadThreadData(messageId) {
+    if (!messageId) return;
+    try {
+        const response = await fetch(`/api/thread/${messageId}`);
+        if (!response.ok) throw new Error('Не удалось загрузить комментарии');
+        const data = await response.json();
+        if (!data.success) {
+            renderThreadError(data.message || data.error || 'Комментарии недоступны');
+            return;
+        }
+        activeThreadContext = activeThreadContext || { messageId, type: data.thread && data.thread.message_type === 'poll' ? 'poll' : 'comment', roomId: currentRoomId };
+        renderThreadView(data.thread, data.comments || []);
+    } catch (error) {
+        renderThreadError(error.message);
+    }
+}
+
+function openThreadForMessage(options) {
+    if (!threadView || !currentRoomId) return;
+    const messageId = parseInt(options.messageId, 10);
+    if (Number.isNaN(messageId)) return;
+
+    if (editingMessage) cancelEditing();
+    if (selectionMode) toggleSelectionMode(false);
+    clearPollCommentContext();
+
+    activeThreadContext = {
+        messageId,
+        type: options.threadType || 'comment',
+        roomId: currentRoomId,
+        title: options.title || 'Комментарии',
+        subtitle: options.subtitle || '',
+        preview: options.preview || ''
+    };
+
+    if (threadTitleEl) threadTitleEl.textContent = activeThreadContext.title;
+    if (threadSubtitleEl) threadSubtitleEl.textContent = activeThreadContext.subtitle;
+    if (threadMetaEl) threadMetaEl.textContent = 'Загрузка…';
+    if (threadRootCard) {
+        threadRootCard.innerHTML = '';
+        threadRootCard.style.display = 'none';
+    }
+    if (threadCommentsEl) threadCommentsEl.innerHTML = '';
+    if (threadEmptyEl) threadEmptyEl.style.display = 'none';
+    if (threadInputArea) threadInputArea.style.display = 'none';
+
+    showThreadView();
+    loadThreadData(messageId);
+}
+
+function handleThreadMessage(data) {
+    if (!data || typeof data.thread_root_id === 'undefined') return;
+    const rootId = parseInt(data.thread_root_id, 10);
+    if (!Number.isInteger(rootId)) return;
+
+    const count = typeof data.thread_comment_count !== 'undefined' ? data.thread_comment_count : undefined;
+    if (typeof count !== 'undefined') {
+        updateThreadButtonCount(rootId, count);
+    } else {
+        updateThreadButtonCount(rootId, parseInt(document.querySelector(`button[data-thread-root-id='${rootId}']`)?.dataset.commentCount || '0', 10) + 1);
+    }
+
+    if (activeThreadContext && parseInt(activeThreadContext.messageId, 10) === rootId) {
+        appendThreadCommentCard(data);
+        if (threadMetaEl) {
+            if (typeof count !== 'undefined') {
+                threadMetaEl.textContent = count > 0 ? `Комментарии: ${count}` : 'Нет комментариев';
+            } else {
+                const currentCount = parseInt(threadMetaEl.textContent.replace(/\D/g, ''), 10) || 0;
+                threadMetaEl.textContent = `Комментарии: ${currentCount + 1}`;
+            }
+        }
+    }
+}
+
+function sendThreadComment() {
+    if (!activeThreadContext || !threadInput) return;
+    const text = threadInput.value.trim();
+    if (!text) return;
+    if (!currentRoomId) {
+        alert('Выберите чат, чтобы оставить комментарий.');
+        return;
+    }
+
+    socket.emit('send_message', {
+        room_id: parseInt(currentRoomId),
+        content: text,
+        thread_root_id: parseInt(activeThreadContext.messageId, 10),
+        thread_type: activeThreadContext.type,
+        message_type: activeThreadContext.type === 'poll' ? 'poll_comment' : 'comment'
+    });
+
+    threadInput.value = '';
+}
+
+function startPollComment(messageId, question) {
+    const safeQuestion = (question || 'Голосование').trim();
+    openThreadForMessage({
+        messageId,
+        threadType: 'poll',
+        title: 'Комментарии к опросу',
+        subtitle: safeQuestion,
+        preview: safeQuestion
+    });
+}
+
+function clearPollCommentContext() {
+    if (!pollCommentContext) return;
+    pollCommentContext = null;
+    if (pollCommentBanner) {
+        pollCommentBanner.style.display = 'none';
+    }
+    if (messageInput && pollCommentPreviousPlaceholder !== null) {
+        messageInput.placeholder = pollCommentPreviousPlaceholder;
+    }
+    pollCommentPreviousPlaceholder = null;
+}
+
+function cancelPollComment() {
+    clearPollCommentContext();
+    if (messageInput && !messageInput.disabled) {
+        messageInput.value = '';
+        messageInput.focus();
+    }
 }
 function showIncomingPopup(fromUserId, fromName) {
     incomingFromUserId = fromUserId;
@@ -4203,6 +5054,9 @@ let selectedTheme = document.body.getAttribute('data-theme') || 'dark';
 
 function openInlineSettings() {
     // Скрываем чат, показываем настройки
+    if (activeThreadContext) {
+        closeThreadView({ skipFocus: true });
+    }
     document.getElementById('chat-view').style.display = 'none';
     document.getElementById('settings-view-inline').style.display = 'flex';
     
@@ -4648,6 +5502,10 @@ function toggleMobileTab(tabName) {
 // Закрытие чата на мобильных (возврат к списку чатов)
 function closeMobileChat() {
     if (window.innerWidth <= 768) {
+        clearPollCommentContext();
+        if (activeThreadContext) {
+            closeThreadView({ skipFocus: true });
+        }
         // Показываем sidebar (список чатов)
         const sidebar = document.querySelector('.sidebar');
         const mainContent = document.getElementById('main-content');
@@ -4691,6 +5549,10 @@ function selectRoom(element) {
     const userRole = element.getAttribute('data-user-role');
 
     if (roomId == currentRoomId) return;
+
+    if (activeThreadContext) {
+        closeThreadView({ skipReset: true, skipFocus: true, skipSetup: true });
+    }
 
     // A. Выходим из предыдущей комнаты SocketIO
     if (currentRoomId) {
