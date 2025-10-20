@@ -46,6 +46,7 @@
     --radius-lg: 20px;
     --radius-md: 16px;
     --radius-sm: 12px;
+    --thread-radius: 26px;
     
     /* Продолжительность анимаций */
     --transition-fast: 0.15s;
@@ -597,6 +598,14 @@ label {
     overflow-x: hidden;
 }
 
+.sidebar-content.showing-archive #room-list {
+    display: none !important;
+}
+
+.sidebar-content.showing-archive #archive-list {
+    display: block !important;
+}
+
 .room-item {
     padding: 14px 16px;
     border-radius: var(--radius-lg);
@@ -889,20 +898,96 @@ label {
 }
 
 .chat-input-area {
-    padding: 18px 24px;
-    padding-bottom: calc(18px + env(safe-area-inset-bottom, 0));
-    border-top: 1px solid var(--glass-border);
-    background: var(--glass-bg);
-    backdrop-filter: blur(var(--glass-blur)) saturate(180%);
+    padding: 24px;
+    padding-bottom: calc(24px + env(safe-area-inset-bottom, 0));
+    border-top: none;
+    background: transparent;
     display: flex;
-    gap: 12px;
-    border-radius: 0 0 var(--radius-xl) var(--radius-xl);
+    justify-content: center;
     align-items: center;
-    flex-wrap: nowrap;
-    gap: 10px;
-    position: sticky; /* держим панель ввода всегда видимой как в Telegram */
+    position: sticky;
     bottom: 0;
     z-index: 5;
+}
+
+.chat-composer-floating {
+    width: min(760px, 100%);
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 22px;
+    border-radius: var(--radius-full);
+    background: color-mix(in srgb, var(--surface-elevated) 92%, transparent);
+    border: 1px solid color-mix(in srgb, var(--glass-border) 70%, transparent);
+    box-shadow: 0 28px 54px rgba(0, 0, 0, 0.28);
+    backdrop-filter: blur(calc(var(--glass-blur) * 0.9)) saturate(170%);
+    -webkit-backdrop-filter: blur(calc(var(--glass-blur) * 0.9)) saturate(170%);
+}
+
+.chat-composer-floating input[type="text"] {
+    flex: 1;
+    border: none;
+    background: transparent;
+    color: var(--text-color);
+    font-size: 15px;
+    min-width: 0;
+    padding: 0;
+}
+
+.chat-composer-floating input[type="text"]::placeholder {
+    color: color-mix(in srgb, var(--text-color-muted) 80%, transparent);
+}
+
+.chat-composer-floating input[type="text"]:focus {
+    outline: none;
+}
+
+.composer-trailing {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-left: auto;
+}
+
+.composer-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.composer-attach {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.icon-btn.composer-icon {
+    width: 42px;
+    height: 42px;
+    margin: 0;
+    background: color-mix(in srgb, var(--input-bg) 75%, transparent);
+    border: 1px solid color-mix(in srgb, var(--glass-border) 60%, transparent);
+    backdrop-filter: blur(calc(var(--glass-blur) * 0.6)) saturate(150%);
+    -webkit-backdrop-filter: blur(calc(var(--glass-blur) * 0.6)) saturate(150%);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.icon-btn.composer-icon svg {
+    width: 18px;
+    height: 18px;
+}
+
+.icon-btn.composer-icon:hover {
+    transform: translateY(-1px);
+    background: color-mix(in srgb, var(--input-bg) 95%, transparent);
+}
+
+.icon-btn.composer-icon:active {
+    transform: scale(0.94);
+}
+
+.mic-button {
+    color: var(--color-primary);
 }
 
 .message-banner {
@@ -1191,6 +1276,11 @@ label {
     transform: rotate(15deg) scale(1.1);
 }
 
+.call-button-text {
+    display: inline-flex;
+    align-items: center;
+}
+
 /* --- Стили Сообщений в стиле iOS --- */
 
 /* Контейнер для сообщения и его реакций */
@@ -1206,6 +1296,16 @@ label {
     animation: slideIn 0.3s var(--easing-smooth);
     border-radius: var(--radius-lg);
     transition: all var(--transition-normal) var(--easing-smooth);
+}
+
+.message-container.poll-message-container {
+    max-width: min(640px, 92%);
+    width: min(640px, 92%);
+}
+
+.message-container.poll-message-container .message-container-inner,
+.message-container.poll-message-container .message {
+    width: 100%;
 }
 
 .message-container-inner {
@@ -1520,13 +1620,40 @@ label {
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
 }
 
-.message-timestamp {
-    display: block;
-    font-size: 11px;
+.message-meta {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 6px;
     margin-top: 6px;
-    opacity: 0.65;
-    text-align: right;
+    font-size: 11px;
+    color: color-mix(in srgb, var(--text-color-muted) 80%, transparent);
+}
+
+.message-timestamp {
+    font-size: 11px;
+    opacity: 0.7;
     font-weight: 500;
+}
+
+.message-status {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0.8;
+    transition: opacity var(--transition-fast) ease, color var(--transition-fast) ease;
+}
+
+.message-status svg {
+    width: 16px;
+    height: 16px;
+    stroke: currentColor;
+    fill: none;
+}
+
+.message-status[data-status="read"] {
+    color: var(--color-primary);
+    opacity: 1;
 }
 
 .message-sender {
@@ -2681,19 +2808,20 @@ input[type="range"]::-moz-range-thumb:active {
     }
     
     /* Оптимизированные размеры полей ввода */
-    input[type="text"], 
-    input[type="email"], 
-    input[type="password"], 
+    input[type="text"]:not(#message-input),
+    input[type="email"],
+    input[type="password"],
     textarea {
         font-size: 16px; /* Предотвращает зум на iOS при фокусе */
         min-height: 44px;
         padding: 12px 16px;
     }
-    
+
     #message-input {
         font-size: 16px;
         min-height: 44px;
         line-height: 1.4;
+        padding: 0;
     }
     
     /* Улучшенный picker реакций для тач-устройств */
@@ -3085,24 +3213,28 @@ input[type="range"]::-moz-range-thumb:active {
     
     .chat-window {
         padding: 16px;
-        padding-bottom: calc(170px + env(safe-area-inset-bottom, 0));
+        padding-bottom: calc(200px + env(safe-area-inset-bottom, 0));
     }
 
     .chat-input-area {
-        padding: 10px 12px;
-        padding-bottom: calc(12px + env(safe-area-inset-bottom, 0));
-        flex-wrap: wrap;
+        padding: 18px 16px;
+        padding-bottom: calc(18px + env(safe-area-inset-bottom, 0));
         bottom: env(safe-area-inset-bottom, 0);
     }
-    
-    #message-input {
-        flex: 1 1 100%;
-        margin-bottom: 8px;
-    }
-    
-    #send-button {
-        flex: 1 1 100%;
+
+    .chat-composer-floating {
         width: 100%;
+        padding: 16px 20px;
+        box-shadow: 0 24px 48px rgba(0, 0, 0, 0.36);
+    }
+
+    .chat-composer-floating input[type="text"] {
+        font-size: 16px;
+    }
+
+    .icon-btn.composer-icon {
+        width: 40px;
+        height: 40px;
     }
     
     .user-panel {
@@ -3811,21 +3943,25 @@ html {
     position: relative;
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 14px;
     border-radius: var(--radius-lg);
     overflow: hidden;
-    background: var(--glass-bg);
-    border: 1px solid var(--glass-border);
-    transition: background var(--transition-fast), box-shadow var(--transition-fast), border-color var(--transition-fast);
-    padding: 14px 16px;
+    background: color-mix(in srgb, var(--surface-elevated) 88%, transparent);
+    border: none;
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--glass-border) 55%, transparent);
+    transition: background var(--transition-fast), box-shadow var(--transition-fast), transform var(--transition-fast);
+    padding: 16px 20px;
     cursor: pointer;
     width: 100%;
     box-sizing: border-box;
+    user-select: none;
+    -webkit-user-select: none;
 }
 
 .poll-option-row:hover {
-    background: var(--glass-bg-hover);
-    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.25);
+    background: color-mix(in srgb, var(--surface-elevated) 96%, transparent);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--glass-border) 45%, transparent), 0 14px 32px rgba(0, 0, 0, 0.28);
+    transform: translateY(-1px);
 }
 
 .poll-bar {
@@ -3854,25 +3990,29 @@ html {
     font-weight: 600;
     line-height: 1.35;
     word-break: break-word;
+    color: var(--text-color);
 }
 
 .poll-option-votes {
     font-size: 13px;
     opacity: 0.85;
+    font-weight: 500;
+    color: color-mix(in srgb, var(--text-color-muted) 65%, transparent);
 }
 
 .poll-option-check {
     position: relative;
     z-index: 2;
-    width: 34px;
-    height: 34px;
+    width: 36px;
+    height: 36px;
     border-radius: 50%;
-    border: 2px solid var(--glass-border);
+    border: none;
     display: flex;
     align-items: center;
     justify-content: center;
     transition: all var(--transition-fast);
-    background: var(--glass-bg);
+    background: color-mix(in srgb, var(--surface-elevated) 94%, transparent);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--glass-border) 55%, transparent), 0 6px 18px rgba(0, 0, 0, 0.24);
 }
 
 .poll-option-check svg {
@@ -3883,14 +4023,13 @@ html {
 }
 
 .poll-option-selected {
-    border-color: var(--color-primary);
-    box-shadow: 0 12px 32px rgba(0, 36, 120, 0.35);
+    box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--color-primary) 40%, transparent), 0 18px 42px rgba(0, 36, 120, 0.38);
 }
 
 .poll-option-selected .poll-option-check {
     background: var(--color-primary);
-    border-color: transparent;
     color: #ffffff;
+    box-shadow: none;
 }
 
 .poll-option-selected .poll-option-check svg {
@@ -3904,7 +4043,7 @@ html {
 
 .poll-option-disabled {
     cursor: not-allowed;
-    opacity: 0.72;
+    opacity: 0.68;
 }
 
 .poll-option-disabled .poll-option-check {
@@ -3976,29 +4115,40 @@ html {
 #thread-view {
     display: flex;
     flex-direction: column;
-    gap: 16px;
-    padding: 16px;
-    padding-bottom: calc(16px + env(safe-area-inset-bottom, 0));
+    align-items: center;
+    gap: 20px;
+    padding: clamp(16px, 3vw, 32px);
+    padding-bottom: calc(clamp(16px, 3vw, 32px) + env(safe-area-inset-bottom, 0));
     width: 100%;
     flex: 1;
     min-height: 0;
-    overflow: hidden;
+    box-sizing: border-box;
+    overflow-x: hidden;
+    overflow-y: hidden;
+    scroll-padding-bottom: 160px;
+}
+
+#thread-view > .thread-header,
+#thread-view > .thread-root-card,
+#thread-view > .thread-comments,
+#thread-view > .thread-empty {
+    width: min(720px, 100%);
 }
 
 .thread-header {
     display: flex;
     align-items: center;
     gap: 16px;
-    padding: 14px 18px;
-    border-radius: var(--radius-xl);
-    background: var(--glass-bg);
-    border: 1px solid var(--glass-border);
-    box-shadow: var(--menu-shadow);
+    padding: 12px clamp(14px, 3vw, 24px);
+    border-radius: var(--thread-radius);
+    background: color-mix(in srgb, var(--surface-elevated) 90%, transparent);
+    border: 1px solid color-mix(in srgb, var(--glass-border) 60%, transparent);
+    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.2);
     position: sticky;
-    top: 0;
+    top: clamp(8px, 2vw, 20px);
     z-index: 5;
-    backdrop-filter: blur(var(--glass-blur)) saturate(160%);
-    -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+    backdrop-filter: blur(calc(var(--glass-blur) * 0.85)) saturate(170%);
+    -webkit-backdrop-filter: blur(calc(var(--glass-blur) * 0.85)) saturate(170%);
 }
 
 .thread-header-text {
@@ -4029,14 +4179,16 @@ html {
 }
 
 .thread-root-card {
-    padding: 16px 18px;
-    border-radius: var(--radius-lg);
-    background: var(--glass-bg);
-    border: 1px solid var(--glass-border);
-    box-shadow: var(--menu-shadow);
+    padding: 18px clamp(16px, 3vw, 24px);
+    border-radius: var(--thread-radius);
+    background: color-mix(in srgb, var(--surface-elevated) 92%, transparent);
+    border: 1px solid color-mix(in srgb, var(--glass-border) 60%, transparent);
+    box-shadow: 0 22px 52px rgba(0, 0, 0, 0.22);
+    backdrop-filter: blur(calc(var(--glass-blur) * 0.8)) saturate(160%);
+    -webkit-backdrop-filter: blur(calc(var(--glass-blur) * 0.8)) saturate(160%);
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 10px;
     color: inherit;
 }
 
@@ -4057,18 +4209,100 @@ html {
     flex: 1;
     min-height: 0;
     overflow-y: auto;
-    padding-right: 4px;
+    padding-right: 6px;
+    padding-bottom: clamp(140px, 22vh, 220px);
+    margin: 0 auto;
+    width: min(720px, 100%);
+    scrollbar-gutter: stable both-edges;
+}
+
+.thread-search-wrapper {
+    width: min(720px, 100%);
+    display: flex;
+    justify-content: center;
+    margin: 8px auto 0;
+}
+
+.thread-search-pill {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: min(680px, calc(100% - 16px));
+    padding: 12px 18px;
+    border-radius: var(--radius-full);
+    background: color-mix(in srgb, var(--surface-elevated) 95%, transparent);
+    border: 1px solid color-mix(in srgb, var(--glass-border) 55%, transparent);
+    box-shadow: 0 24px 48px rgba(0, 0, 0, 0.24);
+    backdrop-filter: blur(calc(var(--glass-blur) * 0.8)) saturate(150%);
+    -webkit-backdrop-filter: blur(calc(var(--glass-blur) * 0.8)) saturate(150%);
+    color: var(--text-color-muted);
+}
+
+.thread-search-pill span.material-icons-round {
+    font-size: 20px;
+    opacity: 0.7;
+}
+
+.thread-search-pill input {
+    flex: 1;
+    border: none;
+    background: transparent;
+    color: var(--text-color);
+    font-size: 15px;
+    min-width: 0;
+}
+
+.thread-search-pill input::placeholder {
+    color: color-mix(in srgb, var(--text-color-muted) 80%, transparent);
+}
+
+.thread-search-pill input:focus {
+    outline: none;
+}
+
+.thread-search-clear {
+    border: none;
+    background: transparent;
+    color: inherit;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px;
+    border-radius: var(--radius-full);
+    cursor: pointer;
+    transition: background var(--transition-fast) var(--easing-smooth);
+}
+
+.thread-search-clear:hover {
+    background: color-mix(in srgb, var(--input-bg) 90%, transparent);
+}
+
+.thread-search-empty {
+    width: min(720px, 100%);
+    margin: -4px auto 0;
+    padding: 18px;
+    border-radius: var(--thread-radius);
+    background: color-mix(in srgb, var(--surface-muted) 92%, transparent);
+    border: 1px dashed color-mix(in srgb, var(--glass-border) 55%, transparent);
+    text-align: center;
+    color: var(--text-color-muted);
+    backdrop-filter: blur(calc(var(--glass-blur) * 0.6));
+    -webkit-backdrop-filter: blur(calc(var(--glass-blur) * 0.6));
 }
 
 .thread-comment-card {
-    padding: 14px 16px;
-    border-radius: var(--radius-lg);
-    background: var(--glass-bg);
-    border: 1px solid var(--glass-border);
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+    padding: 16px clamp(16px, 3vw, 22px);
+    border-radius: var(--thread-radius);
+    background: color-mix(in srgb, var(--surface-elevated) 88%, transparent);
+    border: 1px solid color-mix(in srgb, var(--glass-border) 55%, transparent);
+    box-shadow: 0 20px 48px rgba(0, 0, 0, 0.2);
+    backdrop-filter: blur(calc(var(--glass-blur) * 0.75)) saturate(150%);
+    -webkit-backdrop-filter: blur(calc(var(--glass-blur) * 0.75)) saturate(150%);
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 8px;
+    width: min(680px, 100%);
+    margin: 0 auto;
 }
 
 .thread-comment-header {
@@ -4099,32 +4333,66 @@ html {
 
 .thread-empty {
     text-align: center;
-    padding: 32px 16px;
-    border-radius: var(--radius-lg);
-    background: var(--glass-bg);
-    border: 1px dashed var(--glass-border);
+    padding: 28px clamp(16px, 4vw, 32px);
+    border-radius: var(--thread-radius);
+    background: color-mix(in srgb, var(--surface-muted) 88%, transparent);
+    border: 1px dashed color-mix(in srgb, var(--glass-border) 55%, transparent);
     color: var(--text-color-muted);
+    backdrop-filter: blur(calc(var(--glass-blur) * 0.6));
+    -webkit-backdrop-filter: blur(calc(var(--glass-blur) * 0.6));
+}
+
+
+#thread-view > .thread-input-area {
+    width: min(720px, 100%);
 }
 
 .thread-input-area {
     margin-top: auto;
-    padding: 12px 16px;
-    padding-bottom: calc(12px + env(safe-area-inset-bottom, 0));
-    border-radius: var(--radius-lg);
-    display: flex;
-    align-items: flex-end;
-    gap: 12px;
+    padding: 0;
     position: sticky;
-    bottom: 0;
-    box-shadow: 0 -12px 32px rgba(0, 0, 0, 0.25);
-    background: var(--glass-bg);
-    border: 1px solid var(--glass-border);
-    backdrop-filter: blur(var(--glass-blur)) saturate(160%);
-    -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+    bottom: calc(env(safe-area-inset-bottom, 0) + clamp(12px, 3vw, 24px));
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    display: flex;
+    justify-content: center;
+    align-items: flex-end;
+    pointer-events: none;
 }
 
-.thread-comments {
-    padding-bottom: 80px;
+.thread-input-pill {
+    pointer-events: auto;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: min(680px, calc(100% - 16px));
+    padding: 12px clamp(16px, 4vw, 22px);
+    border-radius: var(--radius-full);
+    border: 1px solid color-mix(in srgb, var(--glass-border) 60%, transparent);
+    background: color-mix(in srgb, var(--surface-elevated) 92%, transparent);
+    box-shadow: 0 32px 68px rgba(0, 0, 0, 0.3);
+    backdrop-filter: blur(calc(var(--glass-blur) * 0.9)) saturate(170%);
+    -webkit-backdrop-filter: blur(calc(var(--glass-blur) * 0.9)) saturate(170%);
+}
+
+.thread-input-area .chat-composer-floating {
+    pointer-events: auto;
+    width: min(680px, calc(100% - 16px));
+    padding: 14px 22px;
+    gap: 14px;
+}
+
+.thread-composer {
+    width: min(680px, calc(100% - 16px));
+}
+
+.thread-composer input[type="text"] {
+    font-size: 15px;
+}
+
+.thread-composer-actions {
+    gap: 10px;
 }
 
 .thread-input-area textarea {
@@ -4134,7 +4402,10 @@ html {
     background: transparent;
     color: inherit;
     font-size: 15px;
-    min-height: 48px;
+    line-height: 1.45;
+    min-height: 44px;
+    max-height: 180px;
+    padding: 4px 0;
 }
 
 .thread-input-area textarea::placeholder {
@@ -4153,17 +4424,49 @@ html {
 
 @media (max-width: 768px) {
     #thread-view {
-        padding: 12px;
-        padding-bottom: calc(12px + env(safe-area-inset-bottom, 0));
+        padding: clamp(12px, 4vw, 20px);
+        padding-bottom: calc(clamp(12px, 4vw, 20px) + env(safe-area-inset-bottom, 0));
+        gap: 16px;
     }
 
     .thread-header {
-        border-radius: var(--radius-lg);
+        border-radius: var(--thread-radius);
+        top: clamp(8px, env(safe-area-inset-top, 0) + 8px, 18px);
+    }
+
+    .thread-search-wrapper {
+        margin-top: 4px;
+    }
+
+    .thread-search-pill {
+        width: calc(100% - 8px);
+        padding: 12px clamp(14px, 6vw, 18px);
+        box-shadow: 0 20px 42px rgba(0, 0, 0, 0.28);
+    }
+
+    .thread-search-empty {
+        width: 100%;
+    }
+
+    .thread-comments,
+    #thread-view > .thread-comments,
+    #thread-view > .thread-header,
+    #thread-view > .thread-root-card {
+        width: 100%;
     }
 
     .thread-input-area {
-        border-radius: var(--radius-lg) var(--radius-lg) 0 0;
-        padding-bottom: calc(16px + env(safe-area-inset-bottom, 0));
+        bottom: calc(env(safe-area-inset-bottom, 0) + 12px);
+    }
+
+    .thread-input-pill {
+        width: calc(100% - 8px);
+        padding: 12px clamp(14px, 6vw, 18px);
+    }
+
+    .message-container.poll-message-container {
+        max-width: 100%;
+        width: 100%;
     }
 }
 
@@ -4659,4 +4962,29 @@ html {
 .file-preview-generic div span {
     opacity: 0.7;
     font-size: 12px;
+}
+
+@media (max-width: 600px) {
+    #chat-header-actions {
+        gap: 6px;
+    }
+
+    .chat-header h3 {
+        font-size: 16px;
+    }
+
+    .call-button-header {
+        padding: 10px;
+        min-width: 0;
+        border-radius: var(--radius-full);
+    }
+
+    .call-button-text {
+        display: none;
+    }
+
+    .thread-input-pill {
+        width: calc(100% - 4px);
+        padding: 12px clamp(12px, 8vw, 18px);
+    }
 }
