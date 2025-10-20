@@ -1180,16 +1180,40 @@ const stickerDefinitions = {
         label: 'Ракета',
         color: '#38BDF8',
         svg: `<svg class="sticker-icon" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M15.59 14.37a6 6 0 0 1-5.84 7.38v-4.8"/><path d="M15.59 14.37a14.98 14.98 0 0 0 6.16-12.12A14.98 14.98 0 0 0 9.631 8.41"/><path d="M15.59 14.37a14.926 14.926 0 0 1-5.841 2.58"/><path d="M9.749 8.41a6 6 0 0 0-7.381 5.84h4.8"/><path d="M7.168 14.25a14.927 14.927 0 0 0-2.58 5.84"/><path d="M7.287 20.89a4.493 4.493 0 0 0-1.757 4.306 4.493 4.493 0 0 0 4.306-1.758"/><path d="M16.5 9a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0Z"/></svg>`
+    },
+    sun: {
+        label: 'Солнце',
+        color: '#FCD34D',
+        svg: `<svg class="sticker-icon" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4.5"/><path d="M12 2.25v2.5"/><path d="M12 19.25v2.5"/><path d="M4.758 4.758 6.525 6.525"/><path d="m17.475 17.475 1.767 1.767"/><path d="M2.25 12h2.5"/><path d="M19.25 12h2.5"/><path d="m4.758 19.242 1.767-1.767"/><path d="M17.475 6.525 19.242 4.758"/></svg>`
+    },
+    moon: {
+        label: 'Луна',
+        color: '#60A5FA',
+        svg: `<svg class="sticker-icon" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M20.25 15.75A8.25 8.25 0 0 1 8.25 3.75 6.75 6.75 0 1 0 20.25 15.75Z"/></svg>`
+    },
+    coffee: {
+        label: 'Кофе',
+        color: '#D97706',
+        svg: `<svg class="sticker-icon" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M5.25 8.25h11.25a3.75 3.75 0 0 1 0 7.5H14.5"/><path d="M18 9.75h1.125A2.625 2.625 0 0 1 21.75 12v0a2.625 2.625 0 0 1-2.625 2.625H18"/><path d="M5.25 8.25v5.625a4.875 4.875 0 0 0 4.875 4.875H9"/><path d="M4.5 19.5h12"/><path d="M9 5.25c0-.621.504-1.125 1.125-1.125S11.25 4.629 11.25 5.25c0 .828-.375 1.125-.375 1.875 0 .75.375 1.047.375 1.875"/><path d="M12.75 5.25c0-.621.504-1.125 1.125-1.125S15 4.629 15 5.25c0 .828-.375 1.125-.375 1.875 0 .75.375 1.047.375 1.875"/></svg>`
+    },
+    music: {
+        label: 'Музыка',
+        color: '#A855F7',
+        svg: `<svg class="sticker-icon" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18.75a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Z"/><path d="M19.5 16.5a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Z"/><path d="M4.5 18.75v-12l15-3v12"/><path d="M9 11.625 19.5 9.75"/></svg>`
     }
 };
 
 const stickerPacks = {
     emotions: { name: '😊 Эмоции', stickers: ['smile', 'sparkles', 'sad', 'idea'] },
     gestures: { name: '👋 Жесты', stickers: ['thumbsUp', 'thumbsDown', 'wave', 'heart'] },
-    symbols: { name: '✨ Символы', stickers: ['fire', 'star', 'gift', 'rocket'] }
+    symbols: { name: '✨ Символы', stickers: ['fire', 'star', 'gift', 'rocket'] },
+    daily: { name: '☕ Повседневное', stickers: ['sun', 'moon', 'coffee', 'music'] }
 };
 
 const stickerTemplateCache = new Map();
+
+let stickerPickerAnchorElement = null;
+let stickerPickerResizeHandler = null;
 
 function getStickerDefinition(stickerId) {
     return stickerDefinitions[stickerId] || null;
@@ -1230,30 +1254,45 @@ let currentStickerPack = 'emotions';
 function toggleStickerPicker(event) {
     event.stopPropagation();
     event.preventDefault();
-    
+
     // Создаем пикер если его нет
     let picker = document.getElementById('sticker-picker');
-    
+
     if (!picker) {
         picker = createStickerPicker();
         document.body.appendChild(picker);
     }
-    
+
     const isVisible = picker.style.display === 'block';
-    
+
     if (isVisible) {
-        picker.style.display = 'none';
+        hideStickerPicker(picker);
         return;
     }
-    
+
     closeAllMenus();
     picker.style.display = 'block';
-    
+
+    const triggerElement = event.currentTarget || event.target;
+    stickerPickerAnchorElement = triggerElement.closest('button') || triggerElement;
+    positionStickerPicker(picker, stickerPickerAnchorElement);
+
+    // Запоминаем обработчик resize, чтобы можно было удалить
+    if (!stickerPickerResizeHandler) {
+        stickerPickerResizeHandler = () => {
+            if (!stickerPickerAnchorElement || picker.style.display !== 'block') {
+                return;
+            }
+            positionStickerPicker(picker, stickerPickerAnchorElement);
+        };
+    }
+    window.addEventListener('resize', stickerPickerResizeHandler);
+
     // Закрываем при клике вне пикера
     setTimeout(() => {
         document.addEventListener('click', function closePicker(e) {
             if (!e.target.closest('#sticker-picker') && !e.target.closest('[onclick*="toggleStickerPicker"]')) {
-                picker.style.display = 'none';
+                hideStickerPicker(picker);
                 document.removeEventListener('click', closePicker);
             }
         });
@@ -1265,11 +1304,6 @@ function createStickerPicker() {
     picker.id = 'sticker-picker';
     picker.className = 'sticker-picker glass';
     picker.style.position = 'fixed';
-    picker.style.bottom = 'calc(96px + env(safe-area-inset-bottom, 0))';
-    picker.style.left = '50%';
-    picker.style.transform = 'translateX(-50%)';
-    picker.style.width = 'min(380px, calc(100vw - 32px))';
-    picker.style.maxHeight = 'min(480px, calc(100vh - 140px))';
     picker.style.background = 'var(--glass-bg)';
     const glassBlur = getComputedStyle(document.documentElement).getPropertyValue('--glass-blur') || '20px';
     picker.style.backdropFilter = `blur(${glassBlur.trim()}) saturate(180%)`;
@@ -1309,6 +1343,51 @@ function createStickerPicker() {
     picker.appendChild(container);
 
     return picker;
+}
+
+function hideStickerPicker(picker) {
+    picker.style.display = 'none';
+    picker.style.top = '';
+    picker.style.left = '';
+    stickerPickerAnchorElement = null;
+    if (stickerPickerResizeHandler) {
+        window.removeEventListener('resize', stickerPickerResizeHandler);
+    }
+}
+
+function positionStickerPicker(picker, anchorElement) {
+    if (!anchorElement || !anchorElement.getBoundingClientRect) {
+        return;
+    }
+
+    const rect = anchorElement.getBoundingClientRect();
+    const spacing = 12;
+
+    // Сначала сбрасываем размеры, чтобы получить актуальную ширину/высоту
+    picker.style.top = 'auto';
+    picker.style.left = 'auto';
+    picker.style.right = 'auto';
+    picker.style.bottom = 'auto';
+
+    const pickerWidth = picker.offsetWidth;
+    const pickerHeight = picker.offsetHeight;
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+
+    let top = rect.top - pickerHeight - spacing;
+    if (top < spacing) {
+        top = Math.min(rect.bottom + spacing, viewportHeight - pickerHeight - spacing);
+    }
+
+    let left = rect.left + rect.width / 2 - pickerWidth / 2;
+    if (left < spacing) {
+        left = spacing;
+    } else if (left + pickerWidth > viewportWidth - spacing) {
+        left = viewportWidth - pickerWidth - spacing;
+    }
+
+    picker.style.top = `${top}px`;
+    picker.style.left = `${left}px`;
 }
 
 function switchStickerPack(packId) {
@@ -1459,6 +1538,13 @@ function closeAllMenus(exceptId = null) {
             menu.style.display = 'none';
         }
     });
+
+    if (!exceptId || exceptId !== 'sticker-picker') {
+        const stickerPicker = document.getElementById('sticker-picker');
+        if (stickerPicker && stickerPicker.style.display === 'block') {
+            hideStickerPicker(stickerPicker);
+        }
+    }
 }
 
 // Отправка голосового сообщения на сервер
