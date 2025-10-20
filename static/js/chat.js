@@ -1120,74 +1120,95 @@ function submitPoll() {
 }
 // ========== СТИКЕРЫ ==========
 
+function buildStickerSvg(content) {
+    return `<svg class="sticker-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="none" stroke-width="1.5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">${content}</svg>`;
+}
+
 const stickerDefinitions = {
     smile: {
         label: 'Улыбка',
         color: '#F6B73C',
-        svg: `<svg class="sticker-icon" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M15.182 15.182a4.5 4.5 0 0 1-6.364 0"/><path d="M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/><path d="M9.75 9.75c0 .414-.168.75-.375.75S9 10.164 9 9.75 9.168 9 9.375 9s.375.336.375.75Zm5.625 0c0 .414-.168.75-.375.75s-.375-.336-.375-.75.168-.75.375-.75.375.336.375.75Z"/></svg>`
+        svg: buildStickerSvg(`<path d="M15.182 15.182a4.5 4.5 0 0 1-6.364 0"/><path d="M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/><path d="M9.75 9.75c0 .414-.168.75-.375.75S9 10.164 9 9.75 9.168 9 9.375 9s.375.336.375.75Zm5.625 0c0 .414-.168.75-.375.75s-.375-.336-.375-.75.168-.75.375-.75.375.336.375.75Z"/>`)
     },
     sad: {
         label: 'Грусть',
         color: '#4C6EF5',
-        svg: `<svg class="sticker-icon" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M15.182 16.318A4.486 4.486 0 0 0 12.016 15a4.486 4.486 0 0 0-3.198 1.318"/><path d="M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/><path d="M9.75 9.75c0 .414-.168.75-.375.75S9 10.164 9 9.75 9.168 9 9.375 9s.375.336.375.75Zm5.625 0c0 .414-.168.75-.375.75s-.375-.336-.375-.75.168-.75.375-.75.375.336.375.75Z"/></svg>`
+        svg: buildStickerSvg(`<path d="M15.182 16.318A4.486 4.486 0 0 0 12.016 15a4.486 4.486 0 0 0-3.198 1.318"/><path d="M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/><path d="M9.75 9.75c0 .414-.168.75-.375.75S9 10.164 9 9.75 9.168 9 9.375 9s.375.336.375.75Zm5.625 0c0 .414-.168.75-.375.75s-.375-.336-.375-.75.168-.75.375-.75.375.336.375.75Z"/>`)
     },
     sparkles: {
         label: 'Искры',
         color: '#F472B6',
-        svg: `<svg class="sticker-icon" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09Z"/><path d="M18.259 8.715 18 9.75l-.259-1.035a3.375 3.375 0 0 0-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 0 0 2.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 0 0 2.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 0 0-2.456 2.456Z"/><path d="M16.894 20.567 16.5 21.75l-.394-1.183a2.25 2.25 0 0 0-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 0 0 1.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 0 0 1.423 1.423l1.183.394-1.183.394a2.25 2.25 0 0 0-1.423 1.423Z"/></svg>`
+        svg: buildStickerSvg(`<path d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09Z"/><path d="M18.259 8.715 18 9.75l-.259-1.035a3.375 3.375 0 0 0-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 0 0 2.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 0 0 2.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 0 0-2.456 2.456Z"/><path d="M16.894 20.567 16.5 21.75l-.394-1.183a2.25 2.25 0 0 0-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 0 0 1.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 0 0 1.423 1.423l1.183.394-1.183.394a2.25 2.25 0 0 0-1.423 1.423Z"/>`)
     },
     idea: {
         label: 'Идея',
         color: '#FACC15',
-        svg: `<svg class="sticker-icon" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M12 18v-5.25"/><path d="M10.5 12.75a6.01 6.01 0 0 0 3 0"/><path d="M15.75 18v-.192c0-.983.658-1.823 1.508-2.316a7.5 7.5 0 1 0-7.517 0c.85.493 1.509 1.333 1.509 2.316V18"/><path d="M11.25 21.728a14.406 14.406 0 0 0 3 0"/><path d="M12.75 19.289a12.06 12.06 0 0 0 4.5 0"/></svg>`
+        svg: buildStickerSvg(`<path d="M12 18v-5.25"/><path d="M10.5 12.75a6.01 6.01 0 0 0 3 0"/><path d="M15.75 18v-.192c0-.983.658-1.823 1.508-2.316a7.5 7.5 0 1 0-7.517 0c.85.493 1.509 1.333 1.509 2.316V18"/><path d="M11.25 21.728a14.406 14.406 0 0 0 3 0"/><path d="M12.75 19.289a12.06 12.06 0 0 0 4.5 0"/>`)
     },
     thumbsUp: {
         label: 'Лайк',
         color: '#34D399',
-        svg: `<svg class="sticker-icon" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M6.633 10.25c.806 0 1.533-.446 2.031-1.08a9.041 9.041 0 0 1 2.861-2.4c.723-.384 1.35-.956 1.653-1.715a4.498 4.498 0 0 0 .322-1.672V2.75a.75.75 0 0 1 .75-.75 2.25 2.25 0 0 1 2.25 2.25c0 1.152-.26 2.243-.723 3.218-.266.558.107 1.282.725 1.282"/><path d="M15.483 8.75h3.126c1.026 0 1.945.694 2.054 1.715.045.422.068.85.068 1.285a11.95 11.95 0 0 1-2.649 7.521c-.388.482-.987.729-1.605.729H13.48a4.5 4.5 0 0 1-1.423-.23l-3.114-1.04a4.501 4.501 0 0 0-1.423-.23H5.904"/><path d="M5.904 18.5a5.87 5.87 0 0 1-.253-.602"/><path d="M5.904 18.5H4.996a2.25 2.25 0 0 1-2.07-1.368 12 12 0 0 1-.521-3.507c0-1.553.295-3.036.831-4.398C3.387 9.953 4.167 9.5 5 9.5h1.053c.472 0 .745.556.5.96a8.958 8.958 0 0 0-1.302 4.665c0 1.194.232 2.333.654 3.375"/></svg>`
+        svg: buildStickerSvg(`<path d="M6.633 10.25c.806 0 1.533-.446 2.031-1.08a9.041 9.041 0 0 1 2.861-2.4c.723-.384 1.35-.956 1.653-1.715a4.498 4.498 0 0 0 .322-1.672V2.75a.75.75 0 0 1 .75-.75 2.25 2.25 0 0 1 2.25 2.25c0 1.152-.26 2.243-.723 3.218-.266.558.107 1.282.725 1.282"/><path d="M15.483 8.75h3.126c1.026 0 1.945.694 2.054 1.715.045.422.068.85.068 1.285a11.95 11.95 0 0 1-2.649 7.521c-.388.482-.987.729-1.605.729H13.48a4.5 4.5 0 0 1-1.423-.23l-3.114-1.04a4.501 4.501 0 0 0-1.423-.23H5.904"/><path d="M5.904 18.5a5.87 5.87 0 0 1-.253-.602"/><path d="M5.904 18.5H4.996a2.25 2.25 0 0 1-2.07-1.368 12 12 0 0 1-.521-3.507c0-1.553.295-3.036.831-4.398C3.387 9.953 4.167 9.5 5 9.5h1.053c.472 0 .745.556.5.96a8.958 8.958 0 0 0-1.302 4.665c0 1.194.232 2.333.654 3.375"/>`)
     },
     thumbsDown: {
         label: 'Дизлайк',
         color: '#F97316',
-        svg: `<svg class="sticker-icon" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M7.498 15.25H4.372c-1.026 0-1.945-.694-2.054-1.715a12.137 12.137 0 0 1-.068-1.285c0-2.848.992-5.464 2.649-7.521C5.287 4.247 5.886 4 6.504 4h4.016a4.5 4.5 0 0 1 1.423.23l3.114 1.04a4.5 4.5 0 0 0 1.423.23h1.294"/><path d="M7.498 15.25c.618 0 .991.724.725 1.282A7.471 7.471 0 0 0 7.5 19.75 2.25 2.25 0 0 0 9.75 22a.75.75 0 0 0 .75-.75v-.633c0-.573.11-1.14.322-1.672.304-.76.93-1.33 1.653-1.715a9.04 9.04 0 0 0 2.861-2.4c.498-.634 1.226-1.08 2.032-1.08h.384"/><path d="M5.904 18.5H4.996a2.25 2.25 0 0 1-2.07-1.368 12 12 0 0 1-.521-3.507c0-1.553.295-3.036.831-4.398C3.387 9.953 4.167 9.5 5 9.5h1.053c.472 0 .745.556.5.96a8.958 8.958 0 0 0-1.302 4.665c0 1.194.232 2.333.654 3.375"/><path d="M18.096 7.75c.01.05.027.1.05.148.593 1.2.925 2.55.925 3.977 0 1.487-.36 2.89-.999 4.125"/><path d="M18.072 7.75c-.076-.365.183-.75.575-.75h.908a2.25 2.25 0 0 1 2.07 1.368c.339 1.11.521 2.287.521 3.507 0 1.553-.295 3.036-.831 4.398-.306.774-1.086 1.227-1.918 1.227h-1.053c-.472 0-.745-.556-.5-.96.11-.194.214-.39.303-.54"/></svg>`
+        svg: buildStickerSvg(`<path d="M7.498 15.25H4.372c-1.026 0-1.945-.694-2.054-1.715a12.137 12.137 0 0 1-.068-1.285c0-2.848.992-5.464 2.649-7.521C5.287 4.247 5.886 4 6.504 4h4.016a4.5 4.5 0 0 1 1.423.23l3.114 1.04a4.5 4.5 0 0 0 1.423.23h1.294"/><path d="M7.498 15.25c.618 0 .991.724.725 1.282A7.471 7.471 0 0 0 7.5 19.75 2.25 2.25 0 0 0 9.75 22a.75.75 0 0 0 .75-.75v-.633c0-.573.11-1.14.322-1.672.304-.76.93-1.33 1.653-1.715a9.04 9.04 0 0 0 2.861-2.4c.498-.634 1.226-1.08 2.032-1.08h.384"/><path d="M5.904 18.5H4.996a2.25 2.25 0 0 1-2.07-1.368 12 12 0 0 1-.521-3.507c0-1.553.295-3.036.831-4.398C3.387 9.953 4.167 9.5 5 9.5h1.053c.472 0 .745.556.5.96a8.958 8.958 0 0 0-1.302 4.665c0 1.194.232 2.333.654 3.375"/><path d="M18.096 7.75c.01.05.027.1.05.148.593 1.2.925 2.55.925 3.977 0 1.487-.36 2.89-.999 4.125"/><path d="M18.072 7.75c-.076-.365.183-.75.575-.75h.908a2.25 2.25 0 0 1 2.07 1.368c.339 1.11.521 2.287.521 3.507 0 1.553-.295 3.036-.831 4.398-.306.774-1.086 1.227-1.918 1.227h-1.053c-.472 0-.745-.556-.5-.96.11-.194.214-.39.303-.54"/>`)
     },
     wave: {
         label: 'Привет',
         color: '#60A5FA',
-        svg: `<svg class="sticker-icon" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M10.05 4.575a1.575 1.575 0 1 0-3.15 0v3"/><path d="M10.05 4.575v-1.5a1.575 1.575 0 0 1 3.15 0v1.5"/><path d="M10.125 10.5 10.2 4.575"/><path d="M13.2 11.25V4.575a1.575 1.575 0 0 1 3.15 0V15"/><path d="M6.9 7.575a1.575 1.575 0 1 0-3.15 0v8.175a6.75 6.75 0 0 0 6.75 6.75h2.018a5.25 5.25 0 0 0 3.712-1.538l1.732-1.732a5.25 5.25 0 0 0 1.538-3.712l.003-2.024a.668.668 0 0 1 .198-.471 1.575 1.575 0 1 0-2.228-2.228 3.818 3.818 0 0 0-1.12 2.687"/><path d="M6.9 7.575V12"/><path d="M13.17 16.068A4.49 4.49 0 0 1 16.35 15"/></svg>`
+        svg: buildStickerSvg(`<path d="M10.05 4.575a1.575 1.575 0 1 0-3.15 0v3"/><path d="M10.05 4.575v-1.5a1.575 1.575 0 0 1 3.15 0v1.5"/><path d="M10.125 10.5 10.2 4.575"/><path d="M13.2 11.25V4.575a1.575 1.575 0 0 1 3.15 0V15"/><path d="M6.9 7.575a1.575 1.575 0 1 0-3.15 0v8.175a6.75 6.75 0 0 0 6.75 6.75h2.018a5.25 5.25 0 0 0 3.712-1.538l1.732-1.732a5.25 5.25 0 0 0 1.538-3.712l.003-2.024a.668.668 0 0 1 .198-.471 1.575 1.575 0 1 0-2.228-2.228 3.818 3.818 0 0 0-1.12 2.687"/><path d="M6.9 7.575V12"/><path d="M13.17 16.068A4.49 4.49 0 0 1 16.35 15"/>`)
     },
     heart: {
         label: 'Сердце',
         color: '#F43F5E',
-        svg: `<svg class="sticker-icon" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733C11.285 4.876 9.623 3.75 7.687 3.75 5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12Z"/></svg>`
+        svg: buildStickerSvg(`<path d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733C11.285 4.876 9.623 3.75 7.687 3.75 5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12Z"/>`)
     },
     fire: {
         label: 'Огонь',
         color: '#FB923C',
-        svg: `<svg class="sticker-icon" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M15.362 5.214A8.252 8.252 0 0 1 12 21 8.25 8.25 0 0 1 6.038 7.047 8.287 8.287 0 0 0 9 9.601a8.983 8.983 0 0 1 3.361-6.867 8.21 8.21 0 0 0 3 2.48Z"/><path d="M12 18a3.75 3.75 0 0 0 .495-7.468 5.99 5.99 0 0 0-1.925 3.547 5.975 5.975 0 0 1-2.133-1.001A3.75 3.75 0 0 0 12 18Z"/></svg>`
+        svg: buildStickerSvg(`<path d="M15.362 5.214A8.252 8.252 0 0 1 12 21 8.25 8.25 0 0 1 6.038 7.047 8.287 8.287 0 0 0 9 9.601a8.983 8.983 0 0 1 3.361-6.867 8.21 8.21 0 0 0 3 2.48Z"/><path d="M12 18a3.75 3.75 0 0 0 .495-7.468 5.99 5.99 0 0 0-1.925 3.547 5.975 5.975 0 0 1-2.133-1.001A3.75 3.75 0 0 0 12 18Z"/>`)
     },
     star: {
         label: 'Звезда',
         color: '#FCD34D',
-        svg: `<svg class="sticker-icon" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M11.48 3.499a.562.562 0 0 1 1.04 0l2.125 5.111a.563.563 0 0 0 .475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 0 0-.182.557l1.285 5.385a.562.562 0 0 1-.84.61l-4.725-2.885a.562.562 0 0 0-.586 0L6.982 20.54a.562.562 0 0 1-.84-.61l1.285-5.386a.562.562 0 0 0-.182-.557l-4.204-3.602a.562.562 0 0 1 .321-.988l5.518-.442a.563.563 0 0 0 .475-.345L11.48 3.5Z"/></svg>`
+        svg: buildStickerSvg(`<path d="M11.48 3.499a.562.562 0 0 1 1.04 0l2.125 5.111a.563.563 0 0 0 .475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 0 0-.182.557l1.285 5.385a.562.562 0 0 1-.84.61l-4.725-2.885a.562.562 0 0 0-.586 0L6.982 20.54a.562.562 0 0 1-.84-.61l1.285-5.386a.562.562 0 0 0-.182-.557l-4.204-3.602a.562.562 0 0 1 .321-.988l5.518-.442a.563.563 0 0 0 .475-.345L11.48 3.5Z"/>`)
     },
     gift: {
         label: 'Подарок',
         color: '#A855F7',
-        svg: `<svg class="sticker-icon" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M20.625 11.505v8.25a1.5 1.5 0 0 1-1.5 1.5H4.875a1.5 1.5 0 0 1-1.5-1.5v-8.25"/><path d="M11.25 5.13A2.625 2.625 0 1 0 9 7.755h2.625"/><path d="M12 5.13v2.625"/><path d="M12 5.13a2.625 2.625 0 1 1 2.625 2.625H12"/><path d="M12 7.755v13.5"/><path d="M3 11.505h18c.621 0 1.125-.504 1.125-1.125v-1.5c0-.622-.504-1.125-1.125-1.125H3c-.621 0-1.125.503-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125Z"/></svg>`
+        svg: buildStickerSvg(`<path d="M20.625 11.505v8.25a1.5 1.5 0 0 1-1.5 1.5H4.875a1.5 1.5 0 0 1-1.5-1.5v-8.25"/><path d="M11.25 5.13A2.625 2.625 0 1 0 9 7.755h2.625"/><path d="M12 5.13v2.625"/><path d="M12 5.13a2.625 2.625 0 1 1 2.625 2.625H12"/><path d="M12 7.755v13.5"/><path d="M3 11.505h18c.621 0 1.125-.504 1.125-1.125v-1.5c0-.622-.504-1.125-1.125-1.125H3c-.621 0-1.125.503-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125Z"/>`)
     },
     rocket: {
         label: 'Ракета',
         color: '#38BDF8',
-        svg: `<svg class="sticker-icon" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M15.59 14.37a6 6 0 0 1-5.84 7.38v-4.8"/><path d="M15.59 14.37a14.98 14.98 0 0 0 6.16-12.12A14.98 14.98 0 0 0 9.631 8.41"/><path d="M15.59 14.37a14.926 14.926 0 0 1-5.841 2.58"/><path d="M9.749 8.41a6 6 0 0 0-7.381 5.84h4.8"/><path d="M7.168 14.25a14.927 14.927 0 0 0-2.58 5.84"/><path d="M7.287 20.89a4.493 4.493 0 0 0-1.757 4.306 4.493 4.493 0 0 0 4.306-1.758"/><path d="M16.5 9a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0Z"/></svg>`
+        svg: buildStickerSvg(`<path d="M15.59 14.37a6 6 0 0 1-5.84 7.38v-4.8"/><path d="M15.59 14.37a14.98 14.98 0 0 0 6.16-12.12A14.98 14.98 0 0 0 9.631 8.41"/><path d="M15.59 14.37a14.926 14.926 0 0 1-5.841 2.58"/><path d="M9.749 8.41a6 6 0 0 0-7.381 5.84h4.8"/><path d="M7.168 14.25a14.927 14.927 0 0 0-2.58 5.84"/><path d="M7.287 20.89a4.493 4.493 0 0 0-1.757 4.306 4.493 4.493 0 0 0 4.306-1.758"/><path d="M16.5 9a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0Z"/>`)
+    },
+    sun: {
+        label: 'Солнце',
+        color: '#FCD34D',
+        svg: buildStickerSvg(`<circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="M4.93 4.93 6.34 6.34"/><path d="M17.66 17.66 19.07 19.07"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="M6.34 17.66 4.93 19.07"/><path d="M19.07 4.93 17.66 6.34"/>`)
+    },
+    moon: {
+        label: 'Луна',
+        color: '#818CF8',
+        svg: buildStickerSvg(`<path d="M21 12.79A9 9 0 1 1 11.21 3a7 7 0 0 0 9.79 9.79Z"/>`)
+    },
+    planet: {
+        label: 'Планета',
+        color: '#38BDF8',
+        svg: buildStickerSvg(`<circle cx="12" cy="12" r="4"/><path d="M3 12c0-1.657 4.03-3 9-3s9 1.343 9 3-4.03 3-9 3-9-1.343-9-3Z"/><path d="M6.5 8.5c-.95.74-1.5 1.6-1.5 2.5 0 .9.55 1.76 1.5 2.5"/><path d="M17.5 11.5c.95-.74 1.5-1.6 1.5-2.5 0-.9-.55-1.76-1.5-2.5"/>`)
     }
 };
 
 const stickerPacks = {
     emotions: { name: '😊 Эмоции', stickers: ['smile', 'sparkles', 'sad', 'idea'] },
     gestures: { name: '👋 Жесты', stickers: ['thumbsUp', 'thumbsDown', 'wave', 'heart'] },
-    symbols: { name: '✨ Символы', stickers: ['fire', 'star', 'gift', 'rocket'] }
+    symbols: { name: '✨ Символы', stickers: ['fire', 'star', 'gift', 'rocket', 'sun', 'moon', 'planet'] }
 };
+
+
 
 const stickerTemplateCache = new Map();
 
@@ -1211,6 +1232,7 @@ function createStickerSvgElement(stickerId) {
     const template = stickerTemplateCache.get(stickerId);
     const element = template.content.firstElementChild.cloneNode(true);
     element.setAttribute('aria-hidden', 'true');
+    element.setAttribute('focusable', 'false');
     return element;
 }
 
@@ -1226,37 +1248,117 @@ function getMessagePreviewText(messageData) {
 }
 
 let currentStickerPack = 'emotions';
+let stickerPickerAnchorElement = null;
+
+function positionStickerPicker(picker) {
+    if (!picker || !stickerPickerAnchorElement) {
+        return;
+    }
+
+    const anchorRect = stickerPickerAnchorElement.getBoundingClientRect();
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+    const padding = 12;
+
+    const width = Math.min(360, Math.max(240, viewportWidth - padding * 2));
+    picker.style.width = `${width}px`;
+
+    const maxHeight = Math.min(440, Math.max(260, viewportHeight - padding * 2));
+    picker.style.maxHeight = `${maxHeight}px`;
+
+    const measuredHeight = Math.min(maxHeight, picker.offsetHeight || maxHeight);
+
+    let top = anchorRect.top - measuredHeight - padding;
+    if (top < padding) {
+        top = anchorRect.bottom + padding;
+    }
+    if (top + measuredHeight + padding > viewportHeight) {
+        top = viewportHeight - measuredHeight - padding;
+    }
+    top = Math.max(padding, Math.min(top, viewportHeight - measuredHeight - padding));
+
+    const left = Math.min(
+        viewportWidth - padding - width,
+        Math.max(padding, anchorRect.left + anchorRect.width / 2 - width / 2)
+    );
+
+    picker.style.top = `${top}px`;
+    picker.style.left = `${left}px`;
+    picker.style.bottom = '';
+}
+
+const repositionStickerPicker = () => {
+    const picker = document.getElementById('sticker-picker');
+    if (!picker || picker.style.display !== 'block') {
+        return;
+    }
+    positionStickerPicker(picker);
+};
+
+window.addEventListener('resize', repositionStickerPicker);
+window.addEventListener('orientationchange', repositionStickerPicker);
+document.addEventListener('scroll', repositionStickerPicker, true);
 
 function toggleStickerPicker(event) {
-    event.stopPropagation();
-    event.preventDefault();
-    
-    // Создаем пикер если его нет
+    if (event) {
+        event.stopPropagation();
+        event.preventDefault();
+    }
+
     let picker = document.getElementById('sticker-picker');
-    
+
     if (!picker) {
         picker = createStickerPicker();
         document.body.appendChild(picker);
     }
-    
+
     const isVisible = picker.style.display === 'block';
-    
+
     if (isVisible) {
-        picker.style.display = 'none';
+        picker.style.opacity = '0';
+        picker.style.transform = 'translate3d(0, 12px, 0)';
+        stickerPickerAnchorElement = null;
+        setTimeout(() => {
+            picker.style.display = 'none';
+            picker.style.opacity = '';
+            picker.style.transform = '';
+        }, 160);
         return;
     }
-    
+
+    stickerPickerAnchorElement = event?.currentTarget || event?.target || stickerPickerAnchorElement;
+    if (!stickerPickerAnchorElement) {
+        stickerPickerAnchorElement = document.querySelector('[onclick*="toggleStickerPicker"]');
+    }
     closeAllMenus();
+
     picker.style.display = 'block';
-    
-    // Закрываем при клике вне пикера
+    picker.style.opacity = '0';
+    picker.style.transform = 'translate3d(0, 12px, 0)';
+
+    requestAnimationFrame(() => {
+        positionStickerPicker(picker);
+        requestAnimationFrame(() => {
+            picker.style.opacity = '1';
+            picker.style.transform = 'translate3d(0, 0, 0)';
+        });
+    });
+
     setTimeout(() => {
-        document.addEventListener('click', function closePicker(e) {
+        const closePicker = (e) => {
             if (!e.target.closest('#sticker-picker') && !e.target.closest('[onclick*="toggleStickerPicker"]')) {
-                picker.style.display = 'none';
+                picker.style.opacity = '0';
+                picker.style.transform = 'translate3d(0, 12px, 0)';
+                stickerPickerAnchorElement = null;
+                setTimeout(() => {
+                    picker.style.display = 'none';
+                    picker.style.opacity = '';
+                    picker.style.transform = '';
+                }, 160);
                 document.removeEventListener('click', closePicker);
             }
-        });
+        };
+        document.addEventListener('click', closePicker);
     }, 100);
 }
 
@@ -1265,19 +1367,13 @@ function createStickerPicker() {
     picker.id = 'sticker-picker';
     picker.className = 'sticker-picker glass';
     picker.style.position = 'fixed';
-    picker.style.bottom = 'calc(96px + env(safe-area-inset-bottom, 0))';
-    picker.style.left = '50%';
-    picker.style.transform = 'translateX(-50%)';
-    picker.style.width = 'min(380px, calc(100vw - 32px))';
-    picker.style.maxHeight = 'min(480px, calc(100vh - 140px))';
-    picker.style.background = 'var(--glass-bg)';
+    picker.style.zIndex = '2000';
     const glassBlur = getComputedStyle(document.documentElement).getPropertyValue('--glass-blur') || '20px';
     picker.style.backdropFilter = `blur(${glassBlur.trim()}) saturate(180%)`;
     picker.style.webkitBackdropFilter = picker.style.backdropFilter;
     picker.style.border = '1px solid var(--glass-border)';
     picker.style.borderRadius = 'var(--radius-lg)';
     picker.style.boxShadow = '0 8px 32px rgba(0, 0, 0, 0.3)';
-    picker.style.zIndex = '2000';
     picker.style.display = 'none';
     picker.style.overflow = 'hidden';
 
