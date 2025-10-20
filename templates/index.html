@@ -1543,7 +1543,7 @@
 
             <!-- THREAD VIEW -->
             <div id="thread-view" class="content-view" style="display: none;">
-                <div class="thread-header glass">
+                <div class="thread-header thread-surface">
                     <button class="icon-btn" id="thread-back-btn" title="Назад" onclick="closeThreadView()">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                             <line x1="19" y1="12" x2="5" y2="12"></line>
@@ -1556,10 +1556,10 @@
                     </div>
                     <div class="thread-meta" id="thread-meta"></div>
                 </div>
-                <div class="thread-root-card glass" id="thread-root-card" style="display: none;"></div>
+                <div class="thread-root-card thread-surface" id="thread-root-card" style="display: none;"></div>
                 <div class="thread-comments" id="thread-comments"></div>
                 <div class="thread-empty" id="thread-empty" style="display: none;">Пока нет комментариев. Будьте первым!</div>
-                <div class="thread-input-area glass" id="thread-input-area" style="display: none;">
+                <div class="thread-input-area thread-surface" id="thread-input-area" style="display: none;">
                     <textarea id="thread-input" rows="2" placeholder="Написать комментарий..." maxlength="2000"></textarea>
                     <div class="thread-input-actions">
                         <button class="primary-btn" id="thread-send-btn" onclick="sendThreadComment()">Отправить</button>
