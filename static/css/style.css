@@ -3937,12 +3937,13 @@ html {
     border-radius: var(--radius-lg);
     overflow: hidden;
     background: var(--glass-bg);
-    border: 1px solid var(--glass-border);
+    border: none;
     transition: background var(--transition-fast), box-shadow var(--transition-fast), border-color var(--transition-fast);
     padding: 14px 16px;
     cursor: pointer;
     width: 100%;
     box-sizing: border-box;
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--glass-border) 65%, transparent);
 }
 
 .poll-option-row:hover {
@@ -3973,7 +3974,7 @@ html {
 
 .poll-option-text {
     font-size: 16px;
-    font-weight: 600;
+    font-weight: 500;
     line-height: 1.35;
     word-break: break-word;
 }
@@ -3989,12 +3990,13 @@ html {
     width: 34px;
     height: 34px;
     border-radius: 50%;
-    border: 2px solid var(--glass-border);
+    border: none;
     display: flex;
     align-items: center;
     justify-content: center;
     transition: all var(--transition-fast);
     background: var(--glass-bg);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--glass-border) 70%, transparent);
 }
 
 .poll-option-check svg {
@@ -4005,13 +4007,12 @@ html {
 }
 
 .poll-option-selected {
-    border-color: var(--color-primary);
     box-shadow: 0 12px 32px rgba(0, 36, 120, 0.35);
 }
 
 .poll-option-selected .poll-option-check {
     background: var(--color-primary);
-    border-color: transparent;
+    box-shadow: none;
     color: #ffffff;
 }
 
@@ -4027,6 +4028,11 @@ html {
 .poll-option-disabled {
     cursor: not-allowed;
     opacity: 0.72;
+}
+
+.poll-option-row,
+.poll-option-row * {
+    user-select: none;
 }
 
 .poll-option-disabled .poll-option-check {
@@ -4086,6 +4092,18 @@ html {
 
 .poll-total {
     font-weight: 600;
+}
+
+.message-container.poll-message {
+    max-width: 95%;
+    width: min(680px, 100%);
+    align-self: stretch;
+}
+
+.message-container.poll-message .message-container-inner,
+.message-container.poll-message .message,
+.message-container.poll-message .poll-container {
+    width: 100%;
 }
 
 .message-thread-actions {
@@ -4344,11 +4362,11 @@ html {
     pointer-events: none;
 }
 
-.thread-input-pill {
+.thread-composer {
     pointer-events: auto;
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 16px;
     width: min(680px, calc(100% - 16px));
     padding: 12px clamp(16px, 4vw, 22px);
     border-radius: var(--radius-full);
@@ -4359,7 +4377,11 @@ html {
     -webkit-backdrop-filter: blur(calc(var(--glass-blur) * 0.9)) saturate(170%);
 }
 
-.thread-input-area textarea {
+.thread-composer-main {
+    flex: 1;
+}
+
+.thread-composer textarea {
     flex: 1;
     resize: none;
     border: none;
@@ -4372,18 +4394,28 @@ html {
     padding: 4px 0;
 }
 
-.thread-input-area textarea::placeholder {
+.thread-composer textarea::placeholder {
     color: var(--text-color-muted);
 }
 
-.thread-input-area textarea:focus {
+.thread-composer textarea:focus {
     outline: none;
 }
 
-.thread-input-actions {
+.thread-composer-actions {
     display: flex;
     gap: 8px;
     align-items: center;
+    pointer-events: auto;
+}
+
+.thread-composer-actions .thread-icon[disabled] {
+    opacity: 0.4;
+    cursor: default;
+}
+
+.thread-composer-actions .thread-icon svg {
+    opacity: 0.85;
 }
 
 @media (max-width: 768px) {
@@ -4423,7 +4455,7 @@ html {
         bottom: calc(env(safe-area-inset-bottom, 0) + 12px);
     }
 
-    .thread-input-pill {
+    .thread-composer {
         width: calc(100% - 8px);
         padding: 12px clamp(14px, 6vw, 18px);
     }
@@ -4942,7 +4974,7 @@ html {
         display: none;
     }
 
-    .thread-input-pill {
+    .thread-composer {
         width: calc(100% - 4px);
         padding: 12px clamp(12px, 8vw, 18px);
     }

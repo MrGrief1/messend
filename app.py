@@ -94,6 +94,14 @@ s = URLSafeTimedSerializer(app.config['SECRET_KEY'])
 mail = Mail(app)
 IS_MAIL_CONFIGURED = bool(app.config.get('MAIL_SERVER') and app.config.get('MAIL_USERNAME'))
 
+
+def parse_room_id(value):
+    """Безопасно преобразует идентификатор комнаты к int."""
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return None
+
 # --- Модели Базы Данных ---
 class Contact(db.Model):
     __tablename__ = 'contact'
@@ -625,7 +633,7 @@ def get_ice_servers():
 def handle_send_poll(data):
     if 'user_id' not in session: return
     sender_id = session['user_id']
-    room_id = data.get('room_id')
+    room_id = parse_room_id(data.get('room_id'))
     question = (data.get('question') or '').strip()
     options = data.get('options') or []
     multiple_choice = bool(data.get('multiple_choice'))
@@ -1489,12 +1497,12 @@ def send_voice():
     if 'user_id' not in session:
         return jsonify({'success': False, 'message': 'Не авторизован'}), 401
     
-    room_id = request.form.get('room_id')
+    room_id = parse_room_id(request.form.get('room_id'))
     audio_file = request.files.get('audio')
-    
+
     if not room_id or not audio_file:
         return jsonify({'success': False, 'message': 'Не указана комната или файл'}), 400
-    
+
     # Проверяем доступ к комнате
     participant = RoomParticipant.query.filter_by(user_id=session['user_id'], room_id=room_id).first()
     if not participant:
@@ -1678,7 +1686,7 @@ def handle_reaction(data):
 def handle_typing(data):
     if 'user_id' not in session: return
     user_id = session['user_id']
-    room_id = data.get('room_id')
+    room_id = parse_room_id(data.get('room_id'))
     is_typing = bool(data.get('is_typing'))
     if not room_id: return
     if not RoomParticipant.query.filter_by(user_id=user_id, room_id=room_id).first():
@@ -1791,7 +1799,7 @@ def handle_room_call_action(data):
     # Групповые звонки: обработка различных действий
     if 'user_id' not in session: return
     sender_id = session['user_id']
-    room_id = data.get('room_id')
+    room_id = parse_room_id(data.get('room_id'))
     action_type = data.get('action')  # 'lobby_created', 'invite', 'join', 'end'
     if not room_id or not action_type: return
 
@@ -1847,12 +1855,11 @@ def handle_room_call_action(data):
 def handle_system_message(data):
     # Создание системного сообщения (блокировка, разблокировка, звонки)
     if 'user_id' not in session: return
-    
-    room_id = data.get('room_id')
+    room_id = parse_room_id(data.get('room_id'))
     content = data.get('content')
     msg_type = data.get('type', 'system')  # 'system' or 'call'
     call_duration = data.get('call_duration')
-    
+
     if not room_id or not content: return
     
     # Проверяем доступ к комнате
@@ -1880,10 +1887,10 @@ def handle_system_message(data):
 def handle_whiteboard_draw(data):
     """Синхронизация рисования на доске между участниками"""
     if 'user_id' not in session: return
-    
-    room_id = data.get('room_id')
+
+    room_id = parse_room_id(data.get('room_id'))
     if not room_id: return
-    
+
     # Проверяем доступ к комнате
     if not RoomParticipant.query.filter_by(user_id=session['user_id'], room_id=room_id).first():
         return
@@ -1895,10 +1902,10 @@ def handle_whiteboard_draw(data):
 def handle_whiteboard_clear(data):
     """Очистка доски для всех участников"""
     if 'user_id' not in session: return
-    
-    room_id = data.get('room_id')
+
+    room_id = parse_room_id(data.get('room_id'))
     if not room_id: return
-    
+
     # Проверяем доступ к комнате
     if not RoomParticipant.query.filter_by(user_id=session['user_id'], room_id=room_id).first():
         return
@@ -1910,12 +1917,12 @@ def handle_whiteboard_clear(data):
 def handle_document_update(data):
     """Синхронизация совместного документа"""
     if 'user_id' not in session: return
-    
-    room_id = data.get('room_id')
+
+    room_id = parse_room_id(data.get('room_id'))
     content = data.get('content', '')
-    
+
     if not room_id: return
-    
+
     # Проверяем доступ к комнате
     if not RoomParticipant.query.filter_by(user_id=session['user_id'], room_id=room_id).first():
         return
@@ -1927,12 +1934,12 @@ def handle_document_update(data):
 def handle_presentation_slide_change(data):
     """Синхронизация смены слайдов презентации"""
     if 'user_id' not in session: return
-    
-    room_id = data.get('room_id')
+
+    room_id = parse_room_id(data.get('room_id'))
     slide_index = data.get('slide_index', 0)
-    
+
     if not room_id: return
-    
+
     # Проверяем доступ к комнате
     if not RoomParticipant.query.filter_by(user_id=session['user_id'], room_id=room_id).first():
         return

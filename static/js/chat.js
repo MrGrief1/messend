@@ -2259,6 +2259,7 @@ function displayMessage(data) {
     const isStickerMessage = data.message_type === 'sticker';
 
     if (isPollMessage) {
+        messageContainer.classList.add('poll-message');
         messageElement.classList.add('poll-message');
 
         const poll = data.poll || {};
@@ -3536,6 +3537,9 @@ function getAudioContext() {
     if (!audioContext) {
         audioContext = new (window.AudioContext || window.webkitAudioContext)();
     }
+    if (audioContext && audioContext.state === 'suspended') {
+        audioContext.resume().catch(() => {});
+    }
     return audioContext;
 }
 
@@ -3543,8 +3547,11 @@ function getAudioContext() {
 function playRingtone() {
     try {
         stopRingtone();
-        
+
         const ctx = getAudioContext();
+        if (ctx && ctx.state === 'suspended') {
+            ctx.resume().catch(() => {});
+        }
         const ringtone = ringtones[currentRingtone] || ringtones.marimba;
         
         const playRingtoneTone = () => {
