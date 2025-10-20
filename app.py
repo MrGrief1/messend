@@ -1904,7 +1904,7 @@ def handle_whiteboard_clear(data):
         return
     
     # Отправляем всем участникам кроме отправителя
-    emit('whiteboard_clear', {}, room=str(room_id), include_self=False)
+    emit('whiteboard_clear', {'room_id': room_id}, room=str(room_id), include_self=False)
 
 @socketio.on('document_update')
 def handle_document_update(data):

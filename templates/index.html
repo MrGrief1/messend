@@ -1558,23 +1558,21 @@
                     </div>
                     <div class="thread-meta" id="thread-meta"></div>
                 </div>
-                <div class="thread-search-wrapper">
-                    <div class="thread-search-pill" id="thread-search-pill">
-                        <span class="material-icons-round">search</span>
-                        <input type="text" id="thread-search-input" placeholder="Поиск по комментариям" autocomplete="off">
-                        <button type="button" class="thread-search-clear" id="thread-search-clear" aria-label="Очистить поиск">
-                            <span class="material-icons-round">close</span>
-                        </button>
-                    </div>
-                </div>
                 <div class="thread-root-card glass" id="thread-root-card" style="display: none;"></div>
                 <div class="thread-comments" id="thread-comments"></div>
-                <div class="thread-search-empty" id="thread-search-empty" style="display: none;">Совпадений не найдено</div>
                 <div class="thread-empty" id="thread-empty" style="display: none;">Пока нет комментариев. Будьте первым!</div>
                 <div class="thread-input-area" id="thread-input-area" style="display: none;">
-                    <div class="thread-input-pill glass">
-                        <textarea id="thread-input" rows="2" placeholder="Написать комментарий..." maxlength="2000"></textarea>
-                        <div class="thread-input-actions">
+                    <div class="chat-composer-floating thread-composer">
+                        <button class="icon-btn composer-icon" id="thread-emoji-btn" type="button" onclick="threadInput && threadInput.focus();" title="Комментарий">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <path d="M8 14s1.5 2 4 2 4-2 4-2"></path>
+                                <line x1="9" y1="9" x2="9.01" y2="9"></line>
+                                <line x1="15" y1="9" x2="15.01" y2="9"></line>
+                            </svg>
+                        </button>
+                        <input type="text" id="thread-input" placeholder="Написать комментарий..." maxlength="2000" autocomplete="off">
+                        <div class="composer-trailing thread-composer-actions">
                             <button class="primary-btn" id="thread-send-btn" onclick="sendThreadComment()">Отправить</button>
                         </div>
                     </div>

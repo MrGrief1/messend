@@ -298,6 +298,7 @@ document.addEventListener('DOMContentLoaded', (event) => {
     
     // Запрашиваем разрешение на уведомления
     requestNotificationPermission();
+    scheduleAudioUnlock();
 
     // Подключаемся к Socket.IO по текущему origin. Разрешаем стандартный апгрейд (polling -> websocket).
     socket = io({ transports: ['polling'], upgrade: false });
@@ -673,23 +674,35 @@ document.addEventListener('DOMContentLoaded', (event) => {
     
     // Доска для рисования
     socket.on('whiteboard_draw', (data) => {
-        if (!whiteboardCanvas || !whiteboardCtx) return;
-        
-        const fromX = data.fromX * whiteboardCanvas.width;
-        const fromY = data.fromY * whiteboardCanvas.height;
-        const toX = data.toX * whiteboardCanvas.width;
-        const toY = data.toY * whiteboardCanvas.height;
-        
-        drawLine(fromX, fromY, toX, toY, data.color, data.size);
+        if (!data) return;
+        if (data.room_id && String(data.room_id) !== String(currentRoomId)) {
+            return;
+        }
+
+        const segment = {
+            fromX: data.fromX,
+            fromY: data.fromY,
+            toX: data.toX,
+            toY: data.toY,
+            color: data.color,
+            size: data.size
+        };
+
+        const targetRoomId = data.room_id ?? currentRoomId;
+        recordWhiteboardSegment(segment, targetRoomId);
+        if (whiteboardCanvas && whiteboardCtx && String(targetRoomId) === String(currentRoomId)) {
+            drawWhiteboardSegment(segment);
+        }
     });
-    
-    socket.on('whiteboard_clear', () => {
+
+    socket.on('whiteboard_clear', (data = {}) => {
         if (whiteboardCtx && whiteboardCanvas) {
             whiteboardCtx.clearRect(0, 0, whiteboardCanvas.width, whiteboardCanvas.height);
         }
         if (whiteboardOverlayCtx && whiteboardOverlay) {
             whiteboardOverlayCtx.clearRect(0, 0, whiteboardOverlay.width, whiteboardOverlay.height);
         }
+        clearWhiteboardHistory(data.room_id ?? currentRoomId);
     });
     
     // Совместные документы
@@ -2259,6 +2272,7 @@ function displayMessage(data) {
     const isStickerMessage = data.message_type === 'sticker';
 
     if (isPollMessage) {
+        messageContainer.classList.add('poll-message-container');
         messageElement.classList.add('poll-message');
 
         const poll = data.poll || {};
@@ -3455,6 +3469,51 @@ let ringtoneOscillator = null;
 let ringtoneGainNode = null;
 let ringtoneInterval = null;
 let currentRingtone = localStorage.getItem('selectedRingtone') || 'marimba';
+let audioUnlockScheduled = false;
+
+function resumeAudioContextSilently() {
+    try {
+        if (!audioContext) return;
+        if (audioContext.state === 'suspended') {
+            audioContext.resume().catch(() => {});
+        }
+    } catch (error) {
+        console.warn('Не удалось активировать аудио контекст:', error);
+    }
+}
+
+function scheduleAudioUnlock() {
+    if (audioUnlockScheduled) return;
+    audioUnlockScheduled = true;
+
+    const unlockHandler = () => {
+        try {
+            const ctx = getAudioContext();
+            if (ctx && ctx.state === 'suspended') {
+                ctx.resume().catch(() => {});
+            }
+        } catch (error) {
+            console.warn('Ошибка разблокировки аудио контекста:', error);
+        } finally {
+            document.removeEventListener('pointerdown', unlockHandler);
+            document.removeEventListener('keydown', unlockHandler);
+        }
+    };
+
+    document.addEventListener('pointerdown', unlockHandler, { once: true });
+    document.addEventListener('keydown', unlockHandler, { once: true });
+}
+
+function ensureAudioContextReady() {
+    const ctx = getAudioContext();
+    if (!ctx) {
+        return null;
+    }
+    if (ctx.state === 'suspended') {
+        ctx.resume().catch(() => {});
+    }
+    return ctx;
+}
 
 // Библиотека мелодий рингтонов
 const ringtones = {
@@ -3533,8 +3592,10 @@ async function loadUserAvatar(placeholderElement, userId) {
 
 // Создаём AudioContext при первом использовании
 function getAudioContext() {
+    scheduleAudioUnlock();
     if (!audioContext) {
         audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        resumeAudioContextSilently();
     }
     return audioContext;
 }
@@ -3543,10 +3604,13 @@ function getAudioContext() {
 function playRingtone() {
     try {
         stopRingtone();
-        
-        const ctx = getAudioContext();
+
+        const ctx = ensureAudioContextReady();
+        if (!ctx) {
+            return;
+        }
         const ringtone = ringtones[currentRingtone] || ringtones.marimba;
-        
+
         const playRingtoneTone = () => {
             ringtone.notes.forEach(note => {
                 const osc = ctx.createOscillator();
@@ -3597,10 +3661,13 @@ function stopRingtone() {
 // Звук уведомления о новом сообщении
 function playMessageSound() {
     try {
-        const ctx = getAudioContext();
+        const ctx = ensureAudioContextReady();
+        if (!ctx) {
+            return;
+        }
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
-        
+
         osc.connect(gain);
         gain.connect(ctx.destination);
         
@@ -3702,7 +3769,7 @@ function renderPollOptionsAndResults(pollContainer, messageId, poll) {
 
         const votesSpan = document.createElement('span');
         votesSpan.className = 'poll-option-votes';
-        votesSpan.textContent = totalVotes > 0 ? `${votes} · ${percent}%` : `${votes}`;
+        votesSpan.textContent = totalVotes > 0 ? `${votes} — ${percent}%` : `${votes}`;
         content.appendChild(votesSpan);
 
         row.appendChild(content);
@@ -5890,10 +5957,15 @@ function selectRoom(element) {
 
     // E. Вступаем в новую комнату SocketIO
     socket.emit('join', { room_id: parseInt(currentRoomId) });
-    
+
     // F. Сбрасываем счетчик непрочитанных
     markRoomAsRead(roomId);
-    
+
+    const whiteboardModal = document.getElementById('whiteboardModal');
+    if (whiteboardCanvas && whiteboardModal && getComputedStyle(whiteboardModal).display !== 'none') {
+        replayWhiteboardHistory(currentRoomId);
+    }
+
     // НОВОЕ: На мобильных переключаемся на экран чата (Telegram-стиль)
     if (window.innerWidth <= 768) {
         const sidebar = document.querySelector('.sidebar');
@@ -6121,6 +6193,81 @@ let whiteboardStartX = 0;
 let whiteboardStartY = 0;
 let whiteboardLastX = 0;
 let whiteboardLastY = 0;
+const whiteboardHistoryByRoom = new Map();
+const MAX_WHITEBOARD_HISTORY = 4000;
+
+function clampWhiteboardValue(value) {
+    const num = Number(value);
+    if (!Number.isFinite(num)) return 0;
+    if (num < 0) return 0;
+    if (num > 1) return 1;
+    return num;
+}
+
+function getWhiteboardHistory(roomId = currentRoomId) {
+    if (!roomId) return [];
+    const key = String(roomId);
+    let history = whiteboardHistoryByRoom.get(key);
+    if (!history) {
+        history = [];
+        whiteboardHistoryByRoom.set(key, history);
+    }
+    return history;
+}
+
+function recordWhiteboardSegment(segment, roomId = currentRoomId) {
+    if (!segment || !roomId) return;
+    const normalized = {
+        fromX: clampWhiteboardValue(segment.fromX),
+        fromY: clampWhiteboardValue(segment.fromY),
+        toX: clampWhiteboardValue(segment.toX),
+        toY: clampWhiteboardValue(segment.toY),
+        color: typeof segment.color === 'string' ? segment.color : whiteboardColor,
+        size: Number(segment.size) || whiteboardSize
+    };
+    const history = getWhiteboardHistory(roomId);
+    history.push(normalized);
+    if (history.length > MAX_WHITEBOARD_HISTORY) {
+        history.splice(0, history.length - MAX_WHITEBOARD_HISTORY);
+    }
+}
+
+function clearWhiteboardHistory(roomId = currentRoomId) {
+    if (!roomId) return;
+    const history = getWhiteboardHistory(roomId);
+    history.length = 0;
+}
+
+function drawWhiteboardSegment(segment) {
+    if (!whiteboardCanvas || !whiteboardCtx || !segment) return;
+    const width = whiteboardCanvas.width;
+    const height = whiteboardCanvas.height;
+    if (!width || !height) return;
+
+    const fromX = clampWhiteboardValue(segment.fromX) * width;
+    const fromY = clampWhiteboardValue(segment.fromY) * height;
+    const toX = clampWhiteboardValue(segment.toX) * width;
+    const toY = clampWhiteboardValue(segment.toY) * height;
+    const color = typeof segment.color === 'string' ? segment.color : whiteboardColor;
+    const size = Number(segment.size) || whiteboardSize;
+
+    drawLine(fromX, fromY, toX, toY, color, size);
+}
+
+function replayWhiteboardHistory(roomId = currentRoomId) {
+    if (!whiteboardCanvas || !whiteboardCtx) return;
+    const width = whiteboardCanvas.width;
+    const height = whiteboardCanvas.height;
+    if (!width || !height) return;
+
+    whiteboardCtx.clearRect(0, 0, width, height);
+    if (whiteboardOverlayCtx && whiteboardOverlay) {
+        whiteboardOverlayCtx.clearRect(0, 0, whiteboardOverlay.width, whiteboardOverlay.height);
+    }
+
+    const history = getWhiteboardHistory(roomId);
+    history.forEach(drawWhiteboardSegment);
+}
 
 function openWhiteboard() {
     openModal('whiteboardModal');
@@ -6149,6 +6296,7 @@ function openWhiteboard() {
     }
 
     resetWhiteboardToolbar();
+    replayWhiteboardHistory();
 }
 
 function resizeWhiteboardCanvas() {
@@ -6160,6 +6308,7 @@ function resizeWhiteboardCanvas() {
         whiteboardOverlay.width = width;
         whiteboardOverlay.height = height;
     }
+    replayWhiteboardHistory();
 }
 
 function resetWhiteboardToolbar() {
@@ -6349,14 +6498,23 @@ function drawShapeCircle(startX, startY, endX, endY) {
 
 function emitWhiteboardSegment(fromX, fromY, toX, toY, color, size) {
     if (!whiteboardCanvas) return;
-    socket.emit('whiteboard_draw', {
-        room_id: currentRoomId,
-        fromX: fromX / whiteboardCanvas.width,
-        fromY: fromY / whiteboardCanvas.height,
-        toX: toX / whiteboardCanvas.width,
-        toY: toY / whiteboardCanvas.height,
+    const width = whiteboardCanvas.width;
+    const height = whiteboardCanvas.height;
+    if (!width || !height) return;
+
+    const normalized = {
+        fromX: fromX / width,
+        fromY: fromY / height,
+        toX: toX / width,
+        toY: toY / height,
         color: color,
         size: size
+    };
+
+    recordWhiteboardSegment(normalized);
+    socket.emit('whiteboard_draw', {
+        room_id: currentRoomId,
+        ...normalized
     });
 }
 
@@ -6411,6 +6569,7 @@ function clearWhiteboard() {
     if (whiteboardOverlayCtx && whiteboardOverlay) {
         whiteboardOverlayCtx.clearRect(0, 0, whiteboardOverlay.width, whiteboardOverlay.height);
     }
+    clearWhiteboardHistory(currentRoomId);
     if (currentRoomId && socket) {
         socket.emit('whiteboard_clear', {
             room_id: currentRoomId
