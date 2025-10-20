@@ -1450,20 +1450,36 @@ def handle_message(data):
 
 @app.route('/api/mark_room_as_read', methods=['POST'])
 def mark_room_as_read():
-    if 'user_id' not in session: return jsonify({'error': 'Unauthorized'}), 401
-    
-    user_id = session['user_id']
-    data = request.get_json()
-    room_id = data.get('room_id')
+    if 'user_id' not in session:
+        return jsonify({'error': 'Unauthorized'}), 401
 
-    if not room_id:
+    user_id = session['user_id']
+    data = request.get_json() or {}
+
+    try:
+        room_id = int(data.get('room_id'))
+    except (TypeError, ValueError):
         return jsonify({'success': False, 'message': 'Не указан ID комнаты.'}), 400
 
     unread_entry = UnreadMessage.query.filter_by(user_id=user_id, room_id=room_id).first()
     if unread_entry:
         unread_entry.count = 0
-        db.session.commit()
-        
+
+    # Фиксируем последний прочитанный идентификатор сообщения в комнате
+    last_message_id = db.session.execute(
+        db.select(db.func.max(Message.id)).where(Message.room_id == room_id)
+    ).scalar()
+
+    db.session.commit()
+
+    if last_message_id:
+        payload = {
+            'room_id': room_id,
+            'reader_id': user_id,
+            'last_read_message_id': int(last_message_id)
+        }
+        socketio.emit('room_read_receipt', payload, room=str(room_id))
+
     return jsonify({'success': True})
 
 

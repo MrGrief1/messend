@@ -30,6 +30,9 @@ const threadCommentsEl = document.getElementById('thread-comments');
 const threadEmptyEl = document.getElementById('thread-empty');
 const threadInputArea = document.getElementById('thread-input-area');
 const threadInput = document.getElementById('thread-input');
+const threadSearchInput = document.getElementById('thread-search-input');
+const threadSearchClear = document.getElementById('thread-search-clear');
+const threadSearchEmptyState = document.getElementById('thread-search-empty');
 const chatViewContainer = document.getElementById('chat-view');
 const settingsViewContainer = document.getElementById('settings-view-inline');
 // Вызовы
@@ -112,6 +115,120 @@ const pollTipTimers = new Map();
 let pollCommentContext = null;
 let pollCommentPreviousPlaceholder = null;
 let activeThreadContext = null;
+let threadSearchQuery = '';
+
+const sentMessageStatus = new Map();
+const roomReadReceipts = new Map();
+
+const MESSAGE_STATUS_ICONS = {
+    delivered: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="5 13 9 17 19 7"></polyline></svg>',
+    read: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 13 7 17 13 11"></polyline><polyline points="10 13 14 17 22 9"></polyline></svg>'
+};
+
+if (threadSearchInput) {
+    threadSearchInput.addEventListener('input', (event) => {
+        filterThreadComments(event.target.value);
+    });
+}
+
+if (threadSearchClear) {
+    threadSearchClear.addEventListener('click', () => {
+        threadSearchQuery = '';
+        if (threadSearchInput) {
+            threadSearchInput.value = '';
+            threadSearchInput.focus();
+        }
+        filterThreadComments('');
+    });
+}
+
+function renderMessageStatusIcon(status) {
+    return MESSAGE_STATUS_ICONS[status] || MESSAGE_STATUS_ICONS.delivered;
+}
+
+function updateMessageStatusElement(element, status) {
+    if (!element) return;
+    const normalized = status === 'read' ? 'read' : 'delivered';
+    element.dataset.status = normalized;
+    element.innerHTML = renderMessageStatusIcon(normalized);
+    const label = normalized === 'read' ? 'Просмотрено' : 'Доставлено';
+    element.setAttribute('aria-label', label);
+    element.title = label;
+}
+
+function registerSentMessageStatus(messageId, roomId, element) {
+    if (!element) return;
+    const numericId = Number(messageId);
+    const numericRoomId = Number(roomId);
+    if (!Number.isFinite(numericId) || !Number.isFinite(numericRoomId)) return;
+    sentMessageStatus.set(numericId, { element, roomId: numericRoomId });
+    updateMessageStatusFromReceipts(numericRoomId, numericId);
+}
+
+function updateMessageStatusFromReceipts(roomId, messageId) {
+    const record = sentMessageStatus.get(Number(messageId));
+    if (!record) return;
+    const receipts = roomReadReceipts.get(Number(roomId));
+    if (!receipts) {
+        updateMessageStatusElement(record.element, 'delivered');
+        return;
+    }
+    let isRead = false;
+    receipts.forEach((lastReadId, readerId) => {
+        if (readerId === CURRENT_USER_ID) return;
+        if (Number(lastReadId) >= Number(messageId)) {
+            isRead = true;
+        }
+    });
+    updateMessageStatusElement(record.element, isRead ? 'read' : 'delivered');
+}
+
+function applyReadReceipt(payload) {
+    if (!payload) return;
+    const roomId = Number(payload.room_id ?? payload.roomId);
+    const readerId = Number(payload.reader_id ?? payload.readerId);
+    const lastId = Number(payload.last_read_message_id ?? payload.lastReadMessageId);
+    if (!Number.isFinite(roomId) || !Number.isFinite(lastId)) return;
+
+    let roomMap = roomReadReceipts.get(roomId);
+    if (!roomMap) {
+        roomMap = new Map();
+        roomReadReceipts.set(roomId, roomMap);
+    }
+    if (Number.isFinite(readerId)) {
+        roomMap.set(readerId, lastId);
+    }
+
+    sentMessageStatus.forEach((record, messageId) => {
+        if (!record || record.roomId !== roomId) return;
+        if (messageId <= lastId && readerId !== CURRENT_USER_ID) {
+            updateMessageStatusElement(record.element, 'read');
+        } else {
+            updateMessageStatusFromReceipts(roomId, messageId);
+        }
+    });
+}
+
+function createMessageMeta(date, isSent, messageId, roomId) {
+    const metaElement = document.createElement('div');
+    metaElement.className = 'message-meta';
+
+    const timestampSpan = document.createElement('span');
+    timestampSpan.className = 'message-timestamp';
+    timestampSpan.textContent = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
+    metaElement.appendChild(timestampSpan);
+
+    let statusElement = null;
+    if (isSent) {
+        statusElement = document.createElement('span');
+        statusElement.className = 'message-status';
+        updateMessageStatusElement(statusElement, 'delivered');
+        metaElement.appendChild(statusElement);
+        registerSentMessageStatus(messageId, roomId, statusElement);
+    }
+
+    return { metaElement, statusElement };
+}
 
 // ========== Browser Push Notifications ==========
 let notificationsEnabled = false;
@@ -232,6 +349,10 @@ document.addEventListener('DOMContentLoaded', (event) => {
         }
     });
 
+    socket.on('room_read_receipt', (data) => {
+        applyReadReceipt(data);
+    });
+
     // Обновления опросов: приходят после голосования любого участника
     socket.on('poll_updated', (data) => {
         if (!data || !data.message_id || !data.poll) return;
@@ -296,14 +417,14 @@ document.addEventListener('DOMContentLoaded', (event) => {
         const container = document.querySelector(`.message-container[data-message-id="${message_id}"] .message`);
         if (container) {
             // Заменим текст до таймстемпа
-            const ts = container.querySelector('.message-timestamp');
+            const meta = container.querySelector('.message-meta');
             const sender = container.querySelector('.message-sender');
             const media = container.querySelector('.message-media');
             container.innerHTML = ''; // Очищаем
             if (sender) container.appendChild(sender);
             if (media) container.appendChild(media); // Восстанавливаем медиа
             container.appendChild(document.createTextNode(content));
-            if (ts) container.appendChild(ts);
+            if (meta) container.appendChild(meta);
         }
     });
     
@@ -332,6 +453,7 @@ document.addEventListener('DOMContentLoaded', (event) => {
     socket.on('message_deleted', ({ message_id }) => {
         const container = document.querySelector(`.message-container[data-message-id="${message_id}"]`);
         if (container) container.remove();
+        sentMessageStatus.delete(Number(message_id));
     });
 
     socket.on('error', (data) => alert('Ошибка: ' + data.message));
@@ -542,6 +664,7 @@ document.addEventListener('DOMContentLoaded', (event) => {
             data.message_ids.forEach(id => {
                 const container = document.querySelector(`.message-container[data-message-id="${id}"]`);
                 if (container) container.remove();
+                sentMessageStatus.delete(Number(id));
             });
         }
     });
@@ -613,12 +736,17 @@ let currentTab = 'chats'; // 'chats' или 'archive'
 
 function switchToTab(tab) {
     currentTab = tab;
-    
+
     const chatsTab = document.getElementById('chats-tab');
     const archiveTab = document.getElementById('archive-tab');
     const roomList = document.getElementById('room-list');
     const archiveList = document.getElementById('archive-list');
-    
+    const sidebarContent = document.querySelector('.sidebar-content');
+
+    if (!roomList || !archiveList) {
+        return;
+    }
+
     if (tab === 'chats') {
         // Показываем обычные чаты
         chatsTab.classList.add('active');
@@ -629,6 +757,7 @@ function switchToTab(tab) {
         archiveTab.style.color = 'var(--text-color)';
         roomList.style.display = 'block';
         archiveList.style.display = 'none';
+        if (sidebarContent) sidebarContent.classList.remove('showing-archive');
     } else {
         // Показываем архив
         chatsTab.classList.remove('active');
@@ -639,21 +768,26 @@ function switchToTab(tab) {
         archiveTab.style.color = 'white';
         roomList.style.display = 'none';
         archiveList.style.display = 'block';
+        if (sidebarContent) sidebarContent.classList.add('showing-archive');
     }
-    
+
     updateChatCounts();
 }
 
 function updateChatCounts() {
     const activeCount = document.querySelectorAll('#room-list .room-item').length;
     const archivedCount = document.querySelectorAll('#archive-list .room-item').length;
-    
+
     const activeCountEl = document.getElementById('active-chats-count');
     const archivedCountEl = document.getElementById('archived-chats-count');
-    
+
     if (activeCountEl) activeCountEl.textContent = activeCount > 0 ? `(${activeCount})` : '';
     if (archivedCountEl) archivedCountEl.textContent = archivedCount > 0 ? `(${archivedCount})` : '';
 }
+
+document.addEventListener('DOMContentLoaded', () => {
+    switchToTab(currentTab);
+});
 
 // Архивирование чата
 async function archiveChat(roomId) {
@@ -1141,6 +1275,16 @@ const stickerDefinitions = {
         color: '#FACC15',
         svg: `<svg class="sticker-icon" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M12 18v-5.25"/><path d="M10.5 12.75a6.01 6.01 0 0 0 3 0"/><path d="M15.75 18v-.192c0-.983.658-1.823 1.508-2.316a7.5 7.5 0 1 0-7.517 0c.85.493 1.509 1.333 1.509 2.316V18"/><path d="M11.25 21.728a14.406 14.406 0 0 0 3 0"/><path d="M12.75 19.289a12.06 12.06 0 0 0 4.5 0"/></svg>`
     },
+    wink: {
+        label: 'Подмигивание',
+        color: '#FB7185',
+        svg: `<svg class="sticker-icon" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Z"/><circle cx="9" cy="10" r="0.75" fill="currentColor" stroke="none"/><path d="M14.25 10.5h3"/><path d="M8.25 14.25s1.5 2.25 3.75 2.25 3.75-2.25 3.75-2.25"/></svg>`
+    },
+    laugh: {
+        label: 'Смех',
+        color: '#F97316',
+        svg: `<svg class="sticker-icon" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Z"/><circle cx="9" cy="10.5" r="0.75" fill="currentColor" stroke="none"/><circle cx="15" cy="10.5" r="0.75" fill="currentColor" stroke="none"/><path d="M7.5 13.5c.9 2.1 2.7 3.75 4.5 3.75s3.6-1.65 4.5-3.75"/></svg>`
+    },
     thumbsUp: {
         label: 'Лайк',
         color: '#34D399',
@@ -1180,16 +1324,37 @@ const stickerDefinitions = {
         label: 'Ракета',
         color: '#38BDF8',
         svg: `<svg class="sticker-icon" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M15.59 14.37a6 6 0 0 1-5.84 7.38v-4.8"/><path d="M15.59 14.37a14.98 14.98 0 0 0 6.16-12.12A14.98 14.98 0 0 0 9.631 8.41"/><path d="M15.59 14.37a14.926 14.926 0 0 1-5.841 2.58"/><path d="M9.749 8.41a6 6 0 0 0-7.381 5.84h4.8"/><path d="M7.168 14.25a14.927 14.927 0 0 0-2.58 5.84"/><path d="M7.287 20.89a4.493 4.493 0 0 0-1.757 4.306 4.493 4.493 0 0 0 4.306-1.758"/><path d="M16.5 9a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0Z"/></svg>`
+    },
+    ok: {
+        label: 'ОК',
+        color: '#22C55E',
+        svg: `<svg class="sticker-icon" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Z"/><path d="m9.75 12.75 2.25 2.25 4.5-4.5"/></svg>`
+    },
+    peace: {
+        label: 'Мир',
+        color: '#60A5FA',
+        svg: `<svg class="sticker-icon" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Z"/><path d="M12 6.75v10.5"/><path d="M7.5 9.75 12 12l4.5-2.25"/><path d="M7.5 14.25 12 12l4.5 2.25"/></svg>`
+    },
+    sun: {
+        label: 'Солнце',
+        color: '#FBBF24',
+        svg: `<svg class="sticker-icon" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M12 18.75a6.75 6.75 0 1 0 0-13.5 6.75 6.75 0 0 0 0 13.5Z"/><path d="M12 1.5v2.25"/><path d="M12 20.25v2.25"/><path d="M4.219 4.219l1.591 1.591"/><path d="M18.19 18.192l1.591 1.591"/><path d="M1.5 12h2.25"/><path d="M20.25 12h2.25"/><path d="M4.219 19.781l1.591-1.591"/><path d="M18.19 5.808l1.591-1.591"/></svg>`
+    },
+    moon: {
+        label: 'Луна',
+        color: '#A855F7',
+        svg: `<svg class="sticker-icon" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.75A9 9 0 1 1 11.25 3 7.5 7.5 0 0 0 21 12.75Z"/></svg>`
     }
 };
 
 const stickerPacks = {
-    emotions: { name: '😊 Эмоции', stickers: ['smile', 'sparkles', 'sad', 'idea'] },
-    gestures: { name: '👋 Жесты', stickers: ['thumbsUp', 'thumbsDown', 'wave', 'heart'] },
-    symbols: { name: '✨ Символы', stickers: ['fire', 'star', 'gift', 'rocket'] }
+    emotions: { name: '😊 Эмоции', stickers: ['smile', 'wink', 'laugh', 'sparkles', 'sad', 'idea'] },
+    gestures: { name: '👋 Жесты', stickers: ['thumbsUp', 'thumbsDown', 'wave', 'heart', 'ok', 'peace'] },
+    symbols: { name: '✨ Символы', stickers: ['fire', 'star', 'gift', 'rocket', 'sun', 'moon'] }
 };
 
 const stickerTemplateCache = new Map();
+let currentStickerAnchor = null;
 
 function getStickerDefinition(stickerId) {
     return stickerDefinitions[stickerId] || null;
@@ -1230,30 +1395,37 @@ let currentStickerPack = 'emotions';
 function toggleStickerPicker(event) {
     event.stopPropagation();
     event.preventDefault();
-    
+
+    const anchor = event.currentTarget || event.target;
+
     // Создаем пикер если его нет
     let picker = document.getElementById('sticker-picker');
-    
+
     if (!picker) {
         picker = createStickerPicker();
         document.body.appendChild(picker);
     }
-    
+
     const isVisible = picker.style.display === 'block';
-    
+
     if (isVisible) {
         picker.style.display = 'none';
+        currentStickerAnchor = null;
         return;
     }
-    
+
     closeAllMenus();
+    currentStickerAnchor = anchor;
     picker.style.display = 'block';
-    
+
+    requestAnimationFrame(() => positionStickerPicker(anchor, picker));
+
     // Закрываем при клике вне пикера
     setTimeout(() => {
         document.addEventListener('click', function closePicker(e) {
             if (!e.target.closest('#sticker-picker') && !e.target.closest('[onclick*="toggleStickerPicker"]')) {
                 picker.style.display = 'none';
+                currentStickerAnchor = null;
                 document.removeEventListener('click', closePicker);
             }
         });
@@ -1265,9 +1437,6 @@ function createStickerPicker() {
     picker.id = 'sticker-picker';
     picker.className = 'sticker-picker glass';
     picker.style.position = 'fixed';
-    picker.style.bottom = 'calc(96px + env(safe-area-inset-bottom, 0))';
-    picker.style.left = '50%';
-    picker.style.transform = 'translateX(-50%)';
     picker.style.width = 'min(380px, calc(100vw - 32px))';
     picker.style.maxHeight = 'min(480px, calc(100vh - 140px))';
     picker.style.background = 'var(--glass-bg)';
@@ -1309,6 +1478,55 @@ function createStickerPicker() {
     picker.appendChild(container);
 
     return picker;
+}
+
+function positionStickerPicker(anchor, picker = document.getElementById('sticker-picker')) {
+    if (!picker || !anchor) {
+        return;
+    }
+
+    const margin = 12;
+    const availableWidth = Math.min(380, window.innerWidth - margin * 2);
+    picker.style.width = `${availableWidth}px`;
+    const maxHeight = Math.min(480, window.innerHeight - margin * 2);
+    picker.style.maxHeight = `${maxHeight}px`;
+
+    const rect = anchor.getBoundingClientRect();
+    const anchorCenter = rect.left + rect.width / 2;
+    let left = anchorCenter - availableWidth / 2;
+    left = Math.max(margin, Math.min(left, window.innerWidth - availableWidth - margin));
+    picker.style.left = `${left}px`;
+    picker.style.right = 'auto';
+
+    // Рассчитываем вертикальное позиционирование
+    const pickerHeight = picker.offsetHeight;
+    let top = rect.top - pickerHeight - margin;
+
+    if (top < margin) {
+        top = rect.bottom + margin;
+        if (top + pickerHeight > window.innerHeight - margin) {
+            top = Math.max(margin, window.innerHeight - pickerHeight - margin);
+        }
+    }
+
+    picker.style.top = `${top}px`;
+    picker.style.bottom = 'auto';
+}
+
+function repositionStickerPickerOnViewportChange() {
+    const picker = document.getElementById('sticker-picker');
+    if (!picker || picker.style.display !== 'block' || !currentStickerAnchor) {
+        return;
+    }
+
+    positionStickerPicker(currentStickerAnchor, picker);
+}
+
+window.addEventListener('resize', repositionStickerPickerOnViewportChange, { passive: true });
+
+if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', repositionStickerPickerOnViewportChange);
+    window.visualViewport.addEventListener('scroll', repositionStickerPickerOnViewportChange);
 }
 
 function switchStickerPack(packId) {
@@ -1374,7 +1592,10 @@ function sendSticker(stickerId) {
 
     // Закрываем пикер
     const picker = document.getElementById('sticker-picker');
-    if (picker) picker.style.display = 'none';
+    if (picker) {
+        picker.style.display = 'none';
+        currentStickerAnchor = null;
+    }
 
     console.log('Стикер отправлен:', stickerId);
 }
@@ -1459,6 +1680,14 @@ function closeAllMenus(exceptId = null) {
             menu.style.display = 'none';
         }
     });
+
+    if (!exceptId || exceptId !== 'sticker-picker') {
+        const picker = document.getElementById('sticker-picker');
+        if (picker) {
+            picker.style.display = 'none';
+        }
+        currentStickerAnchor = null;
+    }
 }
 
 // Отправка голосового сообщения на сервер
@@ -1904,35 +2133,62 @@ function displayMessage(data) {
     
     // Голосовое сообщение
     if (data.message_type === 'voice' && data.media_url) {
+        const isSentVoice = data.sender_id == CURRENT_USER_ID;
         const voiceContainer = document.createElement('div');
-        voiceContainer.className = `message-container ${data.sender_id == CURRENT_USER_ID ? 'sent' : 'received'}`;
+        voiceContainer.className = `message-container ${isSentVoice ? 'sent' : 'received'}`;
         voiceContainer.setAttribute('data-message-id', data.id);
-        
+        voiceContainer.setAttribute('data-room-id', data.room_id);
+
+        const timestampText = new Date(data.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
+        const statusMarkup = isSentVoice ? `<span class="message-status" data-status="delivered">${renderMessageStatusIcon('delivered')}</span>` : '';
+
         const voiceContent = `
-            <div class="message ${data.sender_id == CURRENT_USER_ID ? 'sent' : 'received'}" style="padding: 12px 16px;">
-                ${data.sender_id != CURRENT_USER_ID ? `<span class="message-sender">${data.sender_name || 'Пользователь'}</span>` : ''}
-                <div style="display: flex; align-items: center; gap: 10px;">
-                    <button onclick="playVoiceMessage('${data.media_url}')" style="background: transparent; border: none; cursor: pointer; padding: 0; display: flex;">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-                            <circle cx="12" cy="12" r="10" fill="var(--color-primary)" opacity="0.2"/>
-                            <polygon points="10,8 16,12 10,16" fill="var(--color-primary)"/>
-                        </svg>
-                    </button>
-                    <audio id="voice-${data.id}" src="${data.media_url}" preload="metadata"></audio>
-                    <div style="flex: 1;">
-                        <div style="font-size: 11px; opacity: 0.8;">🎤 Голосовое сообщение</div>
-                        <div id="voice-duration-${data.id}" style="font-size: 10px; opacity: 0.6;">0:00</div>
+            <div class="selection-indicator"></div>
+            <div class="message-container-inner ${isSentVoice ? 'sent' : 'received'}">
+                <div class="message ${isSentVoice ? 'sent' : 'received'}" style="padding: 12px 16px;">
+                    ${!isSentVoice ? `<span class="message-sender">${data.sender_name || 'Пользователь'}</span>` : ''}
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <button onclick="playVoiceMessage('${data.media_url}')" style="background: transparent; border: none; cursor: pointer; padding: 0; display: flex;">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                                <circle cx="12" cy="12" r="10" fill="var(--color-primary)" opacity="0.2"/>
+                                <polygon points="10,8 16,12 10,16" fill="var(--color-primary)"/>
+                            </svg>
+                        </button>
+                        <audio id="voice-${data.id}" src="${data.media_url}" preload="metadata"></audio>
+                        <div style="flex: 1;">
+                            <div style="font-size: 11px; opacity: 0.8;">🎤 Голосовое сообщение</div>
+                            <div id="voice-duration-${data.id}" style="font-size: 10px; opacity: 0.6;">0:00</div>
+                        </div>
+                    </div>
+                    <div class="message-meta">
+                        <span class="message-timestamp">${timestampText}</span>
+                        ${statusMarkup}
                     </div>
                 </div>
-                <span class="message-timestamp">${new Date(data.timestamp).toLocaleTimeString('ru-RU', {hour: '2-digit', minute: '2-digit'})}</span>
             </div>
         `;
-        
+
         voiceContainer.innerHTML = voiceContent;
+
+        const messageElement = voiceContainer.querySelector('.message');
+        voiceContainer.oncontextmenu = (event) => openMessageContextMenu(event, data);
+        voiceContainer.onclick = (event) => {
+            event.stopPropagation();
+            if (selectionMode) {
+                toggleMessageSelection(data.id);
+            } else if (messageElement && messageElement.contains(event.target)) {
+                openReactionPicker(event, data.id, messageElement);
+            }
+        };
+
         chatWindow.appendChild(voiceContainer);
         chatWindow.scrollTop = chatWindow.scrollHeight;
-        
-        // Загружаем длительность
+
+        if (isSentVoice) {
+            const statusEl = voiceContainer.querySelector('.message-status');
+            registerSentMessageStatus(Number(data.id), Number(data.room_id), statusEl);
+        }
+
         const audio = document.getElementById(`voice-${data.id}`);
         if (audio) {
             audio.addEventListener('loadedmetadata', () => {
@@ -1945,7 +2201,7 @@ function displayMessage(data) {
                 }
             });
         }
-        
+
         return;
     }
     
@@ -1953,6 +2209,7 @@ function displayMessage(data) {
     const messageContainer = document.createElement('div');
     messageContainer.classList.add('message-container');
     messageContainer.setAttribute('data-message-id', data.id);
+    messageContainer.setAttribute('data-room-id', data.room_id);
 
     // НОВОЕ: Индикатор выделения
     const indicator = document.createElement('div');
@@ -2182,11 +2439,10 @@ function displayMessage(data) {
     }
 
     // Добавление времени
-    const timestampSpan = document.createElement('span');
-    timestampSpan.classList.add('message-timestamp');
-    const date = new Date(data.timestamp);
-    timestampSpan.textContent = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
-    messageElement.appendChild(timestampSpan);
+    const metaInfo = createMessageMeta(new Date(data.timestamp), isSent, Number(data.id), Number(data.room_id));
+    if (metaInfo && metaInfo.metaElement) {
+        messageElement.appendChild(metaInfo.metaElement);
+    }
 
     innerContainer.appendChild(messageElement);
 
@@ -2903,6 +3159,7 @@ async function addRoomMembers() {
 // --- Утилиты (Modal, Search, CreateRoom, Settings) ---
 function clearChatWindow() {
     chatWindow.innerHTML = '<div class="placeholder-text" id="placeholder-text" style="display: none;"></div>';
+    sentMessageStatus.clear();
 }
 
 // === Присутствие/Печатает и Тест соединения ===
@@ -3658,6 +3915,9 @@ function closeThreadView(options = {}) {
         if (threadMetaEl) threadMetaEl.textContent = '';
         if (threadSubtitleEl) threadSubtitleEl.textContent = '';
         if (threadTitleEl) threadTitleEl.textContent = 'Комментарии';
+        threadSearchQuery = '';
+        if (threadSearchInput) threadSearchInput.value = '';
+        if (threadSearchEmptyState) threadSearchEmptyState.style.display = 'none';
     }
     if (threadInput) threadInput.value = '';
     activeThreadContext = null;
@@ -3684,6 +3944,7 @@ function renderThreadError(message) {
         threadEmptyEl.textContent = message || 'Комментарии недоступны';
         threadEmptyEl.style.display = 'block';
     }
+    if (threadSearchEmptyState) threadSearchEmptyState.style.display = 'none';
     if (threadMetaEl) threadMetaEl.textContent = '';
     if (threadInputArea) threadInputArea.style.display = 'none';
 }
@@ -3763,6 +4024,7 @@ function renderThreadView(threadData, comments) {
         if (count) {
             threadCommentsEl.scrollTop = threadCommentsEl.scrollHeight;
         }
+        filterThreadComments(threadSearchQuery);
     }
 
     if (threadInputArea) threadInputArea.style.display = 'flex';
@@ -3793,6 +4055,33 @@ function summarizeThreadPreview(text) {
     return clean.slice(0, 117) + '…';
 }
 
+function filterThreadComments(query = '') {
+    threadSearchQuery = (query || '').trim().toLowerCase();
+    if (!threadCommentsEl) return;
+
+    const cards = threadCommentsEl.querySelectorAll('.thread-comment-card');
+    let visibleCount = 0;
+
+    cards.forEach(card => {
+        const haystack = (card.dataset.searchText || '').toLowerCase();
+        const matches = !threadSearchQuery || haystack.includes(threadSearchQuery);
+        card.style.display = matches ? '' : 'none';
+        if (matches) visibleCount += 1;
+    });
+
+    if (threadSearchEmptyState) {
+        threadSearchEmptyState.style.display = threadSearchQuery && visibleCount === 0 ? 'block' : 'none';
+    }
+
+    if (threadEmptyEl) {
+        if (threadSearchQuery) {
+            threadEmptyEl.style.display = 'none';
+        } else if (!threadCommentsEl.children.length) {
+            threadEmptyEl.style.display = 'block';
+        }
+    }
+}
+
 function appendThreadCommentCard(comment, scrollIntoView = true) {
     if (!threadCommentsEl) return;
     const card = document.createElement('div');
@@ -3803,25 +4092,36 @@ function appendThreadCommentCard(comment, scrollIntoView = true) {
 
     const author = document.createElement('span');
     author.className = 'thread-comment-author';
-    author.textContent = comment.sender_username ? `@${comment.sender_username}` : 'System';
+    const authorLabel = comment.sender_username ? `@${comment.sender_username}` : 'System';
+    author.textContent = authorLabel;
     header.appendChild(author);
 
     const time = document.createElement('span');
     time.className = 'thread-comment-time';
-    time.textContent = formatThreadTimestamp(comment.timestamp);
+    const timeLabel = formatThreadTimestamp(comment.timestamp);
+    time.textContent = timeLabel;
     header.appendChild(time);
 
     card.appendChild(header);
 
+    let bodyText = '';
     if (comment.content) {
         const body = document.createElement('div');
         body.className = 'thread-comment-body';
-        body.textContent = sanitizeThreadContent(comment.content, comment.message_type);
+        bodyText = sanitizeThreadContent(comment.content, comment.message_type);
+        body.textContent = bodyText;
         card.appendChild(body);
     }
 
+    card.dataset.searchText = [authorLabel, bodyText, timeLabel].filter(Boolean).join(' ').toLowerCase();
+
     threadCommentsEl.appendChild(card);
     if (threadEmptyEl) threadEmptyEl.style.display = 'none';
+    if (threadSearchQuery) {
+        filterThreadComments(threadSearchQuery);
+    } else if (threadSearchEmptyState) {
+        threadSearchEmptyState.style.display = 'none';
+    }
     if (scrollIntoView) {
         threadCommentsEl.scrollTop = threadCommentsEl.scrollHeight;
     }
@@ -3898,6 +4198,10 @@ function openThreadForMessage(options) {
         subtitle: options.subtitle || '',
         preview: options.preview || ''
     };
+
+    threadSearchQuery = '';
+    if (threadSearchInput) threadSearchInput.value = '';
+    if (threadSearchEmptyState) threadSearchEmptyState.style.display = 'none';
 
     if (threadTitleEl) threadTitleEl.textContent = activeThreadContext.title;
     if (threadSubtitleEl) threadSubtitleEl.textContent = activeThreadContext.subtitle;
@@ -4923,7 +5227,8 @@ async function blockUnknownContact() {
         if (data.success) {
             alert('Пользователь заблокирован.');
             unknownBanner.style.display = 'none';
-            messageInput.disabled = true; sendButton.disabled = true;
+            messageInput.disabled = true;
+            if (sendButton) sendButton.disabled = true;
             messageInput.placeholder = 'Вы заблокировали этого пользователя.';
         } else {
             alert(data.message || 'Не удалось заблокировать.');
@@ -7221,7 +7526,7 @@ async function blockContactFromSettings() {
             if (currentDMotherUserId == contactId) {
                 addSystemMessage('Вы заблокировали этого пользователя');
                 messageInput.disabled = true;
-                sendButton.disabled = true;
+                if (sendButton) sendButton.disabled = true;
                 messageInput.placeholder = 'Вы заблокировали этого пользователя.';
                 
                 // Скрываем кнопку звонка
@@ -7264,7 +7569,7 @@ async function unblockContactFromSettings() {
             if (currentDMotherUserId == contactId) {
                 addSystemMessage('Вы разблокировали этого пользователя');
                 messageInput.disabled = false;
-                sendButton.disabled = false;
+                if (sendButton) sendButton.disabled = false;
                 messageInput.placeholder = 'Введите сообщение...';
                 
                 // Показываем кнопку звонка обратно
