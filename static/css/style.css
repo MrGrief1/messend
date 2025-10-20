@@ -1360,6 +1360,28 @@ label {
     animation: bounceIn 0.4s var(--easing-bounce);
 }
 
+.message-container.poll-message-container {
+    max-width: 100%;
+    width: min(620px, calc(100% - 48px));
+}
+
+.message-container.poll-message-container .message-container-inner {
+    width: 100%;
+}
+
+.message.poll-message {
+    display: block;
+    width: 100%;
+    padding: 0;
+    background: transparent;
+    box-shadow: none;
+}
+
+.message.poll-message .poll-container {
+    width: 100%;
+    margin: 0;
+}
+
 .selection-indicator::after {
     content: '✔';
     color: white;
@@ -3915,6 +3937,7 @@ html {
     overflow: hidden;
     color: inherit;
     box-shadow: var(--menu-shadow);
+    width: 100%;
 }
 
 .poll-question {
@@ -3937,12 +3960,14 @@ html {
     border-radius: var(--radius-lg);
     overflow: hidden;
     background: var(--glass-bg);
-    border: 1px solid var(--glass-border);
+    border: none;
+    box-shadow: inset 0 0 0 1px var(--glass-border);
     transition: background var(--transition-fast), box-shadow var(--transition-fast), border-color var(--transition-fast);
     padding: 14px 16px;
     cursor: pointer;
     width: 100%;
     box-sizing: border-box;
+    user-select: none;
 }
 
 .poll-option-row:hover {
@@ -3976,6 +4001,7 @@ html {
     font-weight: 600;
     line-height: 1.35;
     word-break: break-word;
+    user-select: none;
 }
 
 .poll-option-votes {
@@ -3989,7 +4015,8 @@ html {
     width: 34px;
     height: 34px;
     border-radius: 50%;
-    border: 2px solid var(--glass-border);
+    border: none;
+    box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--glass-border) 80%, transparent);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -4005,8 +4032,8 @@ html {
 }
 
 .poll-option-selected {
-    border-color: var(--color-primary);
-    box-shadow: 0 12px 32px rgba(0, 36, 120, 0.35);
+    box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--color-primary) 75%, transparent),
+                0 12px 32px rgba(0, 36, 120, 0.35);
 }
 
 .poll-option-selected .poll-option-check {
@@ -4344,7 +4371,7 @@ html {
     pointer-events: none;
 }
 
-.thread-input-pill {
+.thread-composer {
     pointer-events: auto;
     display: flex;
     align-items: center;
@@ -4354,12 +4381,12 @@ html {
     border-radius: var(--radius-full);
     border: 1px solid color-mix(in srgb, var(--glass-border) 60%, transparent);
     background: color-mix(in srgb, var(--surface-elevated) 92%, transparent);
-    box-shadow: 0 32px 68px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 32px 68px rgba(0, 0, 0, 0.28);
     backdrop-filter: blur(calc(var(--glass-blur) * 0.9)) saturate(170%);
     -webkit-backdrop-filter: blur(calc(var(--glass-blur) * 0.9)) saturate(170%);
 }
 
-.thread-input-area textarea {
+.thread-composer textarea {
     flex: 1;
     resize: none;
     border: none;
@@ -4372,18 +4399,43 @@ html {
     padding: 4px 0;
 }
 
-.thread-input-area textarea::placeholder {
+.thread-composer textarea::placeholder {
     color: var(--text-color-muted);
 }
 
-.thread-input-area textarea:focus {
+.thread-composer textarea:focus {
     outline: none;
 }
 
-.thread-input-actions {
+.thread-composer-actions {
     display: flex;
-    gap: 8px;
     align-items: center;
+    gap: 8px;
+}
+
+.thread-composer .icon-btn.composer-icon {
+    width: 40px;
+    height: 40px;
+    margin: 0;
+    background: color-mix(in srgb, var(--input-bg) 75%, transparent);
+    border: 1px solid color-mix(in srgb, var(--glass-border) 60%, transparent);
+    backdrop-filter: blur(calc(var(--glass-blur) * 0.6)) saturate(150%);
+    -webkit-backdrop-filter: blur(calc(var(--glass-blur) * 0.6)) saturate(150%);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.thread-composer .icon-btn.composer-icon[disabled] {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+.thread-composer .icon-btn.composer-icon svg {
+    width: 18px;
+    height: 18px;
+}
+
+.thread-send-btn {
+    padding: 0 18px;
 }
 
 @media (max-width: 768px) {

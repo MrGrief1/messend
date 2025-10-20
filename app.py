@@ -1479,6 +1479,14 @@ def mark_room_as_read():
             'last_read_message_id': int(last_message_id)
         }
         socketio.emit('room_read_receipt', payload, room=str(room_id))
+        try:
+            participants = RoomParticipant.query.filter_by(room_id=room_id).all()
+            for participant in participants:
+                if participant.user_id == user_id:
+                    continue
+                socketio.emit('room_read_receipt', payload, room=f"user_{participant.user_id}")
+        except Exception:
+            pass
 
     return jsonify({'success': True})
 

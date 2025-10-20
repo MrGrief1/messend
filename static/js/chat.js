@@ -4,6 +4,11 @@ let currentRoomType = null; // 'dm', 'group', 'channel'
 let currentUserRole = null; // 'member', 'admin' - роль текущего пользователя в комнате
 let currentDMotherUserId = null; // ID собеседника в ЛС
 
+function getNumericRoomId(value = currentRoomId) {
+    const parsed = Number.parseInt(value, 10);
+    return Number.isFinite(parsed) ? parsed : null;
+}
+
 // Элементы DOM
 const chatWindow = document.getElementById('chat-window');
 const messageInput = document.getElementById('message-input');
@@ -2259,6 +2264,7 @@ function displayMessage(data) {
     const isStickerMessage = data.message_type === 'sticker';
 
     if (isPollMessage) {
+        messageContainer.classList.add('poll-message-container');
         messageElement.classList.add('poll-message');
 
         const poll = data.poll || {};
@@ -3536,17 +3542,36 @@ function getAudioContext() {
     if (!audioContext) {
         audioContext = new (window.AudioContext || window.webkitAudioContext)();
     }
+    if (audioContext && audioContext.state === 'suspended') {
+        audioContext.resume().catch((err) => {
+            console.warn('AudioContext resume failed:', err);
+        });
+    }
     return audioContext;
 }
 
+async function ensureAudioContext() {
+    const ctx = getAudioContext();
+    if (!ctx) return null;
+    if (ctx.state === 'suspended') {
+        try {
+            await ctx.resume();
+        } catch (err) {
+            console.warn('AudioContext resume rejected:', err);
+        }
+    }
+    return ctx;
+}
+
 // Воспроизводим входящий звонок
-function playRingtone() {
+async function playRingtone() {
     try {
         stopRingtone();
-        
-        const ctx = getAudioContext();
+
+        const ctx = await ensureAudioContext();
+        if (!ctx) return;
         const ringtone = ringtones[currentRingtone] || ringtones.marimba;
-        
+
         const playRingtoneTone = () => {
             ringtone.notes.forEach(note => {
                 const osc = ctx.createOscillator();
@@ -3570,7 +3595,7 @@ function playRingtone() {
         
         playRingtoneTone();
         ringtoneInterval = setInterval(playRingtoneTone, ringtone.interval);
-        
+
     } catch (e) {
         console.error('Ошибка воспроизведения рингтона:', e);
     }
@@ -3595,12 +3620,13 @@ function stopRingtone() {
 }
 
 // Звук уведомления о новом сообщении
-function playMessageSound() {
+async function playMessageSound() {
     try {
-        const ctx = getAudioContext();
+        const ctx = await ensureAudioContext();
+        if (!ctx) return;
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
-        
+
         osc.connect(gain);
         gain.connect(ctx.destination);
         
@@ -3619,7 +3645,7 @@ function playMessageSound() {
 }
 
 // ===== РИНГТОНЫ: выбор и предпрослушка =====
-function previewRingtone() {
+async function previewRingtone() {
     try {
         const sel = document.getElementById('settingsRingtone');
         if (!sel) return;
@@ -3629,7 +3655,8 @@ function previewRingtone() {
         currentRingtone = val;
         // проигрываем короткий предпросмотр
         stopRingtone();
-        const ctx = getAudioContext();
+        const ctx = await ensureAudioContext();
+        if (!ctx) return;
         const ring = ringtones[currentRingtone] || ringtones.marimba;
         ring.notes.forEach(note => {
             const osc = ctx.createOscillator();
@@ -4247,13 +4274,14 @@ function sendThreadComment() {
     if (!activeThreadContext || !threadInput) return;
     const text = threadInput.value.trim();
     if (!text) return;
-    if (!currentRoomId) {
+    const roomId = getNumericRoomId();
+    if (!roomId) {
         alert('Выберите чат, чтобы оставить комментарий.');
         return;
     }
 
     socket.emit('send_message', {
-        room_id: parseInt(currentRoomId),
+        room_id: roomId,
         content: text,
         thread_root_id: parseInt(activeThreadContext.messageId, 10),
         thread_type: activeThreadContext.type,
@@ -6349,8 +6377,10 @@ function drawShapeCircle(startX, startY, endX, endY) {
 
 function emitWhiteboardSegment(fromX, fromY, toX, toY, color, size) {
     if (!whiteboardCanvas) return;
+    const roomId = getNumericRoomId();
+    if (!roomId) return;
     socket.emit('whiteboard_draw', {
-        room_id: currentRoomId,
+        room_id: roomId,
         fromX: fromX / whiteboardCanvas.width,
         fromY: fromY / whiteboardCanvas.height,
         toX: toX / whiteboardCanvas.width,
@@ -6411,10 +6441,13 @@ function clearWhiteboard() {
     if (whiteboardOverlayCtx && whiteboardOverlay) {
         whiteboardOverlayCtx.clearRect(0, 0, whiteboardOverlay.width, whiteboardOverlay.height);
     }
-    if (currentRoomId && socket) {
-        socket.emit('whiteboard_clear', {
-            room_id: currentRoomId
-        });
+    if (socket) {
+        const roomId = getNumericRoomId();
+        if (roomId) {
+            socket.emit('whiteboard_clear', {
+                room_id: roomId
+            });
+        }
     }
 }
 
@@ -6439,12 +6472,13 @@ function openDocuments() {
             if (documentSyncTimeout) clearTimeout(documentSyncTimeout);
 
             documentSyncTimeout = setTimeout(() => {
-                if (currentRoomId && socket) {
-                    socket.emit('document_update', {
-                        room_id: currentRoomId,
-                        content: documentContent
-                    });
-                }
+                if (!socket) return;
+                const roomId = getNumericRoomId();
+                if (!roomId) return;
+                socket.emit('document_update', {
+                    room_id: roomId,
+                    content: documentContent
+                });
             }, 500);
         });
         editor.dataset.bound = 'true';
@@ -6513,13 +6547,14 @@ function sendDocumentToChat() {
         alert('Добавьте текст, прежде чем отправлять.');
         return;
     }
-    if (!currentRoomId) {
+    const roomId = getNumericRoomId();
+    if (!roomId) {
         alert('Выберите чат, чтобы отправить документ.');
         return;
     }
     socket.emit('send_message', {
-        room_id: parseInt(currentRoomId),
-        content: `?? ${content}`
+        room_id: roomId,
+        content: `📄 ${content}`
     });
     alert('Документ отправлен в чат.');
 }
@@ -7226,12 +7261,13 @@ function deleteSlide() {
 }
 
 function syncSlideChange() {
-    if (currentRoomId && socket) {
-        socket.emit('presentation_slide_change', {
-            room_id: currentRoomId,
-            slide_index: currentSlideIndex
-        });
-    }
+    if (!socket) return;
+    const roomId = getNumericRoomId();
+    if (!roomId) return;
+    socket.emit('presentation_slide_change', {
+        room_id: roomId,
+        slide_index: currentSlideIndex
+    });
 }
 
 function startPresentation() {
