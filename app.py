@@ -1451,7 +1451,7 @@ def handle_message(data):
 @app.route('/api/mark_room_as_read', methods=['POST'])
 def mark_room_as_read():
     if 'user_id' not in session: return jsonify({'error': 'Unauthorized'}), 401
-    
+
     user_id = session['user_id']
     data = request.get_json()
     room_id = data.get('room_id')
@@ -1459,12 +1459,31 @@ def mark_room_as_read():
     if not room_id:
         return jsonify({'success': False, 'message': 'Не указан ID комнаты.'}), 400
 
+    try:
+        room_id = int(room_id)
+    except (TypeError, ValueError):
+        return jsonify({'success': False, 'message': 'Некорректный ID комнаты.'}), 400
+
+    participant = RoomParticipant.query.filter_by(user_id=user_id, room_id=room_id).first()
+    if not participant:
+        return jsonify({'success': False, 'message': 'Нет доступа к комнате.'}), 403
+
     unread_entry = UnreadMessage.query.filter_by(user_id=user_id, room_id=room_id).first()
     if unread_entry:
         unread_entry.count = 0
         db.session.commit()
-        
-    return jsonify({'success': True})
+
+    last_read_message_id = None
+    latest_message = Message.query.filter_by(room_id=room_id).order_by(Message.id.desc()).first()
+    if latest_message:
+        last_read_message_id = latest_message.id
+        socketio.emit('read_receipt', {
+            'room_id': room_id,
+            'user_id': user_id,
+            'last_read_message_id': last_read_message_id
+        }, room=str(room_id), include_self=False)
+
+    return jsonify({'success': True, 'last_read_message_id': last_read_message_id})
 
 
 @app.route('/api/send_voice', methods=['POST'])

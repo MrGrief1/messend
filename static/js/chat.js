@@ -30,8 +30,29 @@ const threadCommentsEl = document.getElementById('thread-comments');
 const threadEmptyEl = document.getElementById('thread-empty');
 const threadInputArea = document.getElementById('thread-input-area');
 const threadInput = document.getElementById('thread-input');
+const threadSearchContainer = document.getElementById('thread-search-container');
+const threadSearchInput = document.getElementById('thread-search-input');
+const threadSearchClearBtn = document.getElementById('thread-search-clear');
 const chatViewContainer = document.getElementById('chat-view');
 const settingsViewContainer = document.getElementById('settings-view-inline');
+const THREAD_EMPTY_DEFAULT = threadEmptyEl ? threadEmptyEl.textContent.trim() : 'Пока нет комментариев. Будьте первым!';
+let threadSearchQuery = '';
+
+const MESSAGE_STATUS_ICONS = {
+    delivered: '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 11 8 15 16 5"></polyline></svg>',
+    seen: '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 11 7 15 14 6"></polyline><polyline points="9 11 13 15 18 6"></polyline></svg>'
+};
+
+function setMessageStatus(statusElement, status = 'delivered') {
+    if (!statusElement) return;
+    const normalized = status === 'seen' ? 'seen' : 'delivered';
+    statusElement.dataset.status = normalized;
+    statusElement.classList.remove('message-status--delivered', 'message-status--seen');
+    statusElement.classList.add('message-status', `message-status--${normalized}`);
+    const icon = MESSAGE_STATUS_ICONS[normalized] || MESSAGE_STATUS_ICONS.delivered;
+    statusElement.innerHTML = icon;
+    statusElement.setAttribute('aria-label', normalized === 'seen' ? 'Просмотрено' : 'Доставлено');
+}
 // Вызовы
 let localStream = null;
 let isMicEnabled = true;
@@ -186,8 +207,11 @@ document.addEventListener('DOMContentLoaded', (event) => {
     socket = io({ transports: ['polling'], upgrade: false });
 
     initializeReactionPicker();
+    setupThreadSearch();
 
     socket.on('connect', () => console.log('WebSocket подключен!'));
+
+    socket.on('read_receipt', handleReadReceipt);
 
     socket.on('receive_message', (data) => {
         console.log('Получено сообщение:', data);
@@ -1772,6 +1796,25 @@ function updateUnreadBadge(roomId, count) {
     }
 }
 
+function handleReadReceipt(payload) {
+    if (!payload) return;
+    const roomId = parseInt(payload.room_id, 10);
+    const lastReadId = parseInt(payload.last_read_message_id, 10);
+    if (!Number.isInteger(roomId) || !Number.isInteger(lastReadId)) return;
+    if (!currentRoomId || parseInt(currentRoomId, 10) !== roomId) return;
+    if (payload.user_id && parseInt(payload.user_id, 10) === CURRENT_USER_ID) return;
+
+    const sentMessages = document.querySelectorAll('.message-container.sent');
+    sentMessages.forEach(container => {
+        const messageId = parseInt(container.dataset.messageId, 10);
+        if (!Number.isInteger(messageId) || messageId > lastReadId) return;
+        const statusEl = container.querySelector('.message-status');
+        if (statusEl && statusEl.dataset.status !== 'seen') {
+            setMessageStatus(statusEl, 'seen');
+        }
+    });
+}
+
 async function markRoomAsRead(roomId) {
     // Сначала обновляем UI немедленно
     updateUnreadBadge(roomId, 0);
@@ -2019,11 +2062,18 @@ function displayMessage(data) {
                         <div id="voice-duration-${data.id}" style="font-size: 10px; opacity: 0.6;">0:00</div>
                     </div>
                 </div>
-                <span class="message-timestamp">${new Date(data.timestamp).toLocaleTimeString('ru-RU', {hour: '2-digit', minute: '2-digit'})}</span>
+                <div class="message-meta">
+                    <span class="message-timestamp">${new Date(data.timestamp).toLocaleTimeString('ru-RU', {hour: '2-digit', minute: '2-digit'})}</span>
+                    ${data.sender_id == CURRENT_USER_ID ? '<span class="message-status" data-status="delivered"></span>' : ''}
+                </div>
             </div>
         `;
-        
+
         voiceContainer.innerHTML = voiceContent;
+        if (data.sender_id == CURRENT_USER_ID) {
+            const statusEl = voiceContainer.querySelector('.message-status');
+            setMessageStatus(statusEl, 'delivered');
+        }
         chatWindow.appendChild(voiceContainer);
         chatWindow.scrollTop = chatWindow.scrollHeight;
         
@@ -2281,7 +2331,18 @@ function displayMessage(data) {
     timestampSpan.classList.add('message-timestamp');
     const date = new Date(data.timestamp);
     timestampSpan.textContent = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
-    messageElement.appendChild(timestampSpan);
+
+    const metaRow = document.createElement('div');
+    metaRow.classList.add('message-meta');
+    metaRow.appendChild(timestampSpan);
+
+    if (isSent) {
+        const statusSpan = document.createElement('span');
+        setMessageStatus(statusSpan, 'delivered');
+        metaRow.appendChild(statusSpan);
+    }
+
+    messageElement.appendChild(metaRow);
 
     innerContainer.appendChild(messageElement);
 
@@ -3830,6 +3891,76 @@ function renderThreadRoot(threadData) {
     }
 }
 
+function setupThreadSearch() {
+    if (threadSearchInput) {
+        threadSearchInput.addEventListener('input', (event) => {
+            applyThreadSearch(event.target.value);
+        });
+    }
+    if (threadSearchClearBtn) {
+        threadSearchClearBtn.addEventListener('click', () => {
+            threadSearchQuery = '';
+            if (threadSearchInput) {
+                threadSearchInput.value = '';
+                threadSearchInput.focus();
+            }
+            applyThreadSearch('');
+        });
+    }
+    if (threadSearchContainer) {
+        threadSearchContainer.classList.remove('has-query');
+    }
+}
+
+function applyThreadSearch(query = '') {
+    threadSearchQuery = (query || '').trim().toLowerCase();
+    if (threadSearchContainer) {
+        threadSearchContainer.classList.toggle('has-query', threadSearchQuery.length > 0);
+    }
+    if (!threadCommentsEl) return { total: 0, visibleCount: 0 };
+
+    const cards = Array.from(threadCommentsEl.querySelectorAll('.thread-comment-card'));
+    let visibleCount = 0;
+
+    cards.forEach(card => {
+        let searchText = card.dataset.searchText;
+        if (!searchText) {
+            searchText = card.textContent.toLowerCase();
+            card.dataset.searchText = searchText;
+        }
+        const matches = !threadSearchQuery || searchText.includes(threadSearchQuery);
+        card.style.display = matches ? '' : 'none';
+        if (matches) visibleCount += 1;
+    });
+
+    const total = cards.length;
+
+    if (threadMetaEl) {
+        if (!total) {
+            threadMetaEl.textContent = 'Нет комментариев';
+        } else if (threadSearchQuery) {
+            threadMetaEl.textContent = visibleCount ? `Найдено: ${visibleCount}` : 'Совпадений не найдено';
+        } else {
+            threadMetaEl.textContent = `Комментарии: ${total}`;
+        }
+    }
+
+    if (threadEmptyEl) {
+        if (!total) {
+            threadEmptyEl.textContent = THREAD_EMPTY_DEFAULT;
+            threadEmptyEl.style.display = 'block';
+        } else if (threadSearchQuery && visibleCount === 0) {
+            threadEmptyEl.textContent = 'Совпадений не найдено';
+            threadEmptyEl.style.display = 'block';
+        } else {
+            threadEmptyEl.textContent = THREAD_EMPTY_DEFAULT;
+            threadEmptyEl.style.display = 'none';
+        }
+    }
+
+    return { total, visibleCount };
+}
+
 function renderThreadView(threadData, comments) {
     if (!threadView) return;
     const rootId = threadData ? parseInt(threadData.id, 10) : null;
@@ -3839,8 +3970,10 @@ function renderThreadView(threadData, comments) {
     }
 
     const count = Array.isArray(comments) ? comments.length : 0;
-    if (threadMetaEl) threadMetaEl.textContent = count ? `Комментарии: ${count}` : 'Нет комментариев';
-    if (threadEmptyEl) threadEmptyEl.style.display = count ? 'none' : 'block';
+    if (threadEmptyEl) {
+        threadEmptyEl.textContent = THREAD_EMPTY_DEFAULT;
+        threadEmptyEl.style.display = count ? 'none' : 'block';
+    }
     if (threadSubtitleEl && threadData) {
         if (threadData.message_type === 'poll' && threadData.poll) {
             threadSubtitleEl.textContent = threadData.poll.question || threadSubtitleEl.textContent;
@@ -3859,6 +3992,8 @@ function renderThreadView(threadData, comments) {
             threadCommentsEl.scrollTop = threadCommentsEl.scrollHeight;
         }
     }
+
+    applyThreadSearch(threadSearchQuery);
 
     if (threadInputArea) threadInputArea.style.display = 'flex';
     if (threadInput && !threadInput.disabled) {
@@ -3915,11 +4050,13 @@ function appendThreadCommentCard(comment, scrollIntoView = true) {
         card.appendChild(body);
     }
 
+    card.dataset.searchText = card.textContent.toLowerCase();
     threadCommentsEl.appendChild(card);
     if (threadEmptyEl) threadEmptyEl.style.display = 'none';
     if (scrollIntoView) {
         threadCommentsEl.scrollTop = threadCommentsEl.scrollHeight;
     }
+    applyThreadSearch(threadSearchQuery);
 }
 
 function sanitizeThreadContent(content, type) {
@@ -3993,6 +4130,10 @@ function openThreadForMessage(options) {
         subtitle: options.subtitle || '',
         preview: options.preview || ''
     };
+
+    threadSearchQuery = '';
+    if (threadSearchInput) threadSearchInput.value = '';
+    if (threadSearchContainer) threadSearchContainer.classList.remove('has-query');
 
     if (threadTitleEl) threadTitleEl.textContent = activeThreadContext.title;
     if (threadSubtitleEl) threadSubtitleEl.textContent = activeThreadContext.subtitle;
