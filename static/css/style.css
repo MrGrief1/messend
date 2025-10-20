@@ -1191,6 +1191,11 @@ label {
     transform: rotate(15deg) scale(1.1);
 }
 
+.call-button-text {
+    display: inline-flex;
+    align-items: center;
+}
+
 /* --- Стили Сообщений в стиле iOS --- */
 
 /* Контейнер для сообщения и его реакций */
@@ -3976,29 +3981,40 @@ html {
 #thread-view {
     display: flex;
     flex-direction: column;
-    gap: 16px;
-    padding: 16px;
-    padding-bottom: calc(16px + env(safe-area-inset-bottom, 0));
+    align-items: center;
+    gap: 20px;
+    padding: clamp(16px, 3vw, 32px);
+    padding-bottom: calc(clamp(16px, 3vw, 32px) + env(safe-area-inset-bottom, 0));
     width: 100%;
     flex: 1;
     min-height: 0;
-    overflow: hidden;
+    box-sizing: border-box;
+    overflow-x: hidden;
+    overflow-y: hidden;
+    scroll-padding-bottom: 160px;
+}
+
+#thread-view > .thread-header,
+#thread-view > .thread-root-card,
+#thread-view > .thread-comments,
+#thread-view > .thread-empty {
+    width: min(720px, 100%);
 }
 
 .thread-header {
     display: flex;
     align-items: center;
     gap: 16px;
-    padding: 14px 18px;
-    border-radius: var(--radius-xl);
-    background: var(--glass-bg);
-    border: 1px solid var(--glass-border);
-    box-shadow: var(--menu-shadow);
+    padding: 12px clamp(14px, 3vw, 24px);
+    border-radius: var(--radius-lg);
+    background: color-mix(in srgb, var(--surface-elevated) 80%, transparent);
+    border: 1px solid color-mix(in srgb, var(--glass-border) 65%, transparent);
+    box-shadow: 0 18px 42px rgba(0, 0, 0, 0.18);
     position: sticky;
-    top: 0;
+    top: clamp(8px, 2vw, 20px);
     z-index: 5;
-    backdrop-filter: blur(var(--glass-blur)) saturate(160%);
-    -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+    backdrop-filter: blur(calc(var(--glass-blur) * 0.85)) saturate(170%);
+    -webkit-backdrop-filter: blur(calc(var(--glass-blur) * 0.85)) saturate(170%);
 }
 
 .thread-header-text {
@@ -4029,14 +4045,16 @@ html {
 }
 
 .thread-root-card {
-    padding: 16px 18px;
+    padding: 18px clamp(16px, 3vw, 24px);
     border-radius: var(--radius-lg);
-    background: var(--glass-bg);
-    border: 1px solid var(--glass-border);
-    box-shadow: var(--menu-shadow);
+    background: color-mix(in srgb, var(--surface-elevated) 78%, transparent);
+    border: 1px solid color-mix(in srgb, var(--glass-border) 70%, transparent);
+    box-shadow: 0 20px 48px rgba(0, 0, 0, 0.18);
+    backdrop-filter: blur(calc(var(--glass-blur) * 0.8)) saturate(160%);
+    -webkit-backdrop-filter: blur(calc(var(--glass-blur) * 0.8)) saturate(160%);
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 10px;
     color: inherit;
 }
 
@@ -4057,18 +4075,26 @@ html {
     flex: 1;
     min-height: 0;
     overflow-y: auto;
-    padding-right: 4px;
+    padding-right: 6px;
+    padding-bottom: clamp(140px, 22vh, 220px);
+    margin: 0 auto;
+    width: min(720px, 100%);
+    scrollbar-gutter: stable both-edges;
 }
 
 .thread-comment-card {
-    padding: 14px 16px;
+    padding: 16px clamp(16px, 3vw, 22px);
     border-radius: var(--radius-lg);
-    background: var(--glass-bg);
-    border: 1px solid var(--glass-border);
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+    background: color-mix(in srgb, var(--surface-elevated) 82%, transparent);
+    border: 1px solid color-mix(in srgb, var(--glass-border) 70%, transparent);
+    box-shadow: 0 22px 52px rgba(0, 0, 0, 0.22);
+    backdrop-filter: blur(calc(var(--glass-blur) * 0.75)) saturate(160%);
+    -webkit-backdrop-filter: blur(calc(var(--glass-blur) * 0.75)) saturate(160%);
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 8px;
+    width: min(680px, 100%);
+    margin: 0 auto;
 }
 
 .thread-comment-header {
@@ -4099,32 +4125,47 @@ html {
 
 .thread-empty {
     text-align: center;
-    padding: 32px 16px;
+    padding: 28px clamp(16px, 4vw, 32px);
     border-radius: var(--radius-lg);
-    background: var(--glass-bg);
-    border: 1px dashed var(--glass-border);
+    background: color-mix(in srgb, var(--surface-muted) 85%, transparent);
+    border: 1px dashed color-mix(in srgb, var(--glass-border) 70%, transparent);
     color: var(--text-color-muted);
+    backdrop-filter: blur(calc(var(--glass-blur) * 0.6));
+    -webkit-backdrop-filter: blur(calc(var(--glass-blur) * 0.6));
+}
+
+
+#thread-view > .thread-input-area {
+    width: min(720px, 100%);
 }
 
 .thread-input-area {
     margin-top: auto;
-    padding: 12px 16px;
-    padding-bottom: calc(12px + env(safe-area-inset-bottom, 0));
-    border-radius: var(--radius-lg);
-    display: flex;
-    align-items: flex-end;
-    gap: 12px;
+    padding: 0;
     position: sticky;
-    bottom: 0;
-    box-shadow: 0 -12px 32px rgba(0, 0, 0, 0.25);
-    background: var(--glass-bg);
-    border: 1px solid var(--glass-border);
-    backdrop-filter: blur(var(--glass-blur)) saturate(160%);
-    -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+    bottom: calc(env(safe-area-inset-bottom, 0) + clamp(12px, 3vw, 24px));
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    display: flex;
+    justify-content: center;
+    align-items: flex-end;
+    pointer-events: none;
 }
 
-.thread-comments {
-    padding-bottom: 80px;
+.thread-input-pill {
+    pointer-events: auto;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: min(680px, calc(100% - 16px));
+    padding: 12px clamp(16px, 4vw, 22px);
+    border-radius: var(--radius-full);
+    border: 1px solid color-mix(in srgb, var(--glass-border) 70%, transparent);
+    background: color-mix(in srgb, var(--surface-elevated) 88%, transparent);
+    box-shadow: 0 32px 68px rgba(0, 0, 0, 0.32);
+    backdrop-filter: blur(calc(var(--glass-blur) * 0.9)) saturate(170%);
+    -webkit-backdrop-filter: blur(calc(var(--glass-blur) * 0.9)) saturate(170%);
 }
 
 .thread-input-area textarea {
@@ -4134,7 +4175,10 @@ html {
     background: transparent;
     color: inherit;
     font-size: 15px;
-    min-height: 48px;
+    line-height: 1.45;
+    min-height: 44px;
+    max-height: 180px;
+    padding: 4px 0;
 }
 
 .thread-input-area textarea::placeholder {
@@ -4153,17 +4197,30 @@ html {
 
 @media (max-width: 768px) {
     #thread-view {
-        padding: 12px;
-        padding-bottom: calc(12px + env(safe-area-inset-bottom, 0));
+        padding: clamp(12px, 4vw, 20px);
+        padding-bottom: calc(clamp(12px, 4vw, 20px) + env(safe-area-inset-bottom, 0));
+        gap: 16px;
     }
 
     .thread-header {
         border-radius: var(--radius-lg);
+        top: clamp(8px, env(safe-area-inset-top, 0) + 8px, 18px);
+    }
+
+    .thread-comments,
+    #thread-view > .thread-comments,
+    #thread-view > .thread-header,
+    #thread-view > .thread-root-card {
+        width: 100%;
     }
 
     .thread-input-area {
-        border-radius: var(--radius-lg) var(--radius-lg) 0 0;
-        padding-bottom: calc(16px + env(safe-area-inset-bottom, 0));
+        bottom: calc(env(safe-area-inset-bottom, 0) + 12px);
+    }
+
+    .thread-input-pill {
+        width: calc(100% - 8px);
+        padding: 12px clamp(14px, 6vw, 18px);
     }
 }
 
@@ -4659,4 +4716,29 @@ html {
 .file-preview-generic div span {
     opacity: 0.7;
     font-size: 12px;
+}
+
+@media (max-width: 600px) {
+    #chat-header-actions {
+        gap: 6px;
+    }
+
+    .chat-header h3 {
+        font-size: 16px;
+    }
+
+    .call-button-header {
+        padding: 10px;
+        min-width: 0;
+        border-radius: var(--radius-full);
+    }
+
+    .call-button-text {
+        display: none;
+    }
+
+    .thread-input-pill {
+        width: calc(100% - 4px);
+        padding: 12px clamp(12px, 8vw, 18px);
+    }
 }
