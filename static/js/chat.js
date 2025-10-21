@@ -1982,41 +1982,73 @@ function formatFileSize(bytes) {
 function displayFilePreview() {
     const previewArea = document.getElementById('file-preview-area');
     const container = document.getElementById('file-preview-container');
-    
+
     if (selectedFiles.length === 0) {
         previewArea.style.display = 'none';
         return;
     }
-    
+
     previewArea.style.display = 'block';
     container.innerHTML = '';
-    
+
     selectedFiles.forEach((file, index) => {
         const preview = document.createElement('div');
         preview.className = 'file-preview-item';
-        
+
         const removeBtn = document.createElement('button');
+        removeBtn.type = 'button';
         removeBtn.className = 'file-preview-remove';
-        removeBtn.innerHTML = '×';
+        removeBtn.setAttribute('aria-label', 'Удалить файл');
+        removeBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7l10 10M17 7 7 17"></path></svg>';
         removeBtn.onclick = () => removeFileFromPreview(index);
-        
+
+        const visual = document.createElement('div');
+        visual.className = 'file-preview-visual';
+
+        const info = document.createElement('div');
+        info.className = 'file-preview-info';
+
+        const nameEl = document.createElement('div');
+        nameEl.className = 'file-preview-name';
+        nameEl.textContent = file.name;
+        nameEl.title = file.name;
+
+        const metaEl = document.createElement('div');
+        metaEl.className = 'file-preview-meta';
+        metaEl.textContent = formatFileSize(file.size);
+
+        info.appendChild(nameEl);
+        info.appendChild(metaEl);
+
         if (file.type.startsWith('image/')) {
+            preview.classList.add('file-preview-item--image');
             const img = document.createElement('img');
-            img.src = URL.createObjectURL(file);
-            preview.appendChild(img);
+            const objectUrl = URL.createObjectURL(file);
+            img.src = objectUrl;
+            img.onload = () => URL.revokeObjectURL(objectUrl);
+            visual.appendChild(img);
         } else if (file.type.startsWith('video/')) {
+            preview.classList.add('file-preview-item--video');
             const video = document.createElement('video');
-            video.src = URL.createObjectURL(file);
-            video.controls = true;
-            preview.appendChild(video);
+            const objectUrl = URL.createObjectURL(file);
+            video.src = objectUrl;
+            video.muted = true;
+            video.loop = true;
+            video.playsInline = true;
+            video.autoplay = true;
+            video.onloadeddata = () => URL.revokeObjectURL(objectUrl);
+            visual.appendChild(video);
         } else {
-            const generic = document.createElement('div');
-            generic.className = 'file-preview-generic';
-            generic.innerHTML = `<span class="material-icons-round">description</span><div><strong>${file.name}</strong><span>${formatFileSize(file.size)}</span></div>`;
-            preview.appendChild(generic);
+            preview.classList.add('file-preview-item--generic');
+            const iconWrapper = document.createElement('div');
+            iconWrapper.className = 'file-preview-icon';
+            iconWrapper.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3H9a3 3 0 0 0-3 3v12a3 3 0 0 0 3 3h6a3 3 0 0 0 3-3V7.5L15 3Z"></path><path d="M15 3v4.5h4.5"></path><path d="M9 13.5h6"></path><path d="M9 17h4.5"></path></svg>';
+            visual.appendChild(iconWrapper);
         }
 
         preview.appendChild(removeBtn);
+        preview.appendChild(visual);
+        preview.appendChild(info);
         container.appendChild(preview);
     });
 }
