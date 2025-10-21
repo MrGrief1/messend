@@ -1903,12 +1903,12 @@ function setupRoomUI() {
     if (messageInput) messageInput.placeholder = "Введите сообщение...";
     
     if (currentRoomType === 'dm') {
-        if (callButton) callButton.style.display = 'inline-block';
+        if (callButton) callButton.style.display = 'inline-flex';
         // Покажем баннер, если собеседник не в контактах
         const contactData = USER_CONTACTS.find(c => c.id == currentDMotherUserId);
         if (unknownBanner) unknownBanner.style.display = contactData ? 'none' : 'flex';
     } else if (currentRoomType === 'group' || currentRoomType === 'channel') {
-        if (callButton) callButton.style.display = 'inline-block';
+        if (callButton) callButton.style.display = 'inline-flex';
         // Кнопка участников убрана - доступна через три точки
         if (roomSettingsBtn) roomSettingsBtn.style.display = 'inline-block';
         if (unknownBanner) unknownBanner.style.display = 'none';
@@ -2010,6 +2010,16 @@ function formatFileSize(bytes) {
     return `${formatted} ${units[unitIndex]}`;
 }
 
+function getFileExtension(filename = '') {
+    if (!filename) return '';
+    const cleanName = filename.split('?')[0].split('#')[0];
+    const lastDot = cleanName.lastIndexOf('.');
+    if (lastDot <= 0 || lastDot === cleanName.length - 1) {
+        return '';
+    }
+    return cleanName.slice(lastDot + 1, lastDot + 7).toUpperCase();
+}
+
 function displayFilePreview() {
     const previewArea = document.getElementById('file-preview-area');
     const container = document.getElementById('file-preview-container');
@@ -2053,12 +2063,43 @@ function displayFilePreview() {
         } else {
             const generic = document.createElement('div');
             generic.className = 'file-preview-generic';
-            generic.innerHTML = `
+
+            const iconWrap = document.createElement('div');
+            iconWrap.className = 'file-preview-icon';
+            iconWrap.innerHTML = `
                 <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
                     <use href="#ui-document"></use>
-                </svg>
-                <strong>${file.name}</strong>
-                <span>${formatFileSize(file.size)}</span>`;
+                </svg>`;
+
+            const ext = getFileExtension(file.name || file.type || '');
+            let extBadge = null;
+            if (ext) {
+                extBadge = document.createElement('span');
+                extBadge.className = 'file-preview-ext';
+                extBadge.textContent = ext;
+            }
+
+            const meta = document.createElement('div');
+            meta.className = 'file-preview-meta';
+
+            const nameEl = document.createElement('strong');
+            const safeName = file.name || 'Документ';
+            nameEl.textContent = safeName;
+            nameEl.title = safeName;
+
+            if (extBadge) {
+                meta.appendChild(extBadge);
+            }
+            meta.appendChild(nameEl);
+
+            if (typeof file.size === 'number') {
+                const sizeEl = document.createElement('span');
+                sizeEl.textContent = formatFileSize(file.size);
+                meta.appendChild(sizeEl);
+            }
+
+            generic.appendChild(iconWrap);
+            generic.appendChild(meta);
             preview.appendChild(generic);
         }
 
@@ -2437,12 +2478,23 @@ function displayMessage(data) {
                         <path d="M10 9H9"></path>
                     </svg>`;
 
+                const ext = getFileExtension(item.name || item.url || '');
+                if (ext) {
+                    const extBadge = document.createElement('span');
+                    extBadge.className = 'file-preview-ext';
+                    extBadge.textContent = ext;
+                    iconWrapper.appendChild(extBadge);
+                }
+
                 const infoWrapper = document.createElement('span');
                 infoWrapper.className = 'message-attachment-info';
 
                 const nameEl = document.createElement('span');
                 nameEl.className = 'message-attachment-name';
-                nameEl.textContent = item.name || item.url.split('/').pop();
+                const rawName = item.name || item.url.split('/').pop() || '';
+                const displayName = rawName.split('?')[0].split('#')[0] || rawName;
+                nameEl.textContent = displayName;
+                nameEl.title = displayName;
 
                 infoWrapper.appendChild(nameEl);
 
@@ -7747,8 +7799,9 @@ async function blockContactFromSettings() {
                 // Скрываем кнопку звонка
                 const callButton = document.getElementById('call-button');
                 if (callButton) callButton.style.display = 'none';
+                closeCallDropdown();
             }
-            
+
             alert('Пользователь заблокирован.');
         } else {
             alert(data.message || 'Не удалось заблокировать.');
@@ -7789,7 +7842,8 @@ async function unblockContactFromSettings() {
                 
                 // Показываем кнопку звонка обратно
                 const callButton = document.getElementById('call-button');
-                if (callButton) callButton.style.display = 'flex';
+                if (callButton) callButton.style.display = 'inline-flex';
+                closeCallDropdown();
             }
             
             alert('Пользователь разблокирован.');
@@ -7850,42 +7904,72 @@ let isAudioOnly = false; // Флаг: аудио-звонок (без видео
 let callStartTime = null; // Время начала звонка
 let callTimerInterval = null; // Интервал для таймера
 
+function closeCallDropdown() {
+    const menu = document.getElementById('call-dropdown-menu');
+    if (menu) {
+        menu.classList.remove('show');
+        menu.style.display = '';
+    }
+    if (callButton) {
+        callButton.setAttribute('aria-expanded', 'false');
+    }
+    const arrow = callButton ? callButton.querySelector('.call-button-arrow') : null;
+    if (arrow) {
+        arrow.setAttribute('aria-expanded', 'false');
+    }
+}
+
 function toggleCallDropdown(event) {
-    event.stopPropagation();
-    event.preventDefault();
-    
+    if (event) {
+        event.stopPropagation();
+        event.preventDefault();
+    }
+
     const menu = document.getElementById('call-dropdown-menu');
     if (!menu) {
         console.error('call-dropdown-menu не найдено!');
         return;
     }
-    
+
     const isVisible = menu.classList.contains('show');
-    console.log('toggleCallDropdown вызвана, isVisible:', isVisible);
-    
+
     if (isVisible) {
-        // вместо мгновенного скрытия дадим возможность повторного открытия без конфликтов
-        menu.classList.remove('show');
-        // не выходим, чтобы переустановить обработчик внешнего клика корректно
-        menu.style.display = '';
+        closeCallDropdown();
         return;
     }
 
     menu.classList.add('show');
     menu.style.display = '';
-    
+    if (callButton) {
+        callButton.setAttribute('aria-expanded', 'true');
+    }
+    const arrow = callButton ? callButton.querySelector('.call-button-arrow') : null;
+    if (arrow) {
+        arrow.setAttribute('aria-expanded', 'true');
+    }
+
     // Закрыть при клике вне меню
     setTimeout(() => {
         function closeDropdown(e) {
-            // если клик по самой кнопке-стрелке — игнорим (чтобы не закрывалось до toggle)
             const inWrapper = e.target.closest('.call-button-wrapper');
             if (!inWrapper) {
-                menu.classList.remove('show');
-                document.removeEventListener('click', closeDropdown);
+                closeCallDropdown();
+                document.removeEventListener('click', closeDropdown, { capture: true });
             }
         }
         document.addEventListener('click', closeDropdown, { capture: true, once: true });
     }, 50);
+}
+
+function handleCallButtonClick(event) {
+    if (!callButton) return;
+    const arrowTarget = event.target.closest('.call-button-arrow');
+    if (arrowTarget) {
+        toggleCallDropdown(event);
+        return;
+    }
+    closeCallDropdown();
+    startCall();
 }
 
 async function startVideoCall() {
@@ -7896,10 +7980,10 @@ async function startVideoCall() {
             return;
         }
     }
-    
+
     // Закрываем меню
-    document.getElementById('call-dropdown-menu').classList.remove('show');
-    
+    closeCallDropdown();
+
     isAudioOnly = false; // Видео звонок
     await openCall(); // Используем существующую функцию
 }
@@ -7912,10 +7996,10 @@ async function startAudioCall() {
             return;
         }
     }
-    
+
     // Закрываем меню
-    document.getElementById('call-dropdown-menu').classList.remove('show');
-    
+    closeCallDropdown();
+
     isAudioOnly = true; // Аудио звонок (без видео)
     await openCall(); // Используем существующую функцию
 }

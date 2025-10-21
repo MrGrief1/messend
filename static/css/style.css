@@ -347,6 +347,46 @@ label {
     letter-spacing: -0.3px;
 }
 
+.label-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 12px;
+    margin-right: 8px;
+    background: color-mix(in srgb, var(--color-primary) 18%, transparent);
+    color: color-mix(in srgb, var(--color-primary) 80%, var(--text-color));
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35);
+    vertical-align: middle;
+}
+
+.section-title-with-icon {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.section-title-with-icon .label-icon {
+    width: 34px;
+    height: 34px;
+    border-radius: 14px;
+    margin-right: 0;
+}
+
+.icon-text-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding-inline: 18px;
+    font-weight: 600;
+}
+
+.icon-text-btn .ui-icon {
+    --icon-size: 18px;
+}
+
 .input-group {
     margin-bottom: 20px;
     text-align: left;
@@ -920,24 +960,26 @@ label {
 }
 
 .chat-composer-floating {
-    width: min(720px, 100%);
+    width: min(640px, 100%);
     display: flex;
     flex-direction: column;
     justify-content: center;
-    background: color-mix(in srgb, var(--surface-elevated) 94%, transparent);
-    border-radius: clamp(26px, 5vw, 36px);
-    border: 1px solid color-mix(in srgb, var(--glass-border) 75%, transparent);
-    padding: clamp(14px, 3vw, 22px) clamp(16px, 4vw, 26px);
-    box-shadow: 0 18px 52px rgba(12, 20, 33, 0.14);
-    gap: clamp(10px, 2.5vw, 14px);
+    gap: clamp(12px, 2.5vw, 16px);
+    padding: clamp(16px, 3.2vw, 24px) clamp(18px, 4vw, 28px);
+    border-radius: clamp(28px, 5vw, 40px);
+    border: 1px solid color-mix(in srgb, var(--glass-border) 60%, transparent);
+    background: color-mix(in srgb, var(--surface-elevated) 96%, transparent);
+    box-shadow: 0 26px 60px rgba(12, 20, 33, 0.18);
+    backdrop-filter: blur(22px);
+    -webkit-backdrop-filter: blur(22px);
 }
 
 .composer-main {
     width: 100%;
     display: grid;
     grid-template-columns: auto 1fr auto;
-    align-items: flex-end;
-    gap: clamp(12px, 3vw, 18px);
+    align-items: center;
+    gap: clamp(14px, 3vw, 20px);
 }
 
 .composer-field {
@@ -945,20 +987,21 @@ label {
     display: flex;
     flex-direction: column;
     gap: clamp(8px, 2vw, 12px);
-    padding: clamp(10px, 2.6vw, 14px) clamp(16px, 4vw, 22px);
-    border-radius: clamp(22px, 5vw, 30px);
-    border: 1px solid color-mix(in srgb, var(--glass-border) 95%, transparent);
-    background: color-mix(in srgb, var(--surface-muted) 135%, transparent);
+    padding: clamp(12px, 2.4vw, 16px) clamp(18px, 4vw, 26px);
+    border-radius: clamp(26px, 5vw, 36px);
+    border: 1px solid color-mix(in srgb, var(--glass-border) 48%, transparent);
+    background: color-mix(in srgb, var(--surface-base, #ffffff) 94%, transparent);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.16);
     transition: border-color 0.25s var(--easing-smooth),
                 background 0.25s var(--easing-smooth),
                 box-shadow 0.25s var(--easing-smooth);
-    min-height: clamp(48px, 6vw, 56px);
+    min-height: clamp(52px, 6vw, 60px);
 }
 
 .composer-field:focus-within {
-    background: color-mix(in srgb, var(--surface-muted) 165%, transparent);
-    border-color: color-mix(in srgb, var(--text-color-muted) 45%, transparent);
-    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--text-color-muted) 32%, transparent);
+    background: color-mix(in srgb, var(--surface-base, #ffffff) 102%, transparent);
+    border-color: color-mix(in srgb, var(--color-primary) 32%, transparent);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 12%, transparent);
 }
 
 .composer-field textarea {
@@ -966,8 +1009,8 @@ label {
     border: none;
     background: transparent;
     color: var(--text-color);
-    font-size: clamp(15px, 1.7vw, 17px);
-    line-height: 1.5;
+    font-size: clamp(15.5px, 1.7vw, 17px);
+    line-height: 1.55;
     resize: none;
     padding: 0;
     margin: 0;
@@ -976,7 +1019,7 @@ label {
 }
 
 .composer-field textarea::placeholder {
-    color: color-mix(in srgb, var(--text-color-muted) 75%, transparent);
+    color: color-mix(in srgb, var(--text-color-muted) 70%, transparent);
 }
 
 .composer-field textarea:focus {
@@ -1310,28 +1353,47 @@ label {
     display: flex;
     align-items: center;
     gap: 12px;
-    padding: 12px 14px;
-    border-radius: var(--radius-md);
-    background: rgba(255, 255, 255, 0.08);
+    padding: 14px 16px;
+    border-radius: var(--radius-lg);
+    background: color-mix(in srgb, var(--surface-muted) 125%, transparent);
+    border: 1px solid color-mix(in srgb, var(--glass-border) 70%, transparent);
     color: inherit;
     text-decoration: none;
-    transition: background 0.2s ease, transform 0.2s ease;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+    box-shadow: 0 10px 24px rgba(12, 20, 33, 0.16);
 }
 
 .message-attachment:hover {
-    background: rgba(255, 255, 255, 0.14);
+    background: color-mix(in srgb, var(--surface-muted) 150%, transparent);
     transform: translateY(-1px);
+    box-shadow: 0 14px 32px rgba(12, 20, 33, 0.2);
 }
 
 .message-attachment-icon {
+    position: relative;
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 36px;
-    height: 36px;
-    border-radius: var(--radius-sm);
-    background: rgba(255, 255, 255, 0.12);
-    color: var(--color-primary);
+    width: 44px;
+    height: 44px;
+    border-radius: 16px;
+    background: linear-gradient(145deg, color-mix(in srgb, var(--color-primary) 70%, #5d8cff), color-mix(in srgb, var(--color-primary) 55%, #2f6bff));
+    color: #fff;
+    box-shadow: 0 8px 20px rgba(44, 128, 255, 0.24);
+}
+
+.message-attachment-icon svg {
+    width: 24px;
+    height: 24px;
+}
+
+.message-attachment-icon .file-preview-ext {
+    position: absolute;
+    bottom: -6px;
+    right: -6px;
+    background: rgba(255, 255, 255, 0.95);
+    color: color-mix(in srgb, var(--color-primary) 85%, #2f6bff);
+    box-shadow: 0 6px 14px rgba(12, 20, 33, 0.2);
 }
 
 .message-attachment-info {
@@ -1393,20 +1455,20 @@ label {
 }
 
 .call-button-header {
-    background: var(--color-success);
+    background: linear-gradient(135deg, color-mix(in srgb, var(--color-success) 88%, #2ecc71), color-mix(in srgb, var(--color-success) 70%, #27ae60));
     width: auto;
-    padding: 10px 14px;
-    font-size: 13px;
+    padding: 0;
+    font-size: 14px;
     margin-top: 0;
     margin-right: 0;
-    border-radius: var(--radius-lg) 0 0 var(--radius-lg);
-    box-shadow: 0 2px 8px rgba(52, 199, 89, 0.3);
+    border-radius: var(--radius-full);
+    box-shadow: 0 12px 28px rgba(52, 199, 89, 0.32);
     position: relative;
     overflow: hidden;
     border: none;
-    display: flex;
-    align-items: center;
-    gap: 4px;
+    display: inline-flex;
+    align-items: stretch;
+    gap: 0;
 }
 
 .call-button-header::before {
@@ -1429,23 +1491,48 @@ label {
 }
 
 .call-button-header:hover {
-    transform: translateY(-2px) scale(1.05);
-    box-shadow: 0 6px 20px rgba(52, 199, 89, 0.5);
+    transform: translateY(-2px) scale(1.03);
+    box-shadow: 0 16px 30px rgba(52, 199, 89, 0.42);
 }
 
-.call-button-header svg {
-    transition: all var(--transition-normal) var(--easing-bounce);
+.call-button-main {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 0 18px;
+    color: #fff;
     position: relative;
     z-index: 1;
 }
 
-.call-button-header:hover svg {
-    transform: rotate(15deg) scale(1.1);
+.call-button-arrow {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 14px;
+    border-left: 1px solid rgba(255, 255, 255, 0.24);
+    background: rgba(255, 255, 255, 0.14);
+    color: #fff;
+    position: relative;
+    z-index: 1;
+}
+
+.call-button-header svg {
+    transition: transform var(--transition-normal) var(--easing-bounce);
+}
+
+.call-button-header:hover .call-button-main svg:first-child {
+    transform: translateY(-1px) rotate(8deg);
+}
+
+.call-button-header:hover .call-button-arrow svg {
+    transform: translateY(-1px);
 }
 
 .call-button-text {
     display: inline-flex;
     align-items: center;
+    font-weight: 600;
 }
 
 /* --- Стили Сообщений в стиле iOS --- */
@@ -1955,24 +2042,34 @@ label {
     cursor: pointer;
     padding: 6px;
     transition: all var(--transition-normal) var(--easing-bounce);
-    display: inline-flex;
-    background: var(--glass-bg);
+    background: color-mix(in srgb, var(--surface-muted) 135%, transparent);
 }
 
-.reaction-option .reaction-icon {
-    width: 32px;
-    height: 32px;
+.reaction-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
 }
 
-.reaction-option .reaction-icon svg {
+.reaction-svg {
     width: 28px;
     height: 28px;
+    color: var(--text-color);
+    stroke: currentColor;
+    transition: transform 0.2s ease, color 0.2s ease;
 }
 
 .reaction-option:hover {
     transform: scale(1.12);
-    background: var(--glass-bg-hover);
+    background: color-mix(in srgb, var(--surface-muted) 160%, transparent);
     box-shadow: 0 8px 20px rgba(0, 122, 255, 0.25);
+}
+
+.reaction-option:hover .reaction-svg {
+    color: var(--color-primary);
+    transform: scale(1.08);
 }
 
 .reaction-option:active {
@@ -4529,10 +4626,10 @@ html {
 
 .thread-input-area .chat-composer-floating {
     pointer-events: auto;
-    width: min(620px, calc(100% - 20px));
-    padding: clamp(12px, 3vw, 20px) clamp(16px, 4vw, 22px);
-    border-radius: clamp(24px, 5vw, 32px);
-    box-shadow: 0 14px 38px rgba(12, 20, 33, 0.16);
+    width: min(640px, 100%);
+    padding: clamp(16px, 3vw, 22px) clamp(18px, 4vw, 26px);
+    border-radius: clamp(28px, 5vw, 38px);
+    box-shadow: 0 22px 48px rgba(12, 20, 33, 0.18);
 }
 
 .thread-composer {
@@ -5068,8 +5165,8 @@ html {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 8px;
-    padding: 12px;
+    gap: 12px;
+    padding: 14px 12px 16px;
     width: 100%;
     text-align: center;
     color: var(--text-color);
@@ -5077,15 +5174,72 @@ html {
     line-height: 1.3;
 }
 
+.file-preview-meta {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    max-width: 100%;
+}
+
 .file-preview-generic strong {
-    display: block;
     font-weight: 600;
     font-size: 12px;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .file-preview-generic span {
     opacity: 0.7;
     font-size: 11px;
+}
+
+.file-preview-icon {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    width: 54px;
+    height: 54px;
+    border-radius: 18px;
+    background: linear-gradient(145deg, color-mix(in srgb, var(--color-primary) 72%, #547dff), color-mix(in srgb, var(--color-primary) 52%, #305dff));
+    color: #fff;
+    box-shadow: 0 12px 26px rgba(44, 128, 255, 0.24);
+}
+
+.file-preview-icon svg {
+    width: 26px;
+    height: 26px;
+    color: currentColor;
+}
+
+.file-preview-ext {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: rgba(0, 0, 0, 0.25);
+    color: #fff;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+.file-preview-icon .file-preview-ext {
+    display: none;
+}
+
+.file-preview-meta .file-preview-ext {
+    margin-bottom: 4px;
+    background: color-mix(in srgb, var(--color-primary) 24%, transparent);
+    color: color-mix(in srgb, var(--color-primary) 85%, #ffffff);
+}
 }
 
 @media (max-width: 600px) {
@@ -5098,9 +5252,15 @@ html {
     }
 
     .call-button-header {
-        padding: 10px;
         min-width: 0;
-        border-radius: var(--radius-full);
+    }
+
+    .call-button-main {
+        padding: 0 14px;
+    }
+
+    .call-button-arrow {
+        padding: 0 12px;
     }
 
     .call-button-text {
