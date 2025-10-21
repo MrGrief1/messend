@@ -1982,42 +1982,101 @@ function formatFileSize(bytes) {
 function displayFilePreview() {
     const previewArea = document.getElementById('file-preview-area');
     const container = document.getElementById('file-preview-container');
-    
+
     if (selectedFiles.length === 0) {
-        previewArea.style.display = 'none';
+        if (previewArea) {
+            previewArea.hidden = true;
+            previewArea.classList.remove('is-visible');
+            previewArea.removeAttribute('data-count');
+        }
+        if (container) {
+            container.innerHTML = '';
+        }
         return;
     }
-    
-    previewArea.style.display = 'block';
+
+    if (!previewArea || !container) {
+        return;
+    }
+
+    previewArea.hidden = false;
+    previewArea.classList.add('is-visible');
+    previewArea.dataset.count = String(selectedFiles.length);
     container.innerHTML = '';
-    
+
+    const iconAssets = window.CHAT_ICON_ASSETS || {};
+
     selectedFiles.forEach((file, index) => {
-        const preview = document.createElement('div');
-        preview.className = 'file-preview-item';
-        
-        const removeBtn = document.createElement('button');
-        removeBtn.className = 'file-preview-remove';
-        removeBtn.innerHTML = '×';
-        removeBtn.onclick = () => removeFileFromPreview(index);
-        
+        const chip = document.createElement('div');
+        chip.className = 'attachment-chip';
+        chip.dataset.index = index;
+
+        const thumb = document.createElement('div');
+        thumb.className = 'attachment-thumb';
+
+        const meta = document.createElement('div');
+        meta.className = 'attachment-meta';
+
+        const nameEl = document.createElement('span');
+        nameEl.className = 'attachment-name';
+        nameEl.textContent = file.name;
+
+        const sizeEl = document.createElement('span');
+        sizeEl.className = 'attachment-size';
+        sizeEl.textContent = formatFileSize(file.size);
+
+        meta.appendChild(nameEl);
+        meta.appendChild(sizeEl);
+
         if (file.type.startsWith('image/')) {
+            chip.classList.add('is-image');
             const img = document.createElement('img');
-            img.src = URL.createObjectURL(file);
-            preview.appendChild(img);
+            const objectUrl = URL.createObjectURL(file);
+            img.src = objectUrl;
+            img.alt = file.name;
+            img.onload = () => URL.revokeObjectURL(objectUrl);
+            thumb.appendChild(img);
         } else if (file.type.startsWith('video/')) {
-            const video = document.createElement('video');
-            video.src = URL.createObjectURL(file);
-            video.controls = true;
-            preview.appendChild(video);
+            chip.classList.add('is-video');
+            const videoBadge = document.createElement('div');
+            videoBadge.className = 'attachment-icon';
+            const videoIcon = document.createElement('img');
+            videoIcon.src = iconAssets.media || iconAssets.document || '';
+            videoIcon.alt = '';
+            videoIcon.className = 'icon-glyph';
+            videoBadge.appendChild(videoIcon);
+            thumb.appendChild(videoBadge);
         } else {
-            const generic = document.createElement('div');
-            generic.className = 'file-preview-generic';
-            generic.innerHTML = `<span class="material-icons-round">description</span><div><strong>${file.name}</strong><span>${formatFileSize(file.size)}</span></div>`;
-            preview.appendChild(generic);
+            chip.classList.add('is-generic');
+            const genericIcon = document.createElement('img');
+            genericIcon.src = iconAssets.document || '';
+            genericIcon.alt = '';
+            genericIcon.className = 'icon-glyph';
+            thumb.appendChild(genericIcon);
         }
 
-        preview.appendChild(removeBtn);
-        container.appendChild(preview);
+        chip.appendChild(thumb);
+        chip.appendChild(meta);
+
+        const removeBtn = document.createElement('button');
+        removeBtn.type = 'button';
+        removeBtn.className = 'attachment-remove';
+        removeBtn.setAttribute('aria-label', 'Удалить вложение');
+
+        if (iconAssets.close) {
+            const removeIcon = document.createElement('img');
+            removeIcon.src = iconAssets.close;
+            removeIcon.alt = '';
+            removeIcon.className = 'icon-glyph';
+            removeBtn.appendChild(removeIcon);
+        } else {
+            removeBtn.textContent = '×';
+        }
+
+        removeBtn.onclick = () => removeFileFromPreview(index);
+
+        chip.appendChild(removeBtn);
+        container.appendChild(chip);
     });
 }
 
