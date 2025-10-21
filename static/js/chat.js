@@ -9,6 +9,7 @@ const chatWindow = document.getElementById('chat-window');
 const messageInput = document.getElementById('message-input');
 const chatHeader = document.getElementById('chat-header');
 const chatInputArea = document.getElementById('chat-input-area');
+const chatComposer = document.getElementById('chat-composer');
 const placeholderText = document.getElementById('placeholder-text');
 const chatWithName = document.getElementById('chat-with-name');
 const roomList = document.getElementById('room-list');
@@ -1980,44 +1981,85 @@ function formatFileSize(bytes) {
 }
 
 function displayFilePreview() {
-    const previewArea = document.getElementById('file-preview-area');
-    const container = document.getElementById('file-preview-container');
-    
-    if (selectedFiles.length === 0) {
-        previewArea.style.display = 'none';
+    const attachments = document.getElementById('composer-attachments');
+    const scroller = document.getElementById('composer-attachments-scroll');
+
+    if (!attachments || !scroller) {
         return;
     }
-    
-    previewArea.style.display = 'block';
-    container.innerHTML = '';
-    
+
+    if (selectedFiles.length === 0) {
+        attachments.classList.remove('has-items');
+        attachments.setAttribute('aria-hidden', 'true');
+        scroller.innerHTML = '';
+        if (chatComposer) {
+            chatComposer.dataset.hasAttachments = 'false';
+        }
+        return;
+    }
+
+    attachments.classList.add('has-items');
+    attachments.removeAttribute('aria-hidden');
+    if (chatComposer) {
+        chatComposer.dataset.hasAttachments = 'true';
+    }
+    scroller.innerHTML = '';
+
     selectedFiles.forEach((file, index) => {
-        const preview = document.createElement('div');
-        preview.className = 'file-preview-item';
-        
-        const removeBtn = document.createElement('button');
-        removeBtn.className = 'file-preview-remove';
-        removeBtn.innerHTML = '×';
-        removeBtn.onclick = () => removeFileFromPreview(index);
-        
+        const item = document.createElement('div');
+        item.className = 'composer-attachment-item';
+        item.setAttribute('role', 'listitem');
+
+        const thumb = document.createElement('div');
+        thumb.className = 'attachment-thumb';
+
         if (file.type.startsWith('image/')) {
             const img = document.createElement('img');
             img.src = URL.createObjectURL(file);
-            preview.appendChild(img);
+            img.alt = file.name;
+            thumb.appendChild(img);
         } else if (file.type.startsWith('video/')) {
             const video = document.createElement('video');
             video.src = URL.createObjectURL(file);
-            video.controls = true;
-            preview.appendChild(video);
+            video.muted = true;
+            video.loop = true;
+            video.playsInline = true;
+            video.preload = 'metadata';
+            thumb.appendChild(video);
         } else {
             const generic = document.createElement('div');
-            generic.className = 'file-preview-generic';
-            generic.innerHTML = `<span class="material-icons-round">description</span><div><strong>${file.name}</strong><span>${formatFileSize(file.size)}</span></div>`;
-            preview.appendChild(generic);
+            generic.className = 'attachment-generic';
+            generic.innerHTML = '<svg class="icon icon-file" aria-hidden="true"><use href="#icon-file"></use></svg>';
+            thumb.appendChild(generic);
         }
 
-        preview.appendChild(removeBtn);
-        container.appendChild(preview);
+        const info = document.createElement('div');
+        info.className = 'attachment-meta';
+        const name = document.createElement('span');
+        name.className = 'attachment-name';
+        name.textContent = file.name;
+        const size = document.createElement('span');
+        size.className = 'attachment-size';
+        size.textContent = formatFileSize(file.size);
+        info.appendChild(name);
+        info.appendChild(size);
+
+        const removeBtn = document.createElement('button');
+        removeBtn.type = 'button';
+        removeBtn.className = 'attachment-remove';
+        removeBtn.setAttribute('aria-label', 'Убрать вложение');
+        removeBtn.innerHTML = '<svg class="icon icon-close" aria-hidden="true"><use href="#icon-close"></use></svg>';
+        removeBtn.addEventListener('click', () => removeFileFromPreview(index));
+
+        item.appendChild(thumb);
+        item.appendChild(info);
+        item.appendChild(removeBtn);
+
+        scroller.appendChild(item);
+    });
+
+    requestAnimationFrame(() => {
+        scroller.scrollLeft = scroller.scrollWidth;
     });
 }
 

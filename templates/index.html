@@ -13,7 +13,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.5/socket.io.min.js"></script>
-    
+
     <style>
         /* Дополнительные стили для жидкого фона и мобильной оптимизации */
         
@@ -1171,75 +1171,220 @@
     </style>
 </head>
 <body data-theme="{{ user.theme }}">
-    <!-- Жидкий анимированный фон -->
-    <div class="liquid-bg">
-        <div class="blob blob-1"></div>
-        <div class="blob blob-2"></div>
-        <div class="blob blob-3"></div>
-    </div>
-    
-    <div class="app-layout">
-        <div class="bg-shape shape1"></div>
-        <div class="bg-shape shape2"></div>
-
-        <div class="sidebar enhanced-glass">
-            <div class="sidebar-header">
-                <!-- Вкладки Чаты / Архив -->
-                <div style="display: flex; gap: 6px; align-items: center;">
+<svg aria-hidden="true" style="display:none" xmlns="http://www.w3.org/2000/svg">
+  <symbol id="icon-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+    <path d='M5 12h14'/>
+    <path d='M12 5v14'/>
+  </symbol>
+  <symbol id="icon-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+    <path d='m21 21-4.34-4.34'/>
+    <circle cx='11' cy='11' r='8'/>
+  </symbol>
+  <symbol id="icon-settings" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+    <path d='M14 17H5'/>
+    <path d='M19 7h-9'/>
+    <circle cx='17' cy='17' r='3'/>
+    <circle cx='7' cy='7' r='3'/>
+  </symbol>
+  <symbol id="icon-user" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx='12' cy='8' r='5'/>
+    <path d='M20 21a8 8 0 0 0-16 0'/>
+  </symbol>
+  <symbol id="icon-users" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+    <path d='M18 21a8 8 0 0 0-16 0'/>
+    <circle cx='10' cy='8' r='5'/>
+    <path d='M22 20c0-3.37-2-6.5-4-8a5 5 0 0 0-.45-8.3'/>
+  </symbol>
+  <symbol id="icon-chat" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+    <path d='M22 17a2 2 0 0 1-2 2H6.828a2 2 0 0 0-1.414.586l-2.202 2.202A.71.71 0 0 1 2 21.286V5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2z'/>
+    <path d='M7 11h10'/>
+    <path d='M7 15h6'/>
+    <path d='M7 7h8'/>
+  </symbol>
+  <symbol id="icon-arrow-left" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+    <path d='m12 19-7-7 7-7'/>
+    <path d='M19 12H5'/>
+  </symbol>
+  <symbol id="icon-phone" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+    <path d='M13.832 16.568a1 1 0 0 0 1.213-.303l.355-.465A2 2 0 0 1 17 15h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2A18 18 0 0 1 2 4a2 2 0 0 1 2-2h3a2 2 0 0 1 2 2v3a2 2 0 0 1-.8 1.6l-.468.351a1 1 0 0 0-.292 1.233 14 14 0 0 0 6.392 6.384'/>
+  </symbol>
+  <symbol id="icon-chevron-down" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+    <path d='m6 9 6 6 6-6'/>
+  </symbol>
+  <symbol id="icon-video" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+    <path d='m16 13 5.223 3.482a.5.5 0 0 0 .777-.416V7.87a.5.5 0 0 0-.752-.432L16 10.5'/>
+    <rect x='2' y='6' width='14' height='12' rx='2'/>
+  </symbol>
+  <symbol id="icon-mic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+    <path d='M12 19v3'/>
+    <path d='M19 10v2a7 7 0 0 1-14 0v-2'/>
+    <rect x='9' y='2' width='6' height='13' rx='3'/>
+  </symbol>
+  <symbol id="icon-dots-vertical" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx='12' cy='12' r='1'/>
+    <circle cx='12' cy='5' r='1'/>
+    <circle cx='12' cy='19' r='1'/>
+  </symbol>
+  <symbol id="icon-phone-solid" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+    <path d='M13 2a9 9 0 0 1 9 9'/>
+    <path d='M13 6a5 5 0 0 1 5 5'/>
+    <path d='M13.832 16.568a1 1 0 0 0 1.213-.303l.355-.465A2 2 0 0 1 17 15h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2A18 18 0 0 1 2 4a2 2 0 0 1 2-2h3a2 2 0 0 1 2 2v3a2 2 0 0 1-.8 1.6l-.468.351a1 1 0 0 0-.292 1.233 14 14 0 0 0 6.392 6.384'/>
+  </symbol>
+  <symbol id="icon-close" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+    <path d='M18 6 6 18'/>
+    <path d='m6 6 12 12'/>
+  </symbol>
+  <symbol id="icon-edit" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+    <path d='M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z'/>
+    <path d='m15 5 4 4'/>
+  </symbol>
+  <symbol id="icon-trash" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+    <path d='M10 11v6'/>
+    <path d='M14 11v6'/>
+    <path d='M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6'/>
+    <path d='M3 6h18'/>
+    <path d='M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2'/>
+  </symbol>
+  <symbol id="icon-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+    <path d='M20 6 9 17l-5-5'/>
+  </symbol>
+  <symbol id="icon-archive" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+    <rect width='20' height='5' x='2' y='3' rx='1'/>
+    <path d='M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8'/>
+    <path d='M10 12h4'/>
+  </symbol>
+  <symbol id="icon-unarchive" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+    <rect width='20' height='5' x='2' y='3' rx='1'/>
+    <path d='M4 8v11a2 2 0 0 0 2 2h2'/>
+    <path d='M20 8v11a2 2 0 0 1-2 2h-2'/>
+    <path d='m9 15 3-3 3 3'/>
+    <path d='M12 12v9'/>
+  </symbol>
+  <symbol id="icon-block" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+    <path d='M4.929 4.929 19.07 19.071'/>
+    <circle cx='12' cy='12' r='10'/>
+  </symbol>
+  <symbol id="icon-clock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+    <path d='M12 6v6h4'/>
+    <circle cx='12' cy='12' r='10'/>
+  </symbol>
+  <symbol id="icon-emoji" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx='12' cy='12' r='10'/>
+    <path d='M8 14s1.5 2 4 2 4-2 4-2'/>
+    <line x1='9' x2='9.01' y1='9' y2='9'/>
+    <line x1='15' x2='15.01' y1='9' y2='9'/>
+  </symbol>
+  <symbol id="icon-media" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+    <path d='M10.3 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v10l-3.1-3.1a2 2 0 0 0-2.814.014L6 21'/>
+    <path d='m14 19.5 3-3 3 3'/>
+    <path d='M17 22v-5.5'/>
+    <circle cx='9' cy='9' r='2'/>
+  </symbol>
+  <symbol id="icon-document" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+    <path d='M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z'/>
+    <path d='M14 2v4a2 2 0 0 0 2 2h4'/>
+    <path d='M10 9H8'/>
+    <path d='M16 13H8'/>
+    <path d='M16 17H8'/>
+  </symbol>
+  <symbol id="icon-poll" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+    <path d='M13 5h8'/>
+    <path d='M13 12h8'/>
+    <path d='M13 19h8'/>
+    <path d='m3 17 2 2 4-4'/>
+    <path d='m3 7 2 2 4-4'/>
+  </symbol>
+  <symbol id="icon-screen" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+    <rect width='20' height='14' x='2' y='3' rx='2'/>
+    <line x1='8' x2='16' y1='21' y2='21'/>
+    <line x1='12' x2='12' y1='17' y2='21'/>
+  </symbol>
+  <symbol id="icon-minimize" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+    <path d='m14 10 7-7'/>
+    <path d='M20 10h-6V4'/>
+    <path d='m3 21 7-7'/>
+    <path d='M4 14h6v6'/>
+  </symbol>
+  <symbol id="icon-end-call" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+    <path d='M10.1 13.9a14 14 0 0 0 3.732 2.668 1 1 0 0 0 1.213-.303l.355-.465A2 2 0 0 1 17 15h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2 18 18 0 0 1-12.728-5.272'/>
+    <path d='M22 2 2 22'/>
+    <path d='M4.76 13.582A18 18 0 0 1 2 4a2 2 0 0 1 2-2h3a2 2 0 0 1 2 2v3a2 2 0 0 1-.8 1.6l-.468.351a1 1 0 0 0-.292 1.233 14 14 0 0 0 .244.473'/>
+  </symbol>
+  <symbol id="icon-invite" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+    <path d='M2 21a8 8 0 0 1 13.292-6'/>
+    <circle cx='10' cy='8' r='5'/>
+    <path d='M19 16v6'/>
+    <path d='M22 19h-6'/>
+  </symbol>
+  <symbol id="icon-upload" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+    <path d='M12 13v8'/>
+    <path d='M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242'/>
+    <path d='m8 17 4-4 4 4'/>
+  </symbol>
+  <symbol id="icon-chevron-left" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+    <path d='m15 18-6-6 6-6'/>
+  </symbol>
+  <symbol id="icon-chevron-right" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+    <path d='m9 18 6-6-6-6'/>
+  </symbol>
+  <symbol id="icon-file" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+    <path d='M4 22h14a2 2 0 0 0 2-2V7l-5-5H6a2 2 0 0 0-2 2v4'/>
+    <path d='M14 2v4a2 2 0 0 0 2 2h4'/>
+    <rect width='4' height='6' x='2' y='12' rx='2'/>
+    <path d='M10 12h2v6'/>
+    <path d='M10 18h4'/>
+  </symbol>
+</svg>
+<!-- Жидкий анимированный фон -->
+<div class="liquid-bg">
+<div class="blob blob-1"></div>
+<div class="blob blob-2"></div>
+<div class="blob blob-3"></div>
+</div>
+<div class="app-layout">
+<div class="bg-shape shape1"></div>
+<div class="bg-shape shape2"></div>
+<div class="sidebar enhanced-glass">
+<div class="sidebar-header">
+<!-- Вкладки Чаты / Архив -->
+<div style="display: flex; gap: 6px; align-items: center;">
                     <button class="tab-btn active" id="chats-tab" onclick="switchToTab('chats')" style="width: 38px; height: 38px; padding: 0; border: none; background: var(--color-primary); color: white; border-radius: var(--radius-full); font-weight: 600; font-size: 12px; cursor: pointer; transition: all 0.3s ease; display: flex; align-items: center; justify-content: center;">
-                        💬
+                        <svg aria-hidden="true" class="icon icon-chat" height="20" viewBox="0 0 24 24" width="20"><use href="#icon-chat"></use></svg>
                     </button>
                     <button class="tab-btn" id="archive-tab" onclick="switchToTab('archive')" style="width: 38px; height: 38px; padding: 0; border: none; background: var(--input-bg); color: var(--text-color); border-radius: var(--radius-full); font-weight: 600; font-size: 12px; cursor: pointer; transition: all 0.3s ease; display: flex; align-items: center; justify-content: center;">
-                        📦
+                        <svg aria-hidden="true" class="icon icon-archive" height="20" viewBox="0 0 24 24" width="20"><use href="#icon-archive"></use></svg>
                     </button>
-                </div>
-                <div style="display: flex; gap: 4px; margin-left: 8px;">
-                    <button class="icon-btn" onclick="openModal('createRoomModal')" title="Создать Группу/Канал">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
-                            <line x1="12" y1="5" x2="12" y2="19"></line>
-                            <line x1="5" y1="12" x2="19" y2="12"></line>
-                        </svg>
-                    </button>
-                    <button class="icon-btn" onclick="openModal('searchModal')" title="Поиск пользователей">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
-                            <circle cx="11" cy="11" r="8"></circle>
-                            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-                        </svg>
-                    </button>
-                    <button class="icon-btn" onclick="openInlineSettings()" title="Настройки">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                            <circle cx="12" cy="12" r="3"></circle>
-                            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06A1.65 1.65 0 0 0 15 19.4a1.65 1.65 0 0 0-1 .6 1.65 1.65 0 0 0-.33 1.82l.02.06a2 2 0 1 1-3.38 0l.02-.06A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-.6-1 1.65 1.65 0 0 0-1.82-.33l-.06.02a2 2 0 1 1 0-3.38l.06.02A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06A2 2 0 1 1 7.04 4.3l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-.6 1.65 1.65 0 0 0 .33-1.82l-.02-.06a2 2 0 1 1 3.38 0l-.02.06A1.65 1.65 0 0 0 15 4.6a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9c.38 0 .74.14 1.02.38.29.24.5.57.6 1a1.65 1.65 0 0 0 1.82.33l.06-.02a2 2 0 1 1 0 3.38l-.06-.02a1.65 1.65 0 0 0-1.82.33 1.65 1.65 0 0 0-.6 1z"></path>
-                        </svg>
-                    </button>
-                </div>
-            </div>
-            <div class="sidebar-content">
-                
-                <ul class="room-list" id="room-list">
+</div>
+<div style="display: flex; gap: 4px; margin-left: 8px;">
+<button class="icon-btn" onclick="openModal('createRoomModal')" title="Создать Группу/Канал">
+<svg aria-hidden="true" class="icon icon-plus" height="18" viewBox="0 0 24 24" width="18"><use href="#icon-plus"></use></svg>
+</button>
+<button class="icon-btn" onclick="openModal('searchModal')" title="Поиск пользователей">
+<svg aria-hidden="true" class="icon icon-search" height="18" viewBox="0 0 24 24" width="18"><use href="#icon-search"></use></svg>
+</button>
+<button class="icon-btn" onclick="openInlineSettings()" title="Настройки">
+<svg aria-hidden="true" class="icon icon-settings" height="18" viewBox="0 0 24 24" width="18"><use href="#icon-settings"></use></svg>
+</button>
+</div>
+</div>
+<div class="sidebar-content">
+<ul class="room-list" id="room-list">
                     {% if rooms %}
                         {% for room in rooms %}
-                            <li class="room-item" data-room-id="{{ room.id }}" data-room-type="{{ room.type }}" data-room-name="{{ room.name }}" data-user-role="{{ room.role }}" data-dm-other-id="{{ room.dm_other_user_id or '' }}" onclick="selectRoom(this)">
-                                <span class="room-icon">
+                            <li class="room-item" data-dm-other-id="{{ room.dm_other_user_id or '' }}" data-room-id="{{ room.id }}" data-room-name="{{ room.name }}" data-room-type="{{ room.type }}" data-user-role="{{ room.role }}" onclick="selectRoom(this)">
+<span class="room-icon">
                                     {% if room.avatar_url %}
-                                        <img src="{{ room.avatar_url }}" alt="Avatar">
+                                        <img alt="Avatar" src="{{ room.avatar_url }}"/>
                                     {% elif room.type == 'dm' %}
-                                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-                                            <circle cx="12" cy="8" r="5"></circle>
-                                            <path d="M20 21a8 8 0 1 0-16 0"></path>
-                                        </svg>
+                                        <svg aria-hidden="true" class="icon icon-user" height="22" viewBox="0 0 24 24" width="22"><use href="#icon-user"></use></svg>
                                     {% elif room.type == 'group' %}
-                                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-                                        </svg>
+                                        <svg aria-hidden="true" class="icon icon-users" height="22" viewBox="0 0 24 24" width="22"><use href="#icon-users"></use></svg>
                                     {% elif room.type == 'channel' %}
-                                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-                                            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
-                                        </svg>
+                                        <svg aria-hidden="true" class="icon icon-chat" height="22" viewBox="0 0 24 24" width="22"><use href="#icon-chat"></use></svg>
                                     {% endif %}
                                 </span>
-                                <span class="room-name-text">{{ room.name }}</span>
-                                {% if room.unread_count > 0 %}
+<span class="room-name-text">{{ room.name }}</span>
+                                {% if room.unread_count &gt; 0 %}
                                 <span class="unread-badge">{{ room.unread_count }}</span>
                                 {% endif %}
                             </li>
@@ -1248,32 +1393,24 @@
                         <p class="empty-state" id="empty-state-rooms">У вас пока нет активных чатов. Используйте поиск (🔍) или создайте новую группу (➕).</p>
                     {% endif %}
                 </ul>
-                
-                <!-- Список архивированных чатов (скрыт по умолчанию) -->
-                <ul class="room-list" id="archive-list" style="display: none;">
+<!-- Список архивированных чатов (скрыт по умолчанию) -->
+<ul class="room-list" id="archive-list" style="display: none;">
                     {% if archived_rooms %}
                         {% for room in archived_rooms %}
-                            <li class="room-item archived" data-room-id="{{ room.id }}" data-room-type="{{ room.type }}" data-room-name="{{ room.name }}" data-user-role="{{ room.role }}" data-dm-other-id="{{ room.dm_other_user_id or '' }}" onclick="selectRoom(this)">
-                                <span class="room-icon">
+                            <li class="room-item archived" data-dm-other-id="{{ room.dm_other_user_id or '' }}" data-room-id="{{ room.id }}" data-room-name="{{ room.name }}" data-room-type="{{ room.type }}" data-user-role="{{ room.role }}" onclick="selectRoom(this)">
+<span class="room-icon">
                                     {% if room.avatar_url %}
-                                        <img src="{{ room.avatar_url }}" alt="Avatar">
+                                        <img alt="Avatar" src="{{ room.avatar_url }}"/>
                                     {% elif room.type == 'dm' %}
-                                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-                                            <circle cx="12" cy="8" r="5"></circle>
-                                            <path d="M20 21a8 8 0 1 0-16 0"></path>
-                                        </svg>
+                                        <svg aria-hidden="true" class="icon icon-user" height="22" viewBox="0 0 24 24" width="22"><use href="#icon-user"></use></svg>
                                     {% elif room.type == 'group' %}
-                                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-                                        </svg>
+                                        <svg aria-hidden="true" class="icon icon-users" height="22" viewBox="0 0 24 24" width="22"><use href="#icon-users"></use></svg>
                                     {% elif room.type == 'channel' %}
-                                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-                                            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
-                                        </svg>
+                                        <svg aria-hidden="true" class="icon icon-chat" height="22" viewBox="0 0 24 24" width="22"><use href="#icon-chat"></use></svg>
                                     {% endif %}
                                 </span>
-                                <span class="room-name-text">{{ room.name }}</span>
-                                {% if room.unread_count > 0 %}
+<span class="room-name-text">{{ room.name }}</span>
+                                {% if room.unread_count &gt; 0 %}
                                 <span class="unread-badge">{{ room.unread_count }}</span>
                                 {% endif %}
                             </li>
@@ -1282,1288 +1419,1031 @@
                         <p class="empty-state" id="empty-state-archive">Архив пуст. Чтобы архивировать чат, нажмите правой кнопкой на него и выберите "В архив".</p>
                     {% endif %}
                 </ul>
-            </div>
-            <div class="user-panel">
-                <!-- Desktop версия -->
-                <div class="desktop-user-panel" style="display:flex; align-items:center; gap:10px; min-width:0; width: 100%;">
-                    <span class="room-icon" style="width:36px; height:36px; border-width:1px;">
+</div>
+<div class="user-panel">
+<!-- Desktop версия -->
+<div class="desktop-user-panel" style="display:flex; align-items:center; gap:10px; min-width:0; width: 100%;">
+<span class="room-icon" style="width:36px; height:36px; border-width:1px;">
                         {% if user.avatar_url %}
-                            <img id="my-avatar-img" src="{{ user.avatar_url }}" alt="Avatar">
+                            <img alt="Avatar" id="my-avatar-img" src="{{ user.avatar_url }}"/>
                         {% else %}
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <circle cx="12" cy="8" r="5"></circle>
-                                <path d="M20 21a8 8 0 1 0-16 0"></path>
-                            </svg>
+                            <svg aria-hidden="true" class="icon icon-user" height="18" viewBox="0 0 24 24" width="18"><use href="#icon-user"></use></svg>
                         {% endif %}
                     </span>
-                    <span id="current-username-display">@{{ user.username }}</span>
-                    <a href="{{ url_for('logout') }}" style="margin-left: auto;"><button class="logout-btn">Выйти</button></a>
-                </div>
-                
-                <!-- Mobile табы (Telegram стиль) -->
-                <div class="mobile-tabs" style="display: none;">
-                    <button class="mobile-tab active" onclick="toggleMobileTab('chats')" id="tab-chats">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-                            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
-                        </svg>
-                        <span>Чаты</span>
-                    </button>
-                    <button class="mobile-tab" onclick="openModal('searchModal')" id="tab-search">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-                            <circle cx="11" cy="11" r="8"></circle>
-                            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-                        </svg>
-                        <span>Поиск</span>
-                    </button>
-                    <button class="mobile-tab" onclick="openModal('createRoomModal')" id="tab-create">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
-                            <line x1="12" y1="5" x2="12" y2="19"></line>
-                            <line x1="5" y1="12" x2="19" y2="12"></line>
-                        </svg>
-                        <span>Создать</span>
-                    </button>
-                    <button class="mobile-tab" onclick="openInlineSettings()" id="tab-settings">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <circle cx="12" cy="12" r="3"></circle>
-                            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06A1.65 1.65 0 0 0 15 19.4a1.65 1.65 0 0 0-1 .6 1.65 1.65 0 0 0-.33 1.82l.02.06a2 2 0 1 1-3.38 0l.02-.06A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-.6-1 1.65 1.65 0 0 0-1.82-.33l-.06.02a2 2 0 1 1 0-3.38l.06.02A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06A2 2 0 1 1 7.04 4.3l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-.6 1.65 1.65 0 0 0 .33-1.82l-.02-.06a2 2 0 1 1 3.38 0l-.02.06A1.65 1.65 0 0 0 15 4.6a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9c.38 0 .74.14 1.02.38.29.24.5.57.6 1a1.65 1.65 0 0 0 1.82.33l.06-.02a2 2 0 1 1 0 3.38l-.06-.02a1.65 1.65 0 0 0-1.82.33 1.65 1.65 0 0 0-.6 1z"></path>
-                        </svg>
-                        <span>Настройки</span>
-                    </button>
-                </div>
-            </div>
-        </div>
-
-        <div class="main-content" id="main-content">
-            
-            <!-- CHAT VIEW -->
-            <div id="chat-view" class="content-view">
-                <div class="chat-header" id="chat-header" style="display: none;">
-                    <button class="mobile-back-btn" onclick="closeMobileChat()" style="display: none;">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
-                            <line x1="19" y1="12" x2="5" y2="12"></line>
-                            <polyline points="12 19 5 12 12 5"></polyline>
-                        </svg>
-                    </button>
-                    <h3 id="chat-with-name"></h3>
-                    <div id="chat-header-actions">
-                        <!-- Объединенная кнопка звонка со стрелкой -->
-                        <div class="call-button-wrapper" style="display: flex; align-items: center; gap: 0; position: relative;">
-                            <button class="call-button-header" id="call-button" onclick="startCall()" style="height: 38px; display: flex; align-items: center;">
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
-                                    <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
-                                </svg>
-                                <span class="call-button-text">Позвонить</span>
-                            </button>
-                            <button class="call-dropdown-btn" onclick="event.stopPropagation(); toggleCallDropdown(event);" title="Опции" style="height: 38px;">
-                                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round">
-                                    <polyline points="6 9 12 15 18 9"></polyline>
-                                </svg>
-                            </button>
-                            <div class="call-dropdown-menu" id="call-dropdown-menu">
-                                <div class="call-dropdown-item" onclick="startVideoCall()">
-                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                        <path d="M23 7l-7 5 7 5V7z"></path>
-                                        <rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect>
-                                    </svg>
-                                    <span>Видеозвонок</span>
-                                </div>
-                                <div class="call-dropdown-item" onclick="startAudioCall()">
-                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                        <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
-                                        <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
-                                        <line x1="12" y1="19" x2="12" y2="23"></line>
-                                        <line x1="8" y1="23" x2="16" y2="23"></line>
-                                    </svg>
-                                    <span>Аудиозвонок</span>
-                                </div>
-                            </div>
-                        </div>
-                        <button class="icon-btn" id="room-settings-btn" onclick="openContextSettings()" title="Настройки чата">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                                <circle cx="12" cy="5" r="1.5"></circle>
-                                <circle cx="12" cy="12" r="1.5"></circle>
-                                <circle cx="12" cy="19" r="1.5"></circle>
-                            </svg>
-                        </button>
-                    </div>
-                </div>
-
-            <div class="chat-window" id="chat-window">
-                <!-- Индикатор активного звонка -->
-                <div class="active-call-indicator" id="active-call-indicator" style="display:none;" onclick="returnToCall()">
-                    <div class="call-indicator-left">
-                        <div class="call-indicator-icon">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="white" stroke="white" stroke-width="2">
-                                <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
-                            </svg>
-                        </div>
-                        <div class="call-indicator-info">
-                            <h4 id="call-indicator-title">Активный звонок</h4>
-                            <p id="call-indicator-subtitle">Нажмите, чтобы вернуться</p>
-                        </div>
-                    </div>
-                    <div class="call-indicator-actions">
-                        <span class="call-indicator-timer" id="call-indicator-timer">00:00</span>
-                        <button class="call-indicator-btn danger" onclick="event.stopPropagation(); endCall();">Завершить</button>
-                    </div>
-                </div>
-                
-                <div class="placeholder-text" id="placeholder-text">
+<span id="current-username-display">@{{ user.username }}</span>
+<a href="{{ url_for('logout') }}" style="margin-left: auto;"><button class="logout-btn">Выйти</button></a>
+</div>
+<!-- Mobile табы (Telegram стиль) -->
+<div class="mobile-tabs" style="display: none;">
+<button class="mobile-tab active" id="tab-chats" onclick="toggleMobileTab('chats')">
+<svg aria-hidden="true" class="icon icon-chat" viewBox="0 0 24 24"><use href="#icon-chat"></use></svg>
+<span>Чаты</span>
+</button>
+<button class="mobile-tab" id="tab-search" onclick="openModal('searchModal')">
+<svg aria-hidden="true" class="icon icon-search" viewBox="0 0 24 24"><use href="#icon-search"></use></svg>
+<span>Поиск</span>
+</button>
+<button class="mobile-tab" id="tab-create" onclick="openModal('createRoomModal')">
+<svg aria-hidden="true" class="icon icon-plus" viewBox="0 0 24 24"><use href="#icon-plus"></use></svg>
+<span>Создать</span>
+</button>
+<button class="mobile-tab" id="tab-settings" onclick="openInlineSettings()">
+<svg aria-hidden="true" class="icon icon-settings" viewBox="0 0 24 24"><use href="#icon-settings"></use></svg>
+<span>Настройки</span>
+</button>
+</div>
+</div>
+</div>
+<div class="main-content" id="main-content">
+<!-- CHAT VIEW -->
+<div class="content-view" id="chat-view">
+<div class="chat-header" id="chat-header" style="display: none;">
+<button class="mobile-back-btn" onclick="closeMobileChat()" style="display: none;">
+<svg aria-hidden="true" class="icon icon-arrow-left" height="24" viewBox="0 0 24 24" width="24"><use href="#icon-arrow-left"></use></svg>
+</button>
+<h3 id="chat-with-name"></h3>
+<div id="chat-header-actions">
+<!-- Объединенная кнопка звонка со стрелкой -->
+<div class="call-button-wrapper" style="display: flex; align-items: center; gap: 0; position: relative;">
+<button class="call-button-header" id="call-button" onclick="startCall()" style="height: 38px; display: flex; align-items: center;">
+<svg aria-hidden="true" class="icon icon-phone" height="14" viewBox="0 0 24 24" width="14"><use href="#icon-phone"></use></svg>
+<span class="call-button-text">Позвонить</span>
+</button>
+<button class="call-dropdown-btn" onclick="event.stopPropagation(); toggleCallDropdown(event);" style="height: 38px;" title="Опции">
+<svg aria-hidden="true" class="icon icon-chevron-down" height="10" viewBox="0 0 24 24" width="10"><use href="#icon-chevron-down"></use></svg>
+</button>
+<div class="call-dropdown-menu" id="call-dropdown-menu">
+<div class="call-dropdown-item" onclick="startVideoCall()">
+<svg aria-hidden="true" class="icon icon-video" height="18" viewBox="0 0 24 24" width="18"><use href="#icon-video"></use></svg>
+<span>Видеозвонок</span>
+</div>
+<div class="call-dropdown-item" onclick="startAudioCall()">
+<svg aria-hidden="true" class="icon icon-mic" height="18" viewBox="0 0 24 24" width="18"><use href="#icon-mic"></use></svg>
+<span>Аудиозвонок</span>
+</div>
+</div>
+</div>
+<button class="icon-btn" id="room-settings-btn" onclick="openContextSettings()" title="Настройки чата">
+<svg aria-hidden="true" class="icon icon-dots-vertical" height="18" viewBox="0 0 24 24" width="18"><use href="#icon-dots-vertical"></use></svg>
+</button>
+</div>
+</div>
+<div class="chat-window" id="chat-window">
+<!-- Индикатор активного звонка -->
+<div class="active-call-indicator" id="active-call-indicator" onclick="returnToCall()" style="display:none;">
+<div class="call-indicator-left">
+<div class="call-indicator-icon">
+<svg aria-hidden="true" class="icon icon-phone-solid icon-solid" height="16" viewBox="0 0 24 24" width="16"><use href="#icon-phone-solid"></use></svg>
+</div>
+<div class="call-indicator-info">
+<h4 id="call-indicator-title">Активный звонок</h4>
+<p id="call-indicator-subtitle">Нажмите, чтобы вернуться</p>
+</div>
+</div>
+<div class="call-indicator-actions">
+<span class="call-indicator-timer" id="call-indicator-timer">00:00</span>
+<button class="call-indicator-btn danger" onclick="event.stopPropagation(); endCall();">Завершить</button>
+</div>
+</div>
+<div class="placeholder-text" id="placeholder-text">
                     Выберите чат слева, чтобы начать общение.
                 </div>
-                <div id="unknown-contact-banner" class="unknown-banner" style="display:none;">
-                    <span id="unknown-banner-text">Этот пользователь не в ваших контактах.</span>
-                    <div class="unknown-actions">
-                        <button class="icon-btn" title="Добавить в контакты" onclick="addUnknownToContacts()" style="background: white; color: var(--color-success);">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
-                                <line x1="12" y1="5" x2="12" y2="19"></line>
-                                <line x1="5" y1="12" x2="19" y2="12"></line>
-                            </svg>
-                        </button>
-                        <button class="icon-btn" title="Заблокировать" onclick="blockUnknownContact()" style="background: white; color: var(--color-danger);">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
-                                <circle cx="12" cy="12" r="10"></circle>
-                                <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line>
-                            </svg>
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-                <!-- Editing Message Banner -->
-                <div id="editing-banner" class="message-banner" style="display: none;">
-                    <div class="banner-icon">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
-                    </div>
-                    <div class="banner-content">
-                        <div class="banner-title">Редактирование</div>
-                        <div id="editing-banner-text" class="banner-text"></div>
-                    </div>
-                    <button class="icon-btn" id="cancel-editing-btn">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-                    </button>
-                </div>
-
-                <div id="poll-comment-banner" class="message-banner" style="display: none;">
-                    <div class="banner-icon comment-icon">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M21 15a2 2 0 0 1-2 2H9l-4 4v-4H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
-                        </svg>
-                    </div>
-                    <div class="banner-content">
-                        <div class="banner-title">Комментарий к опросу</div>
-                        <div id="poll-comment-text" class="banner-text"></div>
-                    </div>
-                    <button class="icon-btn" id="cancel-poll-comment-btn" title="Отменить комментарий">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-                    </button>
-                </div>
-
-                <div class="chat-input-area" id="chat-input-area" style="display: none;">
-                    <input type="file" id="file-input" accept="*/*" style="display: none;" onchange="handleFileSelect(event)" multiple>
-                    <input type="file" id="file-input-docs" accept="*/*" style="display: none;" onchange="handleFileSelect(event)" multiple>
-
-                    <div class="chat-composer-floating">
-                        <button class="icon-btn composer-icon" onclick="toggleStickerPicker(event)" title="Стикеры" aria-label="Открыть стикеры">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round">
-                                <circle cx="12" cy="12" r="10"></circle>
-                                <path d="M8 14s1.5 2 4 2 4-2 4-2"></path>
-                                <line x1="9" y1="9" x2="9.01" y2="9"></line>
-                                <line x1="15" y1="9" x2="15.01" y2="9"></line>
-                            </svg>
-                        </button>
-
-                        <input type="text" id="message-input" placeholder="Введите сообщение..." autocomplete="off" onkeypress="handleKeyPress(event)">
-
-                        <div class="composer-trailing">
-                            <div class="composer-actions">
-                                <div class="composer-attach">
-                                    <button class="icon-btn composer-icon" id="attach-btn" onclick="toggleAttachMenu(event)" title="Вложения" aria-label="Добавить вложение">
-                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round">
-                                            <line x1="12" y1="5" x2="12" y2="19"></line>
-                                            <line x1="5" y1="12" x2="19" y2="12"></line>
-                                        </svg>
-                                    </button>
-                                    <!-- Выпадающее меню вложений -->
-                                    <div class="attach-menu" id="attach-menu" style="display: none;">
-                                        <div class="attach-menu-item" onclick="openMediaPicker(); event.stopPropagation();">
-                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-                                                <circle cx="8.5" cy="8.5" r="1.5"></circle>
-                                                <polyline points="21 15 16 10 5 21"></polyline>
-                                            </svg>
-                                            <span>Медиа/Файлы</span>
-                                        </div>
-                                        <div class="attach-menu-item" onclick="openDocPicker(); event.stopPropagation();">
-                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                                <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path>
-                                                <polyline points="13 2 13 9 20 9"></polyline>
-                                            </svg>
-                                            <span>Файлы</span>
-                                        </div>
-                                        <div class="attach-menu-item" onclick="createPoll(); event.stopPropagation();">
-                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                                <line x1="12" y1="20" x2="12" y2="10"></line>
-                                                <line x1="18" y1="20" x2="18" y2="4"></line>
-                                                <line x1="6" y1="20" x2="6" y2="16"></line>
-                                            </svg>
-                                            <span>Голосование</span>
-                                        </div>
-                                    </div>
-                                </div>
-                                <button class="icon-btn composer-icon mic-button" onmousedown="startVoiceRecording(event)" onmouseup="stopVoiceRecording(event)" ontouchstart="startVoiceRecording(event)" ontouchend="stopVoiceRecording(event)" title="Голосовое сообщение" aria-label="Голосовое сообщение">
-                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round">
-                                        <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
-                                        <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
-                                        <line x1="12" y1="19" x2="12" y2="23"></line>
-                                        <line x1="8" y1="23" x2="16" y2="23"></line>
-                                    </svg>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Превью выбранных файлов -->
-                <div id="file-preview-area" style="display: none;">
-                    <div id="file-preview-container"></div>
-                </div>
-            
-            <!-- Floating Action Bar for Selection (перенесено внутрь main-content) -->
-            <div id="selection-bar" class="selection-bar glass" style="display: none;">
-                <span id="selection-count"></span>
-                <div class="selection-actions">
-                    <button class="icon-btn" id="delete-selected-btn" title="Удалить выбранные">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-                    </button>
-                    <button class="icon-btn" id="cancel-selection-btn" title="Отменить выделение">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-                    </button>
-                </div>
-            </div>
-            </div>
-
-            <!-- THREAD VIEW -->
-            <div id="thread-view" class="content-view" style="display: none;">
-                <div class="thread-header glass">
-                    <button class="icon-btn" id="thread-back-btn" title="Назад" onclick="closeThreadView()">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                            <line x1="19" y1="12" x2="5" y2="12"></line>
-                            <polyline points="12 19 5 12 12 5"></polyline>
-                        </svg>
-                    </button>
-                    <div class="thread-header-text">
-                        <div class="thread-title" id="thread-title">Комментарии</div>
-                        <div class="thread-subtitle" id="thread-subtitle"></div>
-                    </div>
-                    <div class="thread-meta" id="thread-meta"></div>
-                </div>
-                <div class="thread-root-card glass" id="thread-root-card" style="display: none;"></div>
-                <div class="thread-comments" id="thread-comments"></div>
-                <div class="thread-empty" id="thread-empty" style="display: none;">Пока нет комментариев. Будьте первым!</div>
-                <div class="thread-input-area" id="thread-input-area" style="display: none;">
-                    <div class="chat-composer-floating thread-composer">
-                        <button class="icon-btn composer-icon" id="thread-emoji-btn" type="button" onclick="threadInput && threadInput.focus();" title="Комментарий">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round">
-                                <circle cx="12" cy="12" r="10"></circle>
-                                <path d="M8 14s1.5 2 4 2 4-2 4-2"></path>
-                                <line x1="9" y1="9" x2="9.01" y2="9"></line>
-                                <line x1="15" y1="9" x2="15.01" y2="9"></line>
-                            </svg>
-                        </button>
-                        <input type="text" id="thread-input" placeholder="Написать комментарий..." maxlength="2000" autocomplete="off">
-                        <div class="composer-trailing thread-composer-actions">
-                            <button class="primary-btn" id="thread-send-btn" onclick="sendThreadComment()">Отправить</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- SETTINGS VIEW -->
-            <div id="settings-view-inline" class="content-view" style="display: none;">
-                <div class="settings-header-inline">
-                    <button class="icon-btn" onclick="closeInlineSettings()" title="Назад">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                            <line x1="19" y1="12" x2="5" y2="12"></line>
-                            <polyline points="12 19 5 12 12 5"></polyline>
-                        </svg>
-                    </button>
-                    <h2>Настройки</h2>
-                </div>
-                <div class="settings-content-inline">
-                    <div class="settings-section">
-                        <h3>Профиль</h3>
-                        <div class="settings-profile-header">
-                            <div class="room-icon" style="width:72px; height:72px; border-width:2px;">
+<div class="unknown-banner" id="unknown-contact-banner" style="display:none;">
+<span id="unknown-banner-text">Этот пользователь не в ваших контактах.</span>
+<div class="unknown-actions">
+<button class="icon-btn" onclick="addUnknownToContacts()" style="background: white; color: var(--color-success);" title="Добавить в контакты">
+<svg aria-hidden="true" class="icon icon-plus" height="16" viewBox="0 0 24 24" width="16"><use href="#icon-plus"></use></svg>
+</button>
+<button class="icon-btn" onclick="blockUnknownContact()" style="background: white; color: var(--color-danger);" title="Заблокировать">
+<svg aria-hidden="true" class="icon icon-block" height="16" viewBox="0 0 24 24" width="16"><use href="#icon-block"></use></svg>
+</button>
+</div>
+</div>
+</div>
+<!-- Editing Message Banner -->
+<div class="message-banner" id="editing-banner" style="display: none;">
+<div class="banner-icon">
+<svg aria-hidden="true" class="icon icon-edit" height="20" viewBox="0 0 24 24" width="20"><use href="#icon-edit"></use></svg>
+</div>
+<div class="banner-content">
+<div class="banner-title">Редактирование</div>
+<div class="banner-text" id="editing-banner-text"></div>
+</div>
+<button class="icon-btn" id="cancel-editing-btn">
+<svg aria-hidden="true" class="icon icon-close" height="16" viewBox="0 0 24 24" width="16"><use href="#icon-close"></use></svg>
+</button>
+</div>
+<div class="message-banner" id="poll-comment-banner" style="display: none;">
+<div class="banner-icon comment-icon">
+<svg aria-hidden="true" class="icon icon-chat" height="20" viewBox="0 0 24 24" width="20"><use href="#icon-chat"></use></svg>
+</div>
+<div class="banner-content">
+<div class="banner-title">Комментарий к опросу</div>
+<div class="banner-text" id="poll-comment-text"></div>
+</div>
+<button class="icon-btn" id="cancel-poll-comment-btn" title="Отменить комментарий">
+<svg aria-hidden="true" class="icon icon-close" height="16" viewBox="0 0 24 24" width="16"><use href="#icon-close"></use></svg>
+</button>
+</div>
+<div class="chat-input-area" id="chat-input-area" style="display: none;">
+<input accept="*/*" id="file-input" multiple="" onchange="handleFileSelect(event)" style="display: none;" type="file"/>
+<input accept="*/*" id="file-input-docs" multiple="" onchange="handleFileSelect(event)" style="display: none;" type="file"/>
+        <div class="chat-composer-floating" id="chat-composer" data-has-attachments="false">
+<button aria-label="Открыть стикеры" class="icon-btn composer-icon" onclick="toggleStickerPicker(event)" title="Стикеры">
+<svg aria-hidden="true" class="icon icon-emoji" viewBox="0 0 24 24"><use href="#icon-emoji"></use></svg>
+</button>
+<div class="composer-input-stack">
+            <div aria-label="Выбранные вложения" aria-live="polite" class="composer-attachments" id="composer-attachments" role="list" aria-hidden="true">
+<div class="composer-attachments-scroll" id="composer-attachments-scroll"></div>
+</div>
+<input aria-label="Поле ввода сообщения" autocomplete="off" id="message-input" onkeypress="handleKeyPress(event)" placeholder="Введите сообщение..." type="text"/>
+</div>
+<div class="composer-trailing">
+<div class="composer-actions">
+<div class="composer-attach">
+<button aria-label="Добавить вложение" class="icon-btn composer-icon" id="attach-btn" onclick="toggleAttachMenu(event)" title="Вложения">
+<svg aria-hidden="true" class="icon icon-plus" viewBox="0 0 24 24"><use href="#icon-plus"></use></svg>
+</button>
+<!-- Выпадающее меню вложений -->
+<div class="attach-menu" id="attach-menu" style="display: none;">
+<div class="attach-menu-item" onclick="openMediaPicker(); event.stopPropagation();">
+<svg aria-hidden="true" class="icon icon-media" viewBox="0 0 24 24"><use href="#icon-media"></use></svg>
+<span>Медиа/Файлы</span>
+</div>
+<div class="attach-menu-item" onclick="openDocPicker(); event.stopPropagation();">
+<svg aria-hidden="true" class="icon icon-document" viewBox="0 0 24 24"><use href="#icon-document"></use></svg>
+<span>Файлы</span>
+</div>
+<div class="attach-menu-item" onclick="createPoll(); event.stopPropagation();">
+<svg aria-hidden="true" class="icon icon-poll" viewBox="0 0 24 24"><use href="#icon-poll"></use></svg>
+<span>Опрос</span>
+</div>
+</div>
+</div>
+<button aria-label="Голосовое сообщение" class="icon-btn composer-icon mic-button" onmousedown="startVoiceRecording(event)" onmouseup="stopVoiceRecording(event)" ontouchend="stopVoiceRecording(event)" ontouchstart="startVoiceRecording(event)" title="Голосовое сообщение">
+<svg aria-hidden="true" class="icon icon-mic" viewBox="0 0 24 24"><use href="#icon-mic"></use></svg>
+</button>
+</div>
+</div>
+</div>
+</div>
+<!-- Floating Action Bar for Selection (перенесено внутрь main-content) -->
+<div class="selection-bar glass" id="selection-bar" style="display: none;">
+<span id="selection-count"></span>
+<div class="selection-actions">
+<button class="icon-btn" id="delete-selected-btn" title="Удалить выбранные">
+<svg aria-hidden="true" class="icon icon-trash" height="18" viewBox="0 0 24 24" width="18"><use href="#icon-trash"></use></svg>
+</button>
+<button class="icon-btn" id="cancel-selection-btn" title="Отменить выделение">
+<svg aria-hidden="true" class="icon icon-close" height="16" viewBox="0 0 24 24" width="16"><use href="#icon-close"></use></svg>
+</button>
+</div>
+</div>
+</div>
+<!-- THREAD VIEW -->
+<div class="content-view" id="thread-view" style="display: none;">
+<div class="thread-header">
+<button class="icon-btn" id="thread-back-btn" onclick="closeThreadView()" title="Назад">
+<svg aria-hidden="true" class="icon icon-arrow-left" height="20" viewBox="0 0 24 24" width="20"><use href="#icon-arrow-left"></use></svg>
+</button>
+<div class="thread-header-text">
+<div class="thread-title" id="thread-title">Комментарии</div>
+<div class="thread-subtitle" id="thread-subtitle"></div>
+</div>
+<div class="thread-meta" id="thread-meta"></div>
+</div>
+<div class="thread-root-card" id="thread-root-card" style="display: none;"></div>
+<div class="thread-comments" id="thread-comments"></div>
+<div class="thread-empty" id="thread-empty" style="display: none;">Пока нет комментариев. Будьте первым!</div>
+<div class="thread-input-area" id="thread-input-area" style="display: none;">
+        <div class="chat-composer-floating thread-composer" id="thread-composer">
+<button class="icon-btn composer-icon" id="thread-emoji-btn" onclick="threadInput &amp;&amp; threadInput.focus();" title="Комментарий" type="button">
+<svg aria-hidden="true" class="icon icon-emoji" height="20" viewBox="0 0 24 24" width="20"><use href="#icon-emoji"></use></svg>
+</button>
+<input autocomplete="off" id="thread-input" maxlength="2000" placeholder="Написать комментарий..." type="text"/>
+<div class="composer-trailing thread-composer-actions">
+<button class="primary-btn" id="thread-send-btn" onclick="sendThreadComment()">Отправить</button>
+</div>
+</div>
+</div>
+</div>
+<!-- SETTINGS VIEW -->
+<div class="content-view" id="settings-view-inline" style="display: none;">
+<div class="settings-header-inline">
+<button class="icon-btn" onclick="closeInlineSettings()" title="Назад">
+<svg aria-hidden="true" class="icon icon-arrow-left" height="20" viewBox="0 0 24 24" width="20"><use href="#icon-arrow-left"></use></svg>
+</button>
+<h2>Настройки</h2>
+</div>
+<div class="settings-content-inline">
+<div class="settings-section">
+<h3>Профиль</h3>
+<div class="settings-profile-header">
+<div class="room-icon" style="width:72px; height:72px; border-width:2px;">
                                 {% if user.avatar_url %}
-                                    <img id="inline-settings-avatar-img" src="{{ user.avatar_url }}" alt="Avatar">
+                                    <img alt="Avatar" id="inline-settings-avatar-img" src="{{ user.avatar_url }}"/>
                                 {% else %}
-                                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                        <circle cx="12" cy="8" r="5"></circle>
-                                        <path d="M20 21a8 8 0 1 0-16 0"></path>
-                                    </svg>
+                                    <svg aria-hidden="true" class="icon icon-user" height="32" viewBox="0 0 24 24" width="32"><use href="#icon-user"></use></svg>
                                 {% endif %}
                             </div>
-                            <div>
-                                <input type="file" id="inline-avatarFileInput" accept="image/*" style="display:none" onchange="uploadAvatarFileInline(event)">
-                                <button onclick="document.getElementById('inline-avatarFileInput').click()" style="margin: 4px;">Загрузить аватар</button>
+<div>
+<input accept="image/*" id="inline-avatarFileInput" onchange="uploadAvatarFileInline(event)" style="display:none" type="file"/>
+<button onclick="document.getElementById('inline-avatarFileInput').click()" style="margin: 4px;">Загрузить аватар</button>
                                 {% if user.avatar_url %}
-                                    <button class="logout-btn" style="background: var(--color-danger); margin: 4px;" onclick="removeAvatarInline()">Удалить</button>
+                                    <button class="logout-btn" onclick="removeAvatarInline()" style="background: var(--color-danger); margin: 4px;">Удалить</button>
                                 {% endif %}
                             </div>
-                        </div>
-                        
-                        <div class="setting-item-inline">
-                            <label>Имя пользователя</label>
-                            <input type="text" id="inline-settingsUsername" value="{{ user.username }}">
-                        </div>
-                        
-                        <div class="setting-item-inline">
-                            <label>О себе</label>
-                            <textarea id="inline-settingsBio" rows="3" placeholder="Коротко о себе">{{ user.bio }}</textarea>
-                        </div>
-                    </div>
-
-                    <div class="settings-section">
-                        <h3>Тема оформления</h3>
-                        <div class="theme-selector">
-                            <div class="theme-option {% if user.theme=='dark' %}active{% endif %}" data-theme="dark" onclick="selectTheme('dark')">
-                                <div class="theme-preview dark-preview">
-                                    <div class="theme-preview-header"></div>
-                                    <div class="theme-preview-content">
-                                        <div class="theme-preview-sidebar"></div>
-                                        <div class="theme-preview-main"></div>
-                                    </div>
-                                </div>
-                                <span class="theme-label">Тёмная</span>
-                            </div>
-                            
-                            <div class="theme-option {% if user.theme=='light' %}active{% endif %}" data-theme="light" onclick="selectTheme('light')">
-                                <div class="theme-preview light-preview">
-                                    <div class="theme-preview-header"></div>
-                                    <div class="theme-preview-content">
-                                        <div class="theme-preview-sidebar"></div>
-                                        <div class="theme-preview-main"></div>
-                                    </div>
-                                </div>
-                                <span class="theme-label">Светлая</span>
-                            </div>
-                            
-                            <div class="theme-option {% if user.theme=='ocean' %}active{% endif %}" data-theme="ocean" onclick="selectTheme('ocean')">
-                                <div class="theme-preview ocean-preview">
-                                    <div class="theme-preview-header"></div>
-                                    <div class="theme-preview-content">
-                                        <div class="theme-preview-sidebar"></div>
-                                        <div class="theme-preview-main"></div>
-                                    </div>
-                                </div>
-                                <span class="theme-label">Океан</span>
-                            </div>
-
-                            <div class="theme-option {% if user.theme=='amoled' %}active{% endif %}" data-theme="amoled" onclick="selectTheme('amoled')">
-                                <div class="theme-preview dark-preview">
-                                    <div class="theme-preview-header" style="background:#000"></div>
-                                    <div class="theme-preview-content">
-                                        <div class="theme-preview-sidebar" style="background:#0b0b0b"></div>
-                                        <div class="theme-preview-main" style="background:#000"></div>
-                                    </div>
-                                </div>
-                                <span class="theme-label">AMOLED</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="settings-section">
-                        <h3>🎨 Эффект стекла</h3>
-                        <div class="setting-item-inline">
-                            <label>Прозрачность: <span id="inline-opacityValue">0.15</span></label>
-                            <input type="range" id="inline-glassOpacity" min="0.05" max="0.4" step="0.01" value="0.15" oninput="updateGlassEffectInline()">
-                        </div>
-                        
-                        <div class="setting-item-inline">
-                            <label>Размытие: <span id="inline-blurValue">40px</span></label>
-                            <input type="range" id="inline-glassBlur" min="10" max="100" step="5" value="40" oninput="updateGlassEffectInline()">
-                        </div>
-                        
-                        <div class="setting-item-inline">
-                            <label>Границы: <span id="inline-borderValue">0.2</span></label>
-                            <input type="range" id="inline-glassBorder" min="0.05" max="0.5" step="0.05" value="0.2" oninput="updateGlassEffectInline()">
-                        </div>
-                        
-                        <button onclick="resetGlassEffectInline()" style="background: var(--color-warning); margin-top: 12px;">🔄 Сбросить</button>
-                    </div>
-
-                    <div class="settings-section">
-                        <h3>Звук вызова</h3>
-                        <div class="setting-item-inline">
-                            <label for="inlineSettingsRingtone">🔔 Рингтон</label>
-                            <select id="inlineSettingsRingtone" onchange="previewRingtone()">
-                                <option value="marimba">Marimba (iPhone)</option>
-                                <option value="ascending">Восходящая</option>
-                                <option value="ripple">Волна</option>
-                                <option value="gentle">Нежная</option>
-                                <option value="cheerful">Веселая</option>
-                            </select>
-                            <button onclick="previewRingtone()" style="margin-top: 8px;">🎵 Прослушать</button>
-                        </div>
-                    </div>
-
-                    <div class="settings-section">
-                        <button onclick="saveInlineSettings()" style="width: 100%; font-size: 16px; padding: 14px;">Сохранить изменения</button>
-                        <div id="inline-settingsMessage" class="modal-message"></div>
-                    </div>
-                </div>
-            </div>
-
-        </div>
-    </div>
-
-    <!-- Поиск пользователей -->
-    <div id="searchModal" class="modal-overlay" onclick="closeModal(event)">
-        <div class="modal-content enhanced-glass">
-            <div class="modal-header">
-                <h3>Поиск пользователей</h3>
-                <button class="close-btn" onclick="closeModal(event)">&times;</button>
-            </div>
-            <div class="input-group">
-                <label for="searchQuery">Введите @имя</label>
-                <input type="text" id="searchQuery" placeholder="Например: ivan" onkeypress="if(event.key==='Enter'){searchUsers()}">
-            </div>
-            <button onclick="searchUsers()">Найти</button>
-            <div id="searchMessage" class="modal-message"></div>
-            <div id="searchResults"></div>
-        </div>
-    </div>
-
-    <!-- Видеозвонок -->
-    <div id="callModal" class="modal-overlay" onclick="closeModal(event)">
-        <div class="modal-content enhanced-glass" style="max-width: 900px; width: 90%;">
-            <div class="modal-header">
-                <h3 id="callTitle">Вызов</h3>
-                <button class="close-btn" onclick="closeModal(event); endCall()">&times;</button>
-            </div>
-            <div class="input-group" id="callInfo" style="display:none;"></div>
-            <div class="call-videos">
-                <div style="position: relative; width: 100%; height: 100%;">
-                    <video id="localVideo" autoplay playsinline muted webkit-playsinline="true"></video>
-                    <div id="localVideoPlaceholder" class="video-placeholder">
-                        <div class="video-placeholder-avatar">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                                <circle cx="12" cy="7" r="4"></circle>
-                            </svg>
-                        </div>
-                        <div class="video-placeholder-text">Камера выключена</div>
-                    </div>
-                </div>
-                <div id="remoteVideos" class="remote-videos"></div>
-            </div>
-            <div class="call-controls">
-                <!-- Микрофон с встроенной стрелкой -->
-                <div class="control-btn-wrapper control-btn-with-settings">
-                    <button id="toggleMicBtn" class="control-btn" onclick="toggleMic()" title="Микрофон">
-                        <svg class="control-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
-                            <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
-                            <line x1="12" y1="19" x2="12" y2="23"></line>
-                            <line x1="8" y1="23" x2="16" y2="23"></line>
-                        </svg>
-                        <span class="control-label">Микро</span>
-                    </button>
-                    <button class="device-settings-btn" onclick="event.stopPropagation(); toggleDeviceMenu(event, 'mic');" title="Настройки">
-                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
-                            <polyline points="6 9 12 15 18 9"></polyline>
-                        </svg>
-                    </button>
-                    <div class="device-menu" id="mic-device-menu">
-                        <!-- Динамически заполняется -->
-                    </div>
-                </div>
-                
-                <!-- Камера с встроенной стрелкой -->
-                <div class="control-btn-wrapper control-btn-with-settings">
-                    <button id="toggleCamBtn" class="control-btn" onclick="toggleCam()" title="Камера">
-                        <svg class="control-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M23 7l-7 5 7 5V7z"></path>
-                            <rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect>
-                        </svg>
-                        <span class="control-label">Камера</span>
-                    </button>
-                    <button class="device-settings-btn" onclick="event.stopPropagation(); toggleDeviceMenu(event, 'cam');" title="Настройки">
-                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
-                            <polyline points="6 9 12 15 18 9"></polyline>
-                        </svg>
-                    </button>
-                    <div class="device-menu" id="cam-device-menu">
-                        <!-- Динамически заполняется -->
-                    </div>
-                </div>
-                
-                <!-- Экран с встроенной стрелкой -->
-                <div class="control-btn-wrapper control-btn-with-settings">
-                    <button id="shareScreenBtn" class="control-btn" onclick="shareScreen()" title="Демонстрация экрана">
-                        <svg class="control-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                            <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
-                            <line x1="8" y1="21" x2="16" y2="21"></line>
-                            <line x1="12" y1="17" x2="12" y2="21"></line>
-                        </svg>
-                        <span class="control-label">Экран</span>
-                    </button>
-                    <button class="device-settings-btn" onclick="event.stopPropagation(); toggleDeviceMenu(event, 'screen');" title="Настройки">
-                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
-                            <polyline points="6 9 12 15 18 9"></polyline>
-                        </svg>
-                    </button>
-                    <div class="device-menu" id="screen-device-menu">
-                        <!-- Динамически заполняется -->
-                    </div>
-                </div>
-                
-                <!-- Компактная кнопка Свернуть -->
-                <button id="pipBtn" class="control-btn control-btn-compact" onclick="togglePictureInPicture()" title="Свернуть в окно">
-                    <svg class="control-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M22 13.7V9a2 2 0 0 0-2-2h-4.3a2 2 0 0 1-1.4-.6l-1-1.2a2 2 0 0 0-3.2 0l-1 1.2a2 2 0 0 1-1.4.6H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h4.3"/>
-                        <path d="m22 19-3-3m0 3 3-3"/>
-                    </svg>
-                    <span class="control-label">Свернуть</span>
-                </button>
-                
-                <!-- Компактная кнопка Завершить -->
-                <button class="end-call end-call-compact" onclick="endCall()">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M23 1L17 7m0 0L11 1m6 6V0"></path>
-                        <path d="M1 23l6-6m0 0l6 6m-6-6v7"></path>
-                    </svg>
+</div>
+<div class="setting-item-inline">
+<label>Имя пользователя</label>
+<input id="inline-settingsUsername" type="text" value="{{ user.username }}"/>
+</div>
+<div class="setting-item-inline">
+<label>О себе</label>
+<textarea id="inline-settingsBio" placeholder="Коротко о себе" rows="3">{{ user.bio }}</textarea>
+</div>
+</div>
+<div class="settings-section">
+<h3>Тема оформления</h3>
+<div class="theme-selector">
+<div class="theme-option {% if user.theme=='dark' %}active{% endif %}" data-theme="dark" onclick="selectTheme('dark')">
+<div class="theme-preview dark-preview">
+<div class="theme-preview-header"></div>
+<div class="theme-preview-content">
+<div class="theme-preview-sidebar"></div>
+<div class="theme-preview-main"></div>
+</div>
+</div>
+<span class="theme-label">Тёмная</span>
+</div>
+<div class="theme-option {% if user.theme=='light' %}active{% endif %}" data-theme="light" onclick="selectTheme('light')">
+<div class="theme-preview light-preview">
+<div class="theme-preview-header"></div>
+<div class="theme-preview-content">
+<div class="theme-preview-sidebar"></div>
+<div class="theme-preview-main"></div>
+</div>
+</div>
+<span class="theme-label">Светлая</span>
+</div>
+<div class="theme-option {% if user.theme=='ocean' %}active{% endif %}" data-theme="ocean" onclick="selectTheme('ocean')">
+<div class="theme-preview ocean-preview">
+<div class="theme-preview-header"></div>
+<div class="theme-preview-content">
+<div class="theme-preview-sidebar"></div>
+<div class="theme-preview-main"></div>
+</div>
+</div>
+<span class="theme-label">Океан</span>
+</div>
+<div class="theme-option {% if user.theme=='amoled' %}active{% endif %}" data-theme="amoled" onclick="selectTheme('amoled')">
+<div class="theme-preview dark-preview">
+<div class="theme-preview-header" style="background:#000"></div>
+<div class="theme-preview-content">
+<div class="theme-preview-sidebar" style="background:#0b0b0b"></div>
+<div class="theme-preview-main" style="background:#000"></div>
+</div>
+</div>
+<span class="theme-label">AMOLED</span>
+</div>
+</div>
+</div>
+<div class="settings-section">
+<h3>🎨 Эффект стекла</h3>
+<div class="setting-item-inline">
+<label>Прозрачность: <span id="inline-opacityValue">0.15</span></label>
+<input id="inline-glassOpacity" max="0.4" min="0.05" oninput="updateGlassEffectInline()" step="0.01" type="range" value="0.15"/>
+</div>
+<div class="setting-item-inline">
+<label>Размытие: <span id="inline-blurValue">40px</span></label>
+<input id="inline-glassBlur" max="100" min="10" oninput="updateGlassEffectInline()" step="5" type="range" value="40"/>
+</div>
+<div class="setting-item-inline">
+<label>Границы: <span id="inline-borderValue">0.2</span></label>
+<input id="inline-glassBorder" max="0.5" min="0.05" oninput="updateGlassEffectInline()" step="0.05" type="range" value="0.2"/>
+</div>
+<button onclick="resetGlassEffectInline()" style="background: var(--color-warning); margin-top: 12px;">🔄 Сбросить</button>
+</div>
+<div class="settings-section">
+<h3>Звук вызова</h3>
+<div class="setting-item-inline">
+<label for="inlineSettingsRingtone">🔔 Рингтон</label>
+<select id="inlineSettingsRingtone" onchange="previewRingtone()">
+<option value="marimba">Marimba (iPhone)</option>
+<option value="ascending">Восходящая</option>
+<option value="ripple">Волна</option>
+<option value="gentle">Нежная</option>
+<option value="cheerful">Веселая</option>
+</select>
+<button onclick="previewRingtone()" style="margin-top: 8px;">🎵 Прослушать</button>
+</div>
+</div>
+<div class="settings-section">
+<button onclick="saveInlineSettings()" style="width: 100%; font-size: 16px; padding: 14px;">Сохранить изменения</button>
+<div class="modal-message" id="inline-settingsMessage"></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Поиск пользователей -->
+<div class="modal-overlay" id="searchModal" onclick="closeModal(event)">
+<div class="modal-content enhanced-glass">
+<div class="modal-header">
+<h3>Поиск пользователей</h3>
+<button class="close-btn" onclick="closeModal(event)">×</button>
+</div>
+<div class="input-group">
+<label for="searchQuery">Введите @имя</label>
+<input id="searchQuery" onkeypress="if(event.key==='Enter'){searchUsers()}" placeholder="Например: ivan" type="text"/>
+</div>
+<button onclick="searchUsers()">Найти</button>
+<div class="modal-message" id="searchMessage"></div>
+<div id="searchResults"></div>
+</div>
+</div>
+<!-- Видеозвонок -->
+<div class="modal-overlay" id="callModal" onclick="closeModal(event)">
+<div class="modal-content enhanced-glass" style="max-width: 900px; width: 90%;">
+<div class="modal-header">
+<h3 id="callTitle">Вызов</h3>
+<button class="close-btn" onclick="closeModal(event); endCall()">×</button>
+</div>
+<div class="input-group" id="callInfo" style="display:none;"></div>
+<div class="call-videos">
+<div style="position: relative; width: 100%; height: 100%;">
+<video autoplay="" id="localVideo" muted="" playsinline="" webkit-playsinline="true"></video>
+<div class="video-placeholder" id="localVideoPlaceholder">
+<div class="video-placeholder-avatar">
+<svg aria-hidden="true" class="icon icon-users" viewBox="0 0 24 24"><use href="#icon-users"></use></svg>
+</div>
+<div class="video-placeholder-text">Камера выключена</div>
+</div>
+</div>
+<div class="remote-videos" id="remoteVideos"></div>
+</div>
+<div class="call-controls">
+<!-- Микрофон с встроенной стрелкой -->
+<div class="control-btn-wrapper control-btn-with-settings">
+<button class="control-btn" id="toggleMicBtn" onclick="toggleMic()" title="Микрофон">
+<svg aria-hidden="true" class="icon icon-mic control-icon" height="16" viewBox="0 0 24 24" width="16"><use href="#icon-mic"></use></svg>
+<span class="control-label">Микро</span>
+</button>
+<button class="device-settings-btn" onclick="event.stopPropagation(); toggleDeviceMenu(event, 'mic');" title="Настройки">
+<svg aria-hidden="true" class="icon icon-chevron-down control-icon" height="10" viewBox="0 0 24 24" width="10"><use href="#icon-chevron-down"></use></svg>
+</button>
+<div class="device-menu" id="mic-device-menu">
+<!-- Динамически заполняется -->
+</div>
+</div>
+<!-- Камера с встроенной стрелкой -->
+<div class="control-btn-wrapper control-btn-with-settings">
+<button class="control-btn" id="toggleCamBtn" onclick="toggleCam()" title="Камера">
+<svg aria-hidden="true" class="icon icon-video control-icon" height="16" viewBox="0 0 24 24" width="16"><use href="#icon-video"></use></svg>
+<span class="control-label">Камера</span>
+</button>
+<button class="device-settings-btn" onclick="event.stopPropagation(); toggleDeviceMenu(event, 'cam');" title="Настройки">
+<svg aria-hidden="true" class="icon icon-chevron-down control-icon" height="10" viewBox="0 0 24 24" width="10"><use href="#icon-chevron-down"></use></svg>
+</button>
+<div class="device-menu" id="cam-device-menu">
+<!-- Динамически заполняется -->
+</div>
+</div>
+<!-- Экран с встроенной стрелкой -->
+<div class="control-btn-wrapper control-btn-with-settings">
+<button class="control-btn" id="shareScreenBtn" onclick="shareScreen()" title="Демонстрация экрана">
+<svg aria-hidden="true" class="icon icon-screen control-icon" height="16" viewBox="0 0 24 24" width="16"><use href="#icon-screen"></use></svg>
+<span class="control-label">Экран</span>
+</button>
+<button class="device-settings-btn" onclick="event.stopPropagation(); toggleDeviceMenu(event, 'screen');" title="Настройки">
+<svg aria-hidden="true" class="icon icon-chevron-down control-icon" height="10" viewBox="0 0 24 24" width="10"><use href="#icon-chevron-down"></use></svg>
+</button>
+<div class="device-menu" id="screen-device-menu">
+<!-- Динамически заполняется -->
+</div>
+</div>
+<!-- Компактная кнопка Свернуть -->
+<button class="control-btn control-btn-compact" id="pipBtn" onclick="togglePictureInPicture()" title="Свернуть в окно">
+<svg aria-hidden="true" class="icon icon-minimize control-icon" height="16" viewBox="0 0 24 24" width="16"><use href="#icon-minimize"></use></svg>
+<span class="control-label">Свернуть</span>
+</button>
+<!-- Компактная кнопка Завершить -->
+<button class="end-call end-call-compact" onclick="endCall()">
+<svg aria-hidden="true" class="icon icon-end-call control-icon" height="12" viewBox="0 0 24 24" width="12"><use href="#icon-end-call"></use></svg>
                     Заверш.
                 </button>
-                
-                <!-- Компактная кнопка Пригласить -->
-                <button class="control-btn control-btn-compact" id="inviteToCallBtn" onclick="openInviteToCallModal()" title="Пригласить участников" style="display:none;">
-                    <svg class="control-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-                        <circle cx="8.5" cy="7" r="4"></circle>
-                        <line x1="20" y1="8" x2="20" y2="14"></line>
-                        <line x1="23" y1="11" x2="17" y2="11"></line>
-                    </svg>
-                    <span class="control-label">Пригласить</span>
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Набор (Dialing) -->
-    <div id="dialModal" class="modal-overlay" onclick="closeModal(event)">
-        <div class="modal-content glass" style="max-width: 420px; width: 90%; text-align: left;">
-            <div class="modal-header">
-                <h3 id="dialTitle">Идёт вызов…</h3>
-                <button class="close-btn" onclick="closeModal(event); cancelDialing()">&times;</button>
-            </div>
-            <p id="dialStatus" style="margin:0 0 10px 0; opacity:0.85;">Соединение…</p>
-            <div style="display:flex; gap:10px; justify-content:flex-end;">
-                <button class="end-call" onclick="cancelDialing()">Отменить</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Входящий звонок -->
-    <div id="incomingCallPopup" class="modal-overlay" style="display:none;" onclick="closeModal(event)">
-        <div class="modal-content glass" style="max-width: 420px; width: 90%;">
-            <div class="modal-header">
-                <h3>Входящий звонок</h3>
-                <button class="close-btn" onclick="closeModal(event); rejectIncomingCall()">&times;</button>
-            </div>
-            <p id="incomingCallText">Кто-то звонит...</p>
-            <div style="display:flex; gap:10px; justify-content:flex-end;">
-                <button onclick="rejectIncomingCall()" class="logout-btn" style="background: var(--color-danger);">Отклонить</button>
-                <button onclick="acceptIncomingCall()">Ответить</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Модальное окно выбора участников для приглашения в звонок -->
-    <div id="inviteToCallModal" class="modal-overlay" style="display:none;" onclick="closeModal(event)">
-        <div class="modal-content glass" style="max-width: 500px; width: 90%;">
-            <div class="modal-header">
-                <h3>Пригласить в звонок</h3>
-                <button class="close-btn" onclick="closeModal(event)">&times;</button>
-            </div>
-            <div class="input-group">
-                <label>Выберите участников для приглашения:</label>
-                <div class="contact-selector" id="inviteToCallMembersSelect" style="max-height: 300px; overflow-y: auto;">
-                    <!-- Сюда будут динамически загружаться участники -->
-                </div>
-            </div>
-            <button onclick="sendCallInvitations()" style="width: 100%; background: var(--color-success);">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="vertical-align: middle; margin-right: 6px;">
-                    <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
-                </svg>
+<!-- Компактная кнопка Пригласить -->
+<button class="control-btn control-btn-compact" id="inviteToCallBtn" onclick="openInviteToCallModal()" style="display:none;" title="Пригласить участников">
+<svg aria-hidden="true" class="icon icon-invite control-icon" height="16" viewBox="0 0 24 24" width="16"><use href="#icon-invite"></use></svg>
+<span class="control-label">Пригласить</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Набор (Dialing) -->
+<div class="modal-overlay" id="dialModal" onclick="closeModal(event)">
+<div class="modal-content glass" style="max-width: 420px; width: 90%; text-align: left;">
+<div class="modal-header">
+<h3 id="dialTitle">Идёт вызов…</h3>
+<button class="close-btn" onclick="closeModal(event); cancelDialing()">×</button>
+</div>
+<p id="dialStatus" style="margin:0 0 10px 0; opacity:0.85;">Соединение…</p>
+<div style="display:flex; gap:10px; justify-content:flex-end;">
+<button class="end-call" onclick="cancelDialing()">Отменить</button>
+</div>
+</div>
+</div>
+<!-- Входящий звонок -->
+<div class="modal-overlay" id="incomingCallPopup" onclick="closeModal(event)" style="display:none;">
+<div class="modal-content glass" style="max-width: 420px; width: 90%;">
+<div class="modal-header">
+<h3>Входящий звонок</h3>
+<button class="close-btn" onclick="closeModal(event); rejectIncomingCall()">×</button>
+</div>
+<p id="incomingCallText">Кто-то звонит...</p>
+<div style="display:flex; gap:10px; justify-content:flex-end;">
+<button class="logout-btn" onclick="rejectIncomingCall()" style="background: var(--color-danger);">Отклонить</button>
+<button onclick="acceptIncomingCall()">Ответить</button>
+</div>
+</div>
+</div>
+<!-- Модальное окно выбора участников для приглашения в звонок -->
+<div class="modal-overlay" id="inviteToCallModal" onclick="closeModal(event)" style="display:none;">
+<div class="modal-content glass" style="max-width: 500px; width: 90%;">
+<div class="modal-header">
+<h3>Пригласить в звонок</h3>
+<button class="close-btn" onclick="closeModal(event)">×</button>
+</div>
+<div class="input-group">
+<label>Выберите участников для приглашения:</label>
+<div class="contact-selector" id="inviteToCallMembersSelect" style="max-height: 300px; overflow-y: auto;">
+<!-- Сюда будут динамически загружаться участники -->
+</div>
+</div>
+<button onclick="sendCallInvitations()" style="width: 100%; background: var(--color-success);">
+<svg aria-hidden="true" class="icon icon-phone" height="18" style="vertical-align: middle; margin-right: 6px;" viewBox="0 0 24 24" width="18"><use href="#icon-phone"></use></svg>
                 Отправить приглашения
             </button>
-            <div id="inviteToCallMessage" class="modal-message"></div>
-        </div>
-    </div>
-
-    <!-- Приглашение в групповой звонок -->
-    <div id="groupCallInviteModal" class="modal-overlay" style="display:none;" onclick="closeModal(event)">
-        <div class="modal-content glass" style="max-width: 500px; width: 90%;">
-            <div class="modal-header">
-                <h3>Групповой звонок</h3>
-                <button class="close-btn" onclick="closeModal(event); declineGroupCall()">&times;</button>
-            </div>
-            <div style="padding: 20px 0;">
-                <div style="text-align: center; margin-bottom: 20px;">
-                    <div style="width: 80px; height: 80px; background: linear-gradient(135deg, var(--color-success), #00c853); border-radius: 50%; margin: 0 auto 16px; display: flex; align-items: center; justify-content: center; animation: pulse 2s infinite;">
-                        <svg width="40" height="40" viewBox="0 0 24 24" fill="white" stroke="white" stroke-width="2">
-                            <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
-                        </svg>
-                    </div>
-                    <h3 id="groupCallInviterName" style="margin: 0 0 8px 0;">Пользователь</h3>
-                    <p id="groupCallRoomName" style="margin: 0; opacity: 0.7; font-size: 15px;">начал групповой звонок</p>
-                </div>
-                
-                <div style="background: rgba(255,255,255,0.05); border-radius: 12px; padding: 16px; margin-bottom: 20px;">
-                    <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-                        </svg>
-                        <div style="flex: 1;">
-                            <div style="font-size: 12px; opacity: 0.7; margin-bottom: 2px;">Участников в звонке</div>
-                            <div style="font-size: 16px; font-weight: 600;" id="groupCallParticipantsCount">1</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <div style="display:flex; gap:12px; justify-content:flex-end;">
-                <button onclick="declineGroupCall()" class="logout-btn" style="background: var(--color-danger); flex: 1;">Отклонить</button>
-                <button onclick="joinGroupCallFromInvite()" style="background: var(--color-success); flex: 1;">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="vertical-align: middle; margin-right: 6px;">
-                        <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
-                    </svg>
+<div class="modal-message" id="inviteToCallMessage"></div>
+</div>
+</div>
+<!-- Приглашение в групповой звонок -->
+<div class="modal-overlay" id="groupCallInviteModal" onclick="closeModal(event)" style="display:none;">
+<div class="modal-content glass" style="max-width: 500px; width: 90%;">
+<div class="modal-header">
+<h3>Групповой звонок</h3>
+<button class="close-btn" onclick="closeModal(event); declineGroupCall()">×</button>
+</div>
+<div style="padding: 20px 0;">
+<div style="text-align: center; margin-bottom: 20px;">
+<div style="width: 80px; height: 80px; background: linear-gradient(135deg, var(--color-success), #00c853); border-radius: 50%; margin: 0 auto 16px; display: flex; align-items: center; justify-content: center; animation: pulse 2s infinite;">
+<svg aria-hidden="true" class="icon icon-phone-solid icon-solid" height="40" viewBox="0 0 24 24" width="40"><use href="#icon-phone-solid"></use></svg>
+</div>
+<h3 id="groupCallInviterName" style="margin: 0 0 8px 0;">Пользователь</h3>
+<p id="groupCallRoomName" style="margin: 0; opacity: 0.7; font-size: 15px;">начал групповой звонок</p>
+</div>
+<div style="background: rgba(255,255,255,0.05); border-radius: 12px; padding: 16px; margin-bottom: 20px;">
+<div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+<svg aria-hidden="true" class="icon icon-users" height="20" viewBox="0 0 24 24" width="20"><use href="#icon-users"></use></svg>
+<div style="flex: 1;">
+<div style="font-size: 12px; opacity: 0.7; margin-bottom: 2px;">Участников в звонке</div>
+<div id="groupCallParticipantsCount" style="font-size: 16px; font-weight: 600;">1</div>
+</div>
+</div>
+</div>
+</div>
+<div style="display:flex; gap:12px; justify-content:flex-end;">
+<button class="logout-btn" onclick="declineGroupCall()" style="background: var(--color-danger); flex: 1;">Отклонить</button>
+<button onclick="joinGroupCallFromInvite()" style="background: var(--color-success); flex: 1;">
+<svg aria-hidden="true" class="icon icon-phone" height="18" style="vertical-align: middle; margin-right: 6px;" viewBox="0 0 24 24" width="18"><use href="#icon-phone"></use></svg>
                     Присоединиться
                 </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Настройки профиля -->
-    <div id="settingsModal" class="modal-overlay" onclick="closeModal(event)">
-        <div class="modal-content glass">
-            <div class="modal-header">
-                <h3>Настройки аккаунта</h3>
-                <button class="close-btn" onclick="closeModal(event)">&times;</button>
-            </div>
-            <div style="display:flex; align-items:center; gap:12px; margin-bottom: 16px;">
-                <div class="room-icon" style="width:64px; height:64px; border-width:2px;">
+</div>
+</div>
+</div>
+<!-- Настройки профиля -->
+<div class="modal-overlay" id="settingsModal" onclick="closeModal(event)">
+<div class="modal-content glass">
+<div class="modal-header">
+<h3>Настройки аккаунта</h3>
+<button class="close-btn" onclick="closeModal(event)">×</button>
+</div>
+<div style="display:flex; align-items:center; gap:12px; margin-bottom: 16px;">
+<div class="room-icon" style="width:64px; height:64px; border-width:2px;">
                     {% if user.avatar_url %}
-                        <img id="settings-avatar-img" src="{{ user.avatar_url }}" alt="Avatar">
+                        <img alt="Avatar" id="settings-avatar-img" src="{{ user.avatar_url }}"/>
                     {% else %}
-                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <circle cx="12" cy="8" r="5"></circle>
-                            <path d="M20 21a8 8 0 1 0-16 0"></path>
-                        </svg>
+                        <svg aria-hidden="true" class="icon icon-user" height="28" viewBox="0 0 24 24" width="28"><use href="#icon-user"></use></svg>
                     {% endif %}
                 </div>
-                <div>
-                    <input type="file" id="avatarFileInput" accept="image/*" style="display:none" onchange="uploadAvatarFile(event)">
-                    <button onclick="document.getElementById('avatarFileInput').click()">Загрузить аватар</button>
+<div>
+<input accept="image/*" id="avatarFileInput" onchange="uploadAvatarFile(event)" style="display:none" type="file"/>
+<button onclick="document.getElementById('avatarFileInput').click()">Загрузить аватар</button>
                     {% if user.avatar_url %}
-                        <button class="logout-btn" style="background: var(--color-danger);" onclick="removeAvatar()">Удалить аватар</button>
+                        <button class="logout-btn" onclick="removeAvatar()" style="background: var(--color-danger);">Удалить аватар</button>
                     {% endif %}
-                    <div id="avatarMessage" class="modal-message"></div>
-                </div>
-            </div>
-            <div class="input-group">
-                <label for="settingsUsername">Имя пользователя</label>
-                <input type="text" id="settingsUsername" value="{{ user.username }}">
-            </div>
-            <div class="input-group">
-                <label for="settingsBio">О себе</label>
-                <textarea id="settingsBio" rows="3" placeholder="Коротко о себе">{{ user.bio }}</textarea>
-            </div>
-            <div class="input-group">
-                <label for="settingsTheme">Тема</label>
-                <select id="settingsTheme">
-                    <option value="dark" {% if user.theme=='dark' %}selected{% endif %}>Тёмная</option>
-                    <option value="light" {% if user.theme=='light' %}selected{% endif %}>Светлая</option>
-                    <option value="ocean" {% if user.theme=='ocean' %}selected{% endif %}>Океан</option>
-                            <option value="amoled" {% if user.theme=='amoled' %}selected{% endif %}>AMOLED</option>
-                </select>
-            </div>
-
-            <div class="input-group">
-                <label for="settingsRingtone">🔔 Рингтон звонка</label>
-                <select id="settingsRingtone" onchange="previewRingtone()">
-                    <option value="marimba">Marimba (iPhone)</option>
-                    <option value="ascending">Восходящая</option>
-                    <option value="ripple">Волна</option>
-                    <option value="gentle">Нежная</option>
-                    <option value="cheerful">Веселая</option>
-                </select>
-                <button onclick="previewRingtone()" style="margin-top: 8px;">🎵 Прослушать</button>
-            </div>
-
-            <div class="input-group">
-                <label>Проверка соединения (камера/микрофон/ICE)</label>
-                <button onclick="runConnectivityTest()">Проверить</button>
-                <div id="connectivityResult" class="modal-message"></div>
-            </div>
-            
-            <hr>
-            <h3 style="font-size: 18px; margin-bottom: 16px;">🎨 Настройки эффекта стекла</h3>
-            
-            <div class="input-group">
-                <label for="glassOpacity">Прозрачность стекла: <span id="opacityValue">0.15</span></label>
-                <input type="range" id="glassOpacity" min="0.05" max="0.4" step="0.01" value="0.15" oninput="updateGlassEffect()">
-            </div>
-            
-            <div class="input-group">
-                <label for="glassBlur">Размытие фона: <span id="blurValue">40px</span></label>
-                <input type="range" id="glassBlur" min="10" max="100" step="5" value="40" oninput="updateGlassEffect()">
-            </div>
-            
-            <div class="input-group">
-                <label for="glassBorder">Прозрачность границ: <span id="borderValue">0.2</span></label>
-                <input type="range" id="glassBorder" min="0.05" max="0.5" step="0.05" value="0.2" oninput="updateGlassEffect()">
-            </div>
-            
-            <button onclick="resetGlassEffect()" style="background: var(--color-warning); margin-top: 12px;">🔄 Сбросить по умолчанию</button>
-            
-            <button onclick="saveSettings()">Сохранить</button>
-            <div id="settingsMessage" class="modal-message"></div>
-        </div>
-    </div>
-
-    <div id="reaction-picker">
-        <span class="reaction-option" data-emoji="👍" data-label="Нравится"></span>
-        <span class="reaction-option" data-emoji="👎" data-label="Не нравится"></span>
-        <span class="reaction-option" data-emoji="❤️" data-label="Любовь"></span>
-        <span class="reaction-option" data-emoji="😂" data-label="Смешно"></span>
-        <span class="reaction-option" data-emoji="😮" data-label="Удивление"></span>
-        <span class="reaction-option" data-emoji="😢" data-label="Печально"></span>
-        <span class="reaction-option" data-emoji="🔥" data-label="Огонь"></span>
-    </div>
-
-    <!-- НОВОЕ: Контекстное меню для сообщений -->
-    <div id="message-context-menu" class="context-menu glass" style="display: none;">
-        <ul>
-            <li id="edit-message-btn">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
-                <span>Редактировать</span>
-            </li>
-            <li id="delete-message-btn">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-                <span>Удалить</span>
-            </li>
-            <li id="select-message-btn">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="9 11 12 14 22 4"></polyline><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>
-                <span>Выбрать</span>
-            </li>
-        </ul>
-    </div>
-    
-    <!-- Контекстное меню для чатов -->
-    <div id="room-context-menu" class="context-menu glass" style="display: none; z-index: 2000;">
-        <ul>
-            <li id="archive-room-btn">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
-                    <polyline points="21 8 21 21 3 21 3 8"></polyline>
-                    <rect x="1" y="3" width="22" height="5"></rect>
-                    <line x1="10" y1="12" x2="14" y2="12"></line>
-                </svg>
-                <span>В архив</span>
-            </li>
-            <li id="unarchive-room-btn" style="display: none;">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
-                    <polyline points="3 8 3 21 21 21 21 8"></polyline>
-                    <rect x="1" y="3" width="22" height="5"></rect>
-                    <line x1="10" y1="12" x2="14" y2="12"></line>
-                </svg>
-                <span>Разархивировать</span>
-            </li>
-            <li id="delete-room-context-btn">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" class="danger">
-                    <polyline points="3 6 5 6 21 6"></polyline>
-                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                </svg>
-                <span>Удалить чат</span>
-            </li>
-        </ul>
-    </div>
-
-    <div id="createRoomModal" class="modal-overlay" onclick="closeModal(event)">
-        <div class="modal-content enhanced-glass">
-             <div class="modal-header">
-                <h3>Создать новую комнату</h3>
-                <button class="close-btn" onclick="closeModal(event)">&times;</button>
-            </div>
-            
-            <div class="input-group">
-                <label for="roomName">Название</label>
-                <input type="text" id="roomName" placeholder="Название группы или канала">
-            </div>
-            <div class="input-group">
-                <label for="roomType">Тип комнаты</label>
-                <select id="roomType">
-                    <option value="group">👥 Группа</option>
-                    <option value="channel">📢 Канал</option>
-                </select>
-            </div>
-
-            <div class="input-group">
-                <label>Добавить участников (из ваших контактов):</label>
-                <div class="contact-selector" id="roomMembersSelect">
+                    <div class="modal-message" id="avatarMessage"></div>
+</div>
+</div>
+<div class="input-group">
+<label for="settingsUsername">Имя пользователя</label>
+<input id="settingsUsername" type="text" value="{{ user.username }}"/>
+</div>
+<div class="input-group">
+<label for="settingsBio">О себе</label>
+<textarea id="settingsBio" placeholder="Коротко о себе" rows="3">{{ user.bio }}</textarea>
+</div>
+<div class="input-group">
+<label for="settingsTheme">Тема</label>
+<select id="settingsTheme">
+<option %}="" %}selected{%="" endif="" if="" user.theme="dark" value="dark" {%="">Тёмная</option>
+<option %}="" %}selected{%="" endif="" if="" user.theme="light" value="light" {%="">Светлая</option>
+<option %}="" %}selected{%="" endif="" if="" user.theme="ocean" value="ocean" {%="">Океан</option>
+<option %}="" %}selected{%="" endif="" if="" user.theme="amoled" value="amoled" {%="">AMOLED</option>
+</select>
+</div>
+<div class="input-group">
+<label for="settingsRingtone">🔔 Рингтон звонка</label>
+<select id="settingsRingtone" onchange="previewRingtone()">
+<option value="marimba">Marimba (iPhone)</option>
+<option value="ascending">Восходящая</option>
+<option value="ripple">Волна</option>
+<option value="gentle">Нежная</option>
+<option value="cheerful">Веселая</option>
+</select>
+<button onclick="previewRingtone()" style="margin-top: 8px;">🎵 Прослушать</button>
+</div>
+<div class="input-group">
+<label>Проверка соединения (камера/микрофон/ICE)</label>
+<button onclick="runConnectivityTest()">Проверить</button>
+<div class="modal-message" id="connectivityResult"></div>
+</div>
+<hr/>
+<h3 style="font-size: 18px; margin-bottom: 16px;">🎨 Настройки эффекта стекла</h3>
+<div class="input-group">
+<label for="glassOpacity">Прозрачность стекла: <span id="opacityValue">0.15</span></label>
+<input id="glassOpacity" max="0.4" min="0.05" oninput="updateGlassEffect()" step="0.01" type="range" value="0.15"/>
+</div>
+<div class="input-group">
+<label for="glassBlur">Размытие фона: <span id="blurValue">40px</span></label>
+<input id="glassBlur" max="100" min="10" oninput="updateGlassEffect()" step="5" type="range" value="40"/>
+</div>
+<div class="input-group">
+<label for="glassBorder">Прозрачность границ: <span id="borderValue">0.2</span></label>
+<input id="glassBorder" max="0.5" min="0.05" oninput="updateGlassEffect()" step="0.05" type="range" value="0.2"/>
+</div>
+<button onclick="resetGlassEffect()" style="background: var(--color-warning); margin-top: 12px;">🔄 Сбросить по умолчанию</button>
+<button onclick="saveSettings()">Сохранить</button>
+<div class="modal-message" id="settingsMessage"></div>
+</div>
+</div>
+<div id="reaction-picker">
+<span class="reaction-option" data-emoji="👍" data-label="Нравится"></span>
+<span class="reaction-option" data-emoji="👎" data-label="Не нравится"></span>
+<span class="reaction-option" data-emoji="❤️" data-label="Любовь"></span>
+<span class="reaction-option" data-emoji="😂" data-label="Смешно"></span>
+<span class="reaction-option" data-emoji="😮" data-label="Удивление"></span>
+<span class="reaction-option" data-emoji="😢" data-label="Печально"></span>
+<span class="reaction-option" data-emoji="🔥" data-label="Огонь"></span>
+</div>
+<!-- НОВОЕ: Контекстное меню для сообщений -->
+<div class="context-menu glass" id="message-context-menu" style="display: none;">
+<ul>
+<li id="edit-message-btn">
+<svg aria-hidden="true" class="icon icon-edit" height="16" viewBox="0 0 24 24" width="16"><use href="#icon-edit"></use></svg>
+<span>Редактировать</span>
+</li>
+<li id="delete-message-btn">
+<svg aria-hidden="true" class="icon icon-trash" height="16" viewBox="0 0 24 24" width="16"><use href="#icon-trash"></use></svg>
+<span>Удалить</span>
+</li>
+<li id="select-message-btn">
+<svg aria-hidden="true" class="icon icon-check" height="16" viewBox="0 0 24 24" width="16"><use href="#icon-check"></use></svg>
+<span>Выбрать</span>
+</li>
+</ul>
+</div>
+<!-- Контекстное меню для чатов -->
+<div class="context-menu glass" id="room-context-menu" style="display: none; z-index: 2000;">
+<ul>
+<li id="archive-room-btn">
+<svg aria-hidden="true" class="icon icon-archive" height="16" viewBox="0 0 24 24" width="16"><use href="#icon-archive"></use></svg>
+<span>В архив</span>
+</li>
+<li id="unarchive-room-btn" style="display: none;">
+<svg aria-hidden="true" class="icon icon-unarchive" height="16" viewBox="0 0 24 24" width="16"><use href="#icon-unarchive"></use></svg>
+<span>Разархивировать</span>
+</li>
+<li id="delete-room-context-btn">
+<svg aria-hidden="true" class="icon icon-trash danger" height="16" viewBox="0 0 24 24" width="16"><use href="#icon-trash"></use></svg>
+<span>Удалить чат</span>
+</li>
+</ul>
+</div>
+<div class="modal-overlay" id="createRoomModal" onclick="closeModal(event)">
+<div class="modal-content enhanced-glass">
+<div class="modal-header">
+<h3>Создать новую комнату</h3>
+<button class="close-btn" onclick="closeModal(event)">×</button>
+</div>
+<div class="input-group">
+<label for="roomName">Название</label>
+<input id="roomName" placeholder="Название группы или канала" type="text"/>
+</div>
+<div class="input-group">
+<label for="roomType">Тип комнаты</label>
+<select id="roomType">
+<option value="group">👥 Группа</option>
+<option value="channel">📢 Канал</option>
+</select>
+</div>
+<div class="input-group">
+<label>Добавить участников (из ваших контактов):</label>
+<div class="contact-selector" id="roomMembersSelect">
                     {% if contacts %}
                         {% for contact in contacts %}
                             <div class="contact-checkbox">
-                                <input type="checkbox" id="member-{{ contact.id }}" value="{{ contact.id }}">
-                                <label for="member-{{ contact.id }}">{{ contact.display_name }}</label>
-                            </div>
+<input id="member-{{ contact.id }}" type="checkbox" value="{{ contact.id }}"/>
+<label for="member-{{ contact.id }}">{{ contact.display_name }}</label>
+</div>
                         {% endfor %}
                     {% else %}
                         <p class="empty-state small">У вас нет контактов для добавления.</p>
                     {% endif %}
                 </div>
-            </div>
-
-            <button onclick="createRoom()">Создать</button>
-            <div id="createRoomMessage" class="modal-message"></div>
-        </div>
-    </div>
-
-    
-
-    <!-- Подтверждение удаления сообщений -->
-    <div id="delete-confirm-modal" class="modal-overlay" onclick="closeModal(event)">
-        <div class="modal-content glass" style="max-width: 420px; width: 90%; text-align: left;">
-            <div class="modal-header">
-                <h3>Удаление сообщений</h3>
-                <button class="close-btn" onclick="closeModal(event)">&times;</button>
-            </div>
-            <p id="delete-confirm-text">Вы уверены, что хотите удалить сообщение?</p>
-            <div id="delete-for-other-user-block" class="input-group" style="display:none;">
-                <label style="display:flex; align-items:center; gap:8px; margin-bottom:0;">
-                    <input type="checkbox" id="delete-for-other-user-checkbox">
-                    <span id="delete-for-other-user-label">Также удалить для собеседника</span>
-                </label>
-            </div>
-            <div style="display:flex; gap:10px; justify-content:flex-end;">
-                <button class="logout-btn" style="background: var(--color-danger);" id="confirm-delete-btn">Удалить</button>
-                <button onclick="closeModal(event)">Отмена</button>
-            </div>
-        </div>
-    </div>
-
-    <div id="contactSettingsModal" class="modal-overlay" onclick="closeModal(event)">
-        <div class="modal-content glass">
-            <div class="modal-header">
-                <h3 id="contactSettingsTitle">Информация о контакте</h3>
-                <button class="close-btn" onclick="closeModal(event)">&times;</button>
-            </div>
-            <input type="hidden" id="contactSettingsId">
-            
-            <!-- Профильная информация -->
-            <div style="text-align: center; margin-bottom: 24px;">
-                <div class="room-icon" style="width:96px; height:96px; border-width:2px; margin: 0 auto 16px;" id="contactAvatarPreview">
-                    <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <circle cx="12" cy="8" r="5"></circle>
-                        <path d="M20 21a8 8 0 1 0-16 0"></path>
-                    </svg>
-                </div>
-                <h3 id="contactUsername" style="margin: 0 0 8px 0; font-size: 20px;"></h3>
-                <p id="contactBio" style="margin: 0; opacity: 0.7; font-size: 14px; font-style: italic;">Био не указано</p>
-            </div>
-            
-            <!-- Информация о контакте -->
-            <div style="background: rgba(255,255,255,0.05); border-radius: 12px; padding: 16px; margin-bottom: 20px;">
-                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="opacity: 0.6;">
-                        <circle cx="12" cy="12" r="10"></circle>
-                        <polyline points="12 6 12 12 16 14"></polyline>
-                    </svg>
-                    <div style="flex: 1;">
-                        <div style="font-size: 12px; opacity: 0.6; margin-bottom: 2px;">Был(а) в сети</div>
-                        <div id="contactLastSeen" style="font-size: 14px;">недавно</div>
-                    </div>
-                </div>
-                
-                <div style="display: flex; align-items: center; gap: 12px;">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="opacity: 0.6;">
-                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
-                    </svg>
-                    <div style="flex: 1;">
-                        <div style="font-size: 12px; opacity: 0.6; margin-bottom: 2px;">Общих сообщений</div>
-                        <div id="contactMessagesCount" style="font-size: 14px;">0</div>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="input-group">
-                <label for="contactCustomName">Ваше имя для контакта (видно только вам)</label>
-                <input type="text" id="contactCustomName" placeholder="Например: Вася Программист">
-            </div>
-            
-            <button onclick="saveContactSettings()" style="width: 100%; margin-bottom: 12px;">Сохранить имя</button>
-            
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
-                <button onclick="openDMWithContact()" style="background: var(--color-primary);">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 6px;">
-                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
-                    </svg>
+</div>
+<button onclick="createRoom()">Создать</button>
+<div class="modal-message" id="createRoomMessage"></div>
+</div>
+</div>
+<!-- Подтверждение удаления сообщений -->
+<div class="modal-overlay" id="delete-confirm-modal" onclick="closeModal(event)">
+<div class="modal-content glass" style="max-width: 420px; width: 90%; text-align: left;">
+<div class="modal-header">
+<h3>Удаление сообщений</h3>
+<button class="close-btn" onclick="closeModal(event)">×</button>
+</div>
+<p id="delete-confirm-text">Вы уверены, что хотите удалить сообщение?</p>
+<div class="input-group" id="delete-for-other-user-block" style="display:none;">
+<label style="display:flex; align-items:center; gap:8px; margin-bottom:0;">
+<input id="delete-for-other-user-checkbox" type="checkbox"/>
+<span id="delete-for-other-user-label">Также удалить для собеседника</span>
+</label>
+</div>
+<div style="display:flex; gap:10px; justify-content:flex-end;">
+<button class="logout-btn" id="confirm-delete-btn" style="background: var(--color-danger);">Удалить</button>
+<button onclick="closeModal(event)">Отмена</button>
+</div>
+</div>
+</div>
+<div class="modal-overlay" id="contactSettingsModal" onclick="closeModal(event)">
+<div class="modal-content glass">
+<div class="modal-header">
+<h3 id="contactSettingsTitle">Информация о контакте</h3>
+<button class="close-btn" onclick="closeModal(event)">×</button>
+</div>
+<input id="contactSettingsId" type="hidden"/>
+<!-- Профильная информация -->
+<div style="text-align: center; margin-bottom: 24px;">
+<div class="room-icon" id="contactAvatarPreview" style="width:96px; height:96px; border-width:2px; margin: 0 auto 16px;">
+<svg aria-hidden="true" class="icon icon-user" height="44" viewBox="0 0 24 24" width="44"><use href="#icon-user"></use></svg>
+</div>
+<h3 id="contactUsername" style="margin: 0 0 8px 0; font-size: 20px;"></h3>
+<p id="contactBio" style="margin: 0; opacity: 0.7; font-size: 14px; font-style: italic;">Био не указано</p>
+</div>
+<!-- Информация о контакте -->
+<div style="background: rgba(255,255,255,0.05); border-radius: 12px; padding: 16px; margin-bottom: 20px;">
+<div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+<svg aria-hidden="true" class="icon icon-clock" height="20" style="opacity: 0.6;" viewBox="0 0 24 24" width="20"><use href="#icon-clock"></use></svg>
+<div style="flex: 1;">
+<div style="font-size: 12px; opacity: 0.6; margin-bottom: 2px;">Был(а) в сети</div>
+<div id="contactLastSeen" style="font-size: 14px;">недавно</div>
+</div>
+</div>
+<div style="display: flex; align-items: center; gap: 12px;">
+<svg aria-hidden="true" class="icon icon-chat" height="20" style="opacity: 0.6;" viewBox="0 0 24 24" width="20"><use href="#icon-chat"></use></svg>
+<div style="flex: 1;">
+<div style="font-size: 12px; opacity: 0.6; margin-bottom: 2px;">Общих сообщений</div>
+<div id="contactMessagesCount" style="font-size: 14px;">0</div>
+</div>
+</div>
+</div>
+<div class="input-group">
+<label for="contactCustomName">Ваше имя для контакта (видно только вам)</label>
+<input id="contactCustomName" placeholder="Например: Вася Программист" type="text"/>
+</div>
+<button onclick="saveContactSettings()" style="width: 100%; margin-bottom: 12px;">Сохранить имя</button>
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+<button onclick="openDMWithContact()" style="background: var(--color-primary);">
+<svg aria-hidden="true" class="icon icon-chat" height="16" style="vertical-align: middle; margin-right: 6px;" viewBox="0 0 24 24" width="16"><use href="#icon-chat"></use></svg>
                     Написать
                 </button>
-                <button onclick="blockContactFromSettings()" class="logout-btn" style="background: var(--color-danger);">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 6px;">
-                        <circle cx="12" cy="12" r="10"></circle>
-                        <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line>
-                    </svg>
+<button class="logout-btn" onclick="blockContactFromSettings()" style="background: var(--color-danger);">
+<svg aria-hidden="true" class="icon icon-block" height="16" style="vertical-align: middle; margin-right: 6px;" viewBox="0 0 24 24" width="16"><use href="#icon-block"></use></svg>
                     Заблокировать
                 </button>
-            </div>
-            
-            <div id="contactSettingsMessage" class="modal-message"></div>
-        </div>
-    </div>
-
-    <div id="roomSettingsModal" class="modal-overlay" onclick="closeModal(event)">
-        <div class="modal-content glass">
-            <div class="modal-header">
-                <h3 id="roomSettingsTitle">Управление Группой/Каналом</h3>
-                <button class="close-btn" onclick="closeModal(event)">&times;</button>
-            </div>
-            <input type="hidden" id="roomSettingsId">
-
-            <!-- Информационная секция -->
-            <div class="settings-section" id="roomInfoSection">
-                <div style="display:flex; align-items:center; gap:16px; margin-bottom: 20px;">
-                    <div class="room-icon" style="width:80px; height:80px; border-width:2px;" id="roomSettingsAvatarPreview">
-                        <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-                        </svg>
-                    </div>
-                    <div style="flex: 1;">
-                        <h4 id="roomSettingsNameDisplay" style="margin: 0 0 8px 0; font-size: 18px;"></h4>
-                        <p id="roomSettingsTypeDisplay" style="margin: 0; opacity: 0.7; font-size: 14px;"></p>
-                    </div>
-                </div>
-                
-                <!-- Кнопка просмотра участников для всех -->
-                <button onclick="openMembersModal()" style="width: 100%; margin-bottom: 12px; background: var(--color-primary);">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 8px;">
-                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-                    </svg>
-                    <span id="members-button-text">Участники</span> (<span id="roomMembersCount">0</span>)
+</div>
+<div class="modal-message" id="contactSettingsMessage"></div>
+</div>
+</div>
+<div class="modal-overlay" id="roomSettingsModal" onclick="closeModal(event)">
+<div class="modal-content glass">
+<div class="modal-header">
+<h3 id="roomSettingsTitle">Управление Группой/Каналом</h3>
+<button class="close-btn" onclick="closeModal(event)">×</button>
+</div>
+<input id="roomSettingsId" type="hidden"/>
+<!-- Информационная секция -->
+<div class="settings-section" id="roomInfoSection">
+<div style="display:flex; align-items:center; gap:16px; margin-bottom: 20px;">
+<div class="room-icon" id="roomSettingsAvatarPreview" style="width:80px; height:80px; border-width:2px;">
+<svg aria-hidden="true" class="icon icon-users" height="36" viewBox="0 0 24 24" width="36"><use href="#icon-users"></use></svg>
+</div>
+<div style="flex: 1;">
+<h4 id="roomSettingsNameDisplay" style="margin: 0 0 8px 0; font-size: 18px;"></h4>
+<p id="roomSettingsTypeDisplay" style="margin: 0; opacity: 0.7; font-size: 14px;"></p>
+</div>
+</div>
+<!-- Кнопка просмотра участников для всех -->
+<button onclick="openMembersModal()" style="width: 100%; margin-bottom: 12px; background: var(--color-primary);">
+<svg aria-hidden="true" class="icon icon-users" height="16" style="vertical-align: middle; margin-right: 8px;" viewBox="0 0 24 24" width="16"><use href="#icon-users"></use></svg>
+<span id="members-button-text">Участники</span> (<span id="roomMembersCount">0</span>)
                 </button>
-                
-                <!-- Дополнительная информация -->
-                <div id="roomSettingsStats" style="display:grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 20px;">
-                    <div style="text-align: center; padding: 12px; background: rgba(255,255,255,0.05); border-radius: 12px;">
-                        <div style="font-size: 24px; font-weight: bold;" id="roomMessagesCount">0</div>
-                        <div style="font-size: 11px; opacity: 0.7; margin-top: 4px;">Сообщений</div>
-                    </div>
-                    <div style="text-align: center; padding: 12px; background: rgba(255,255,255,0.05); border-radius: 12px;">
-                        <div style="font-size: 24px; font-weight: bold;" id="roomMediaCount">0</div>
-                        <div style="font-size: 11px; opacity: 0.7; margin-top: 4px;">Медиа</div>
-                    </div>
-                    <div style="text-align: center; padding: 12px; background: rgba(255,255,255,0.05); border-radius: 12px;">
-                        <div style="font-size: 24px; font-weight: bold;" id="roomLinksCount">0</div>
-                        <div style="font-size: 11px; opacity: 0.7; margin-top: 4px;">Ссылок</div>
-                    </div>
-                </div>
-            </div>
-
-            <hr>
-
-            <div id="admin-only-settings">
-                <h4 style="margin-bottom: 16px;">Настройки администратора</h4>
-                
-                <div class="input-group">
-                    <label for="roomSettingsName">Изменить название</label>
-                    <input type="text" id="roomSettingsName">
-                </div>
-                
-                <div class="input-group">
-                    <label>Аватар комнаты</label>
-                    <div style="display:flex; gap:8px; align-items:center; margin-bottom: 8px;">
-                        <input type="file" id="roomAvatarFileInput" accept="image/*" style="display:none" onchange="uploadRoomAvatarFile(event)">
-                        <button onclick="document.getElementById('roomAvatarFileInput').click()" style="flex: 1;">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 6px;">
-                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                                <polyline points="17 8 12 3 7 8"></polyline>
-                                <line x1="12" y1="3" x2="12" y2="15"></line>
-                            </svg>
+<!-- Дополнительная информация -->
+<div id="roomSettingsStats" style="display:grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 20px;">
+<div style="text-align: center; padding: 12px; background: rgba(255,255,255,0.05); border-radius: 12px;">
+<div id="roomMessagesCount" style="font-size: 24px; font-weight: bold;">0</div>
+<div style="font-size: 11px; opacity: 0.7; margin-top: 4px;">Сообщений</div>
+</div>
+<div style="text-align: center; padding: 12px; background: rgba(255,255,255,0.05); border-radius: 12px;">
+<div id="roomMediaCount" style="font-size: 24px; font-weight: bold;">0</div>
+<div style="font-size: 11px; opacity: 0.7; margin-top: 4px;">Медиа</div>
+</div>
+<div style="text-align: center; padding: 12px; background: rgba(255,255,255,0.05); border-radius: 12px;">
+<div id="roomLinksCount" style="font-size: 24px; font-weight: bold;">0</div>
+<div style="font-size: 11px; opacity: 0.7; margin-top: 4px;">Ссылок</div>
+</div>
+</div>
+</div>
+<hr/>
+<div id="admin-only-settings">
+<h4 style="margin-bottom: 16px;">Настройки администратора</h4>
+<div class="input-group">
+<label for="roomSettingsName">Изменить название</label>
+<input id="roomSettingsName" type="text"/>
+</div>
+<div class="input-group">
+<label>Аватар комнаты</label>
+<div style="display:flex; gap:8px; align-items:center; margin-bottom: 8px;">
+<input accept="image/*" id="roomAvatarFileInput" onchange="uploadRoomAvatarFile(event)" style="display:none" type="file"/>
+<button onclick="document.getElementById('roomAvatarFileInput').click()" style="flex: 1;">
+<svg aria-hidden="true" class="icon icon-upload" height="16" style="vertical-align: middle; margin-right: 6px;" viewBox="0 0 24 24" width="16"><use href="#icon-upload"></use></svg>
                             Загрузить файл
                         </button>
-                        <button class="logout-btn" id="removeRoomAvatarBtn" onclick="removeRoomAvatar()" style="background: var(--color-danger); display:none;">Удалить</button>
-                    </div>
-                    <input type="text" id="roomSettingsAvatar" placeholder="Или вставьте прямую ссылку на изображение (http://...)" style="font-size: 13px;">
-                    <div id="roomAvatarMessage" class="modal-message"></div>
-                </div>
-                
-                <button onclick="updateRoomDetails()">Сохранить изменения</button>
-                
-                <hr>
-                
-                <div class="input-group">
-                    <label>Добавить новых участников (из ваших контактов):</label>
-                    <div class="contact-selector" id="addRoomMembersSelect">
-                        </div>
-                    <button onclick="addRoomMembers()">Добавить выбранных</button>
-                </div>
-                
-                <hr>
-                
-                <div class="danger-zone">
-                    <button onclick="deleteRoom()" class="logout-btn" style="background: var(--color-danger); width: 100%;">Удалить комнату</button>
-                </div>
-            </div>
-            <div id="roomSettingsMessage" class="modal-message"></div>
-        </div>
-    </div>
-    
-    <!-- Модальное окно участников -->
-    <div id="membersModal" class="modal-overlay" onclick="closeModal(event)">
-        <div class="modal-content glass">
-            <div class="modal-header">
-                <h3>Участники</h3>
-                <button class="close-btn" onclick="closeModal(event)">&times;</button>
-            </div>
-                <div id="membersListContainer">
-                <!-- Сюда будет динамически загружаться список -->
-            </div>
-            <div id="membersMessage" class="modal-message"></div>
-        </div>
-    </div>
-
-    <!-- Модальное окно эффектов видео -->
-    <div id="videoEffectsModal" class="modal-overlay" onclick="closeModal(event)">
-        <div class="modal-content glass" style="max-width: 600px;">
-            <div class="modal-header">
-                <h3>Эффекты камеры</h3>
-                <button class="close-btn" onclick="closeModal(event)">&times;</button>
-            </div>
-            <div class="effects-grid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 20px;">
-                <div class="effect-card" onclick="applyVideoEffect('none')">
-                    <div class="effect-preview" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
-                        <span style="color: white; font-weight: 600;">Без эффектов</span>
-                    </div>
-                    <div class="effect-name">Оригинал</div>
-                </div>
-                <div class="effect-card" onclick="applyVideoEffect('blur')">
-                    <div class="effect-preview" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); filter: blur(8px);">
-                    </div>
-                    <div class="effect-name">Размытие фона</div>
-                </div>
-                <div class="effect-card" onclick="applyVideoEffect('grayscale')">
-                    <div class="effect-preview" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); filter: grayscale(100%);">
-                    </div>
-                    <div class="effect-name">Чёрно-белое</div>
-                </div>
-                <div class="effect-card" onclick="applyVideoEffect('sepia')">
-                    <div class="effect-preview" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); filter: sepia(100%);">
-                    </div>
-                    <div class="effect-name">Сепия</div>
-                </div>
-            </div>
-            <div id="videoEffectsMessage" class="modal-message"></div>
-        </div>
-    </div>
-
-        <div id="presentationModal" class="modal-overlay" onclick="closeModal(event)">
-        <div class="modal-content glass presentation-modal">
-            <div class="modal-header">
-                <h3>Доска презентаций</h3>
-                <div class="presentation-header-controls">
-                    <button onclick="prevSlide()" class="icon-btn" title="Предыдущий слайд">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <polyline points="15 18 9 12 15 6"></polyline>
-                        </svg>
-                    </button>
-                    <span id="slideCounter" class="slide-counter">1 / 1</span>
-                    <button onclick="nextSlide()" class="icon-btn" title="Следующий слайд">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <polyline points="9 18 15 12 9 6"></polyline>
-                        </svg>
-                    </button>
-                    <button class="ghost-btn" onclick="duplicateSlide()" title="Дублировать слайд">Дублировать</button>
-                    <button class="ghost-btn danger" onclick="deleteSlide()" title="Удалить слайд">Удалить</button>
-                    <button class="close-btn" onclick="closeModal(event)">&times;</button>
-                </div>
-            </div>
-
-            <div class="presentation-toolbar" id="presentationToolbar">
-                <button class="tool-btn" data-tool="select" onclick="selectPresentationTool('select', this)" title="Выделение">
-                    <span class="material-icons-round">ads_click</span>
-                </button>
-                <button class="tool-btn" data-tool="text" onclick="addPresentationElement('text')" title="Добавить текст">
-                    <span class="material-icons-round">title</span>
-                </button>
-                <button class="tool-btn" data-tool="rectangle" onclick="addPresentationElement('rectangle')" title="Прямоугольник">
-                    <span class="material-icons-round">check_box_outline_blank</span>
-                </button>
-                <button class="tool-btn" data-tool="circle" onclick="addPresentationElement('circle')" title="Круг">
-                    <span class="material-icons-round">radio_button_unchecked</span>
-                </button>
-                <button class="tool-btn" data-tool="arrow" onclick="addPresentationElement('arrow')" title="Стрелка">
-                    <span class="material-icons-round">trending_flat</span>
-                </button>
-                <button class="tool-btn" data-tool="sticky" onclick="addPresentationElement('sticky')" title="Стикер">
-                    <span class="material-icons-round">sticky_note_2</span>
-                </button>
-                <label class="tool-btn upload" title="Вставить изображение">
-                    <span class="material-icons-round">image</span>
-                    <input type="file" id="presentationImageInput" accept="image/*" onchange="handlePresentationImage(event)">
-                </label>
-                <input type="color" id="presentationColor" value="#007aff" onchange="setPresentationColor(this.value)" title="Цвет акцентов">
-                <input type="range" id="presentationFontSize" min="12" max="96" value="32" onchange="setPresentationFontSize(this.value)" title="Размер текста">
-            </div>
-
-            <div class="presentation-workspace">
-                <div id="presentationSlides" class="presentation-canvas"></div>
-                <div id="presentationInspector" class="presentation-inspector">
-                    <p style="opacity: 0.7; font-size: 13px;">Выберите элемент на слайде, чтобы настроить его стиль.</p>
-                </div>
-            </div>
-
-            <div class="presentation-footer">
-                <div class="presentation-footer-left">
-                    <button class="ghost-btn" onclick="addNewSlide()">+ Новый слайд</button>
-                    <button class="ghost-btn" id="presentationGridToggle" onclick="toggleSlideGrid()">Сетка</button>
-                </div>
-                <div class="presentation-footer-right">
-                    <button class="secondary-btn" onclick="startPresentation()">Полноэкранный режим</button>
-                    <button class="primary-btn" onclick="sharePresentation()">Отправить в чат</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-
+<button class="logout-btn" id="removeRoomAvatarBtn" onclick="removeRoomAvatar()" style="background: var(--color-danger); display:none;">Удалить</button>
+</div>
+<input id="roomSettingsAvatar" placeholder="Или вставьте прямую ссылку на изображение (http://...)" style="font-size: 13px;" type="text"/>
+<div class="modal-message" id="roomAvatarMessage"></div>
+</div>
+<button onclick="updateRoomDetails()">Сохранить изменения</button>
+<hr/>
+<div class="input-group">
+<label>Добавить новых участников (из ваших контактов):</label>
+<div class="contact-selector" id="addRoomMembersSelect">
+</div>
+<button onclick="addRoomMembers()">Добавить выбранных</button>
+</div>
+<hr/>
+<div class="danger-zone">
+<button class="logout-btn" onclick="deleteRoom()" style="background: var(--color-danger); width: 100%;">Удалить комнату</button>
+</div>
+</div>
+<div class="modal-message" id="roomSettingsMessage"></div>
+</div>
+</div>
+<!-- Модальное окно участников -->
+<div class="modal-overlay" id="membersModal" onclick="closeModal(event)">
+<div class="modal-content glass">
+<div class="modal-header">
+<h3>Участники</h3>
+<button class="close-btn" onclick="closeModal(event)">×</button>
+</div>
+<div id="membersListContainer">
+<!-- Сюда будет динамически загружаться список -->
+</div>
+<div class="modal-message" id="membersMessage"></div>
+</div>
+</div>
+<!-- Модальное окно эффектов видео -->
+<div class="modal-overlay" id="videoEffectsModal" onclick="closeModal(event)">
+<div class="modal-content glass" style="max-width: 600px;">
+<div class="modal-header">
+<h3>Эффекты камеры</h3>
+<button class="close-btn" onclick="closeModal(event)">×</button>
+</div>
+<div class="effects-grid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 20px;">
+<div class="effect-card" onclick="applyVideoEffect('none')">
+<div class="effect-preview" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+<span style="color: white; font-weight: 600;">Без эффектов</span>
+</div>
+<div class="effect-name">Оригинал</div>
+</div>
+<div class="effect-card" onclick="applyVideoEffect('blur')">
+<div class="effect-preview" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); filter: blur(8px);">
+</div>
+<div class="effect-name">Размытие фона</div>
+</div>
+<div class="effect-card" onclick="applyVideoEffect('grayscale')">
+<div class="effect-preview" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); filter: grayscale(100%);">
+</div>
+<div class="effect-name">Чёрно-белое</div>
+</div>
+<div class="effect-card" onclick="applyVideoEffect('sepia')">
+<div class="effect-preview" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); filter: sepia(100%);">
+</div>
+<div class="effect-name">Сепия</div>
+</div>
+</div>
+<div class="modal-message" id="videoEffectsMessage"></div>
+</div>
+</div>
+<div class="modal-overlay" id="presentationModal" onclick="closeModal(event)">
+<div class="modal-content glass presentation-modal">
+<div class="modal-header">
+<h3>Доска презентаций</h3>
+<div class="presentation-header-controls">
+<button class="icon-btn" onclick="prevSlide()" title="Предыдущий слайд">
+<svg aria-hidden="true" class="icon icon-chevron-left" height="16" viewBox="0 0 24 24" width="16"><use href="#icon-chevron-left"></use></svg>
+</button>
+<span class="slide-counter" id="slideCounter">1 / 1</span>
+<button class="icon-btn" onclick="nextSlide()" title="Следующий слайд">
+<svg aria-hidden="true" class="icon icon-chevron-right" height="16" viewBox="0 0 24 24" width="16"><use href="#icon-chevron-right"></use></svg>
+</button>
+<button class="ghost-btn" onclick="duplicateSlide()" title="Дублировать слайд">Дублировать</button>
+<button class="ghost-btn danger" onclick="deleteSlide()" title="Удалить слайд">Удалить</button>
+<button class="close-btn" onclick="closeModal(event)">×</button>
+</div>
+</div>
+<div class="presentation-toolbar" id="presentationToolbar">
+<button class="tool-btn" data-tool="select" onclick="selectPresentationTool('select', this)" title="Выделение">
+<span class="material-icons-round">ads_click</span>
+</button>
+<button class="tool-btn" data-tool="text" onclick="addPresentationElement('text')" title="Добавить текст">
+<span class="material-icons-round">title</span>
+</button>
+<button class="tool-btn" data-tool="rectangle" onclick="addPresentationElement('rectangle')" title="Прямоугольник">
+<span class="material-icons-round">check_box_outline_blank</span>
+</button>
+<button class="tool-btn" data-tool="circle" onclick="addPresentationElement('circle')" title="Круг">
+<span class="material-icons-round">radio_button_unchecked</span>
+</button>
+<button class="tool-btn" data-tool="arrow" onclick="addPresentationElement('arrow')" title="Стрелка">
+<span class="material-icons-round">trending_flat</span>
+</button>
+<button class="tool-btn" data-tool="sticky" onclick="addPresentationElement('sticky')" title="Стикер">
+<span class="material-icons-round">sticky_note_2</span>
+</button>
+<label class="tool-btn upload" title="Вставить изображение">
+<span class="material-icons-round">image</span>
+<input accept="image/*" id="presentationImageInput" onchange="handlePresentationImage(event)" type="file"/>
+</label>
+<input id="presentationColor" onchange="setPresentationColor(this.value)" title="Цвет акцентов" type="color" value="#007aff"/>
+<input id="presentationFontSize" max="96" min="12" onchange="setPresentationFontSize(this.value)" title="Размер текста" type="range" value="32"/>
+</div>
+<div class="presentation-workspace">
+<div class="presentation-canvas" id="presentationSlides"></div>
+<div class="presentation-inspector" id="presentationInspector">
+<p style="opacity: 0.7; font-size: 13px;">Выберите элемент на слайде, чтобы настроить его стиль.</p>
+</div>
+</div>
+<div class="presentation-footer">
+<div class="presentation-footer-left">
+<button class="ghost-btn" onclick="addNewSlide()">+ Новый слайд</button>
+<button class="ghost-btn" id="presentationGridToggle" onclick="toggleSlideGrid()">Сетка</button>
+</div>
+<div class="presentation-footer-right">
+<button class="secondary-btn" onclick="startPresentation()">Полноэкранный режим</button>
+<button class="primary-btn" onclick="sharePresentation()">Отправить в чат</button>
+</div>
+</div>
+</div>
+</div>
 <!-- Модальное окно доски для рисования -->
-        <div id="whiteboardModal" class="modal-overlay" onclick="closeModal(event)">
-        <div class="modal-content glass whiteboard-modal">
-            <div class="modal-header">
-                <h3>Интерактивная доска</h3>
-                <div class="whiteboard-toolbar" id="whiteboardToolbar">
-                    <button class="tool-btn active" data-tool="pen" onclick="setWhiteboardTool('pen', this)" title="Перо">
-                        <span class="material-icons-round">edit</span>
-                    </button>
-                    <button class="tool-btn" data-tool="highlighter" onclick="setWhiteboardTool('highlighter', this)" title="Маркер">
-                        <span class="material-icons-round">gesture</span>
-                    </button>
-                    <button class="tool-btn" data-tool="eraser" onclick="setWhiteboardTool('eraser', this)" title="Ластик">
-                        <span class="material-icons-round">format_clear</span>
-                    </button>
-                    <button class="tool-btn" data-tool="line" onclick="setWhiteboardTool('line', this)" title="Линия">
-                        <span class="material-icons-round">show_chart</span>
-                    </button>
-                    <button class="tool-btn" data-tool="rectangle" onclick="setWhiteboardTool('rectangle', this)" title="Прямоугольник">
-                        <span class="material-icons-round">crop_7_5</span>
-                    </button>
-                    <button class="tool-btn" data-tool="circle" onclick="setWhiteboardTool('circle', this)" title="Эллипс">
-                        <span class="material-icons-round">panorama_fish_eye</span>
-                    </button>
-                    <div class="whiteboard-divider"></div>
-                    <div class="whiteboard-palette" id="whiteboardPalette">
-                        <button class="color-swatch active" style="--swatch:#007aff" onclick="setWhiteboardColor('#007aff')" title="#007AFF"></button>
-                        <button class="color-swatch" style="--swatch:#ff2d55" onclick="setWhiteboardColor('#ff2d55')" title="#FF2D55"></button>
-                        <button class="color-swatch" style="--swatch:#34c759" onclick="setWhiteboardColor('#34c759')" title="#34C759"></button>
-                        <button class="color-swatch" style="--swatch:#ffbf00" onclick="setWhiteboardColor('#ffbf00')" title="#FFBF00"></button>
-                        <button class="color-swatch" style="--swatch:#333333" onclick="setWhiteboardColor('#333333')" title="#333333"></button>
-                        <button class="color-swatch" style="--swatch:#ffffff" onclick="setWhiteboardColor('#ffffff')" title="#FFFFFF"></button>
-                        <label class="color-picker" title="Другой цвет">
-                            <input type="color" id="brushColor" value="#007AFF" onchange="setWhiteboardColor(this.value)">
-                        </label>
-                    </div>
-                    <div class="whiteboard-slider">
-                        <input type="range" id="brushSize" min="1" max="30" value="3" oninput="setWhiteboardSize(this.value)">
-                        <span id="whiteboardSizeValue">3 px</span>
-                    </div>
-                    <button class="ghost-btn danger" onclick="clearWhiteboard()" title="Очистить доску">Очистить</button>
-                    <button class="close-btn" onclick="closeModal(event)">&times;</button>
-                </div>
-            </div>
-            <div class="whiteboard-stage">
-                <canvas id="whiteboardCanvas"></canvas>
-                <canvas id="whiteboardOverlay"></canvas>
-            </div>
-        </div>
-    </div>
-
-
-    <!-- Модальное окно совместных документов -->
-        <div id="documentsModal" class="modal-overlay" onclick="closeModal(event)">
-        <div class="modal-content glass documents-modal">
-            <div class="modal-header">
-                <h3>Общие документы</h3>
-                <button class="close-btn" onclick="closeModal(event)" title="Закрыть">&times;</button>
-            </div>
-            <div class="document-toolbar" id="documentToolbar">
-                <button onclick="formatText('bold')" class="tool-btn" title="Жирный"><strong>B</strong></button>
-                <button onclick="formatText('italic')" class="tool-btn" title="Курсив"><em>I</em></button>
-                <button onclick="formatText('underline')" class="tool-btn" title="Подчёркнутый"><u>U</u></button>
-                <button onclick="formatText('strikeThrough')" class="tool-btn" title="Зачёркнутый"><span class="material-icons-round">strikethrough_s</span></button>
-                <div class="toolbar-divider"></div>
-                <button onclick="formatText('insertUnorderedList')" class="tool-btn" title="Маркированный список"><span class="material-icons-round">format_list_bulleted</span></button>
-                <button onclick="formatText('insertOrderedList')" class="tool-btn" title="Нумерованный список"><span class="material-icons-round">format_list_numbered</span></button>
-                <div class="toolbar-divider"></div>
-                <button onclick="setDocumentBlock('P')" class="tool-btn" title="Обычный текст">¶</button>
-                <button onclick="setDocumentBlock('H2')" class="tool-btn" title="Заголовок 2">H2</button>
-                <button onclick="setDocumentBlock('H3')" class="tool-btn" title="Заголовок 3">H3</button>
-                <div class="toolbar-divider"></div>
-                <button onclick="setDocumentAlignment('left')" class="tool-btn" title="По левому краю"><span class="material-icons-round">format_align_left</span></button>
-                <button onclick="setDocumentAlignment('center')" class="tool-btn" title="По центру"><span class="material-icons-round">format_align_center</span></button>
-                <button onclick="setDocumentAlignment('right')" class="tool-btn" title="По правому краю"><span class="material-icons-round">format_align_right</span></button>
-                <div class="toolbar-divider"></div>
-                <button onclick="applyDocumentHighlight()" class="tool-btn" title="Маркер"><span class="material-icons-round">highlight</span></button>
-                <button onclick="toggleDocumentCode()" class="tool-btn" title="Код"><span class="material-icons-round">code</span></button>
-            </div>
-            <div id="documentEditor" class="document-editor" contenteditable="true" data-placeholder="Начните писать..." spellcheck="true"></div>
-            <div class="document-footer">
-                <span class="document-hint">Изменения синхронизируются автоматически</span>
-                <div class="document-actions">
-                    <button class="ghost-btn" onclick="shareDocument()">Скопировать текст</button>
-                    <button class="primary-btn" onclick="sendDocumentToChat()">Отправить в чат</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-
-    <!-- Telegram-style мобильная навигация -->
-    <nav class="telegram-mobile-nav" id="telegram-mobile-nav">
-        <div class="telegram-nav-container">
-            <button class="telegram-nav-item active" data-nav="chats" onclick="switchMobileNav('chats', this)">
-                <span class="material-icons-round">forum</span>
-                <span>Чаты</span>
-            </button>
-
-            <button class="telegram-nav-item" data-nav="archive" onclick="switchMobileNav('archive', this)">
-                <span class="material-icons-round">inventory_2</span>
-                <span>Архив</span>
-            </button>
-
-            <button class="telegram-nav-item" data-nav="search" onclick="switchMobileNav('search', this)">
-                <span class="material-icons-round">search</span>
-                <span>Поиск</span>
-            </button>
-            
-            <button class="telegram-nav-item" data-nav="create" onclick="switchMobileNav('create', this)">
-                <span class="material-icons-round">add_circle</span>
-                <span>Создать</span>
-            </button>
-            
-            <button class="telegram-nav-item" data-nav="settings" onclick="switchMobileNav('settings', this)">
-                <span class="material-icons-round">settings</span>
-                <span>Настройки</span>
-            </button>
-        </div>
-    </nav>
-
-    <script id="bootstrap-data" type="application/json">
+<div class="modal-overlay" id="whiteboardModal" onclick="closeModal(event)">
+<div class="modal-content glass whiteboard-modal">
+<div class="modal-header">
+<h3>Интерактивная доска</h3>
+<div class="whiteboard-toolbar" id="whiteboardToolbar">
+<button class="tool-btn active" data-tool="pen" onclick="setWhiteboardTool('pen', this)" title="Перо">
+<span class="material-icons-round">edit</span>
+</button>
+<button class="tool-btn" data-tool="highlighter" onclick="setWhiteboardTool('highlighter', this)" title="Маркер">
+<span class="material-icons-round">gesture</span>
+</button>
+<button class="tool-btn" data-tool="eraser" onclick="setWhiteboardTool('eraser', this)" title="Ластик">
+<span class="material-icons-round">format_clear</span>
+</button>
+<button class="tool-btn" data-tool="line" onclick="setWhiteboardTool('line', this)" title="Линия">
+<span class="material-icons-round">show_chart</span>
+</button>
+<button class="tool-btn" data-tool="rectangle" onclick="setWhiteboardTool('rectangle', this)" title="Прямоугольник">
+<span class="material-icons-round">crop_7_5</span>
+</button>
+<button class="tool-btn" data-tool="circle" onclick="setWhiteboardTool('circle', this)" title="Эллипс">
+<span class="material-icons-round">panorama_fish_eye</span>
+</button>
+<div class="whiteboard-divider"></div>
+<div class="whiteboard-palette" id="whiteboardPalette">
+<button class="color-swatch active" onclick="setWhiteboardColor('#007aff')" style="--swatch:#007aff" title="#007AFF"></button>
+<button class="color-swatch" onclick="setWhiteboardColor('#ff2d55')" style="--swatch:#ff2d55" title="#FF2D55"></button>
+<button class="color-swatch" onclick="setWhiteboardColor('#34c759')" style="--swatch:#34c759" title="#34C759"></button>
+<button class="color-swatch" onclick="setWhiteboardColor('#ffbf00')" style="--swatch:#ffbf00" title="#FFBF00"></button>
+<button class="color-swatch" onclick="setWhiteboardColor('#333333')" style="--swatch:#333333" title="#333333"></button>
+<button class="color-swatch" onclick="setWhiteboardColor('#ffffff')" style="--swatch:#ffffff" title="#FFFFFF"></button>
+<label class="color-picker" title="Другой цвет">
+<input id="brushColor" onchange="setWhiteboardColor(this.value)" type="color" value="#007AFF"/>
+</label>
+</div>
+<div class="whiteboard-slider">
+<input id="brushSize" max="30" min="1" oninput="setWhiteboardSize(this.value)" type="range" value="3"/>
+<span id="whiteboardSizeValue">3 px</span>
+</div>
+<button class="ghost-btn danger" onclick="clearWhiteboard()" title="Очистить доску">Очистить</button>
+<button class="close-btn" onclick="closeModal(event)">×</button>
+</div>
+</div>
+<div class="whiteboard-stage">
+<canvas id="whiteboardCanvas"></canvas>
+<canvas id="whiteboardOverlay"></canvas>
+</div>
+</div>
+</div>
+<!-- Модальное окно совместных документов -->
+<div class="modal-overlay" id="documentsModal" onclick="closeModal(event)">
+<div class="modal-content glass documents-modal">
+<div class="modal-header">
+<h3>Общие документы</h3>
+<button class="close-btn" onclick="closeModal(event)" title="Закрыть">×</button>
+</div>
+<div class="document-toolbar" id="documentToolbar">
+<button class="tool-btn" onclick="formatText('bold')" title="Жирный"><strong>B</strong></button>
+<button class="tool-btn" onclick="formatText('italic')" title="Курсив"><em>I</em></button>
+<button class="tool-btn" onclick="formatText('underline')" title="Подчёркнутый"><u>U</u></button>
+<button class="tool-btn" onclick="formatText('strikeThrough')" title="Зачёркнутый"><span class="material-icons-round">strikethrough_s</span></button>
+<div class="toolbar-divider"></div>
+<button class="tool-btn" onclick="formatText('insertUnorderedList')" title="Маркированный список"><span class="material-icons-round">format_list_bulleted</span></button>
+<button class="tool-btn" onclick="formatText('insertOrderedList')" title="Нумерованный список"><span class="material-icons-round">format_list_numbered</span></button>
+<div class="toolbar-divider"></div>
+<button class="tool-btn" onclick="setDocumentBlock('P')" title="Обычный текст">¶</button>
+<button class="tool-btn" onclick="setDocumentBlock('H2')" title="Заголовок 2">H2</button>
+<button class="tool-btn" onclick="setDocumentBlock('H3')" title="Заголовок 3">H3</button>
+<div class="toolbar-divider"></div>
+<button class="tool-btn" onclick="setDocumentAlignment('left')" title="По левому краю"><span class="material-icons-round">format_align_left</span></button>
+<button class="tool-btn" onclick="setDocumentAlignment('center')" title="По центру"><span class="material-icons-round">format_align_center</span></button>
+<button class="tool-btn" onclick="setDocumentAlignment('right')" title="По правому краю"><span class="material-icons-round">format_align_right</span></button>
+<div class="toolbar-divider"></div>
+<button class="tool-btn" onclick="applyDocumentHighlight()" title="Маркер"><span class="material-icons-round">highlight</span></button>
+<button class="tool-btn" onclick="toggleDocumentCode()" title="Код"><span class="material-icons-round">code</span></button>
+</div>
+<div class="document-editor" contenteditable="true" data-placeholder="Начните писать..." id="documentEditor" spellcheck="true"></div>
+<div class="document-footer">
+<span class="document-hint">Изменения синхронизируются автоматически</span>
+<div class="document-actions">
+<button class="ghost-btn" onclick="shareDocument()">Скопировать текст</button>
+<button class="primary-btn" onclick="sendDocumentToChat()">Отправить в чат</button>
+</div>
+</div>
+</div>
+</div>
+<!-- Telegram-style мобильная навигация -->
+<nav class="telegram-mobile-nav" id="telegram-mobile-nav">
+<div class="telegram-nav-container">
+<button class="telegram-nav-item active" data-nav="chats" onclick="switchMobileNav('chats', this)">
+<span class="material-icons-round">forum</span>
+<span>Чаты</span>
+</button>
+<button class="telegram-nav-item" data-nav="archive" onclick="switchMobileNav('archive', this)">
+<span class="material-icons-round">inventory_2</span>
+<span>Архив</span>
+</button>
+<button class="telegram-nav-item" data-nav="search" onclick="switchMobileNav('search', this)">
+<span class="material-icons-round">search</span>
+<span>Поиск</span>
+</button>
+<button class="telegram-nav-item" data-nav="create" onclick="switchMobileNav('create', this)">
+<span class="material-icons-round">add_circle</span>
+<span>Создать</span>
+</button>
+<button class="telegram-nav-item" data-nav="settings" onclick="switchMobileNav('settings', this)">
+<span class="material-icons-round">settings</span>
+<span>Настройки</span>
+</button>
+</div>
+</nav>
+<script id="bootstrap-data" type="application/json">
         {"CURRENT_USER_ID": {{ user.id | tojson }}, "USER_CONTACTS": {{ contacts | tojson }}, "SFU_URL": {{ (sfu_url or none) | tojson }}}
     </script>
-    <script>
+<script>
         (function(){
             try {
                 const el = document.getElementById('bootstrap-data');
@@ -2574,7 +2454,7 @@
             } catch(e) {}
         })();
     </script>
-    <script>
+<script>
         // Telegram-style мобильная навигация
         function switchMobileNav(section, element) {
             // Убираем активный класс у всех кнопок навигации
@@ -2841,8 +2721,7 @@
             }
         });
     </script>
-    
-    <script src="{{ url_for('static', filename='js/chat.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/sfu.js') }}"></script>
+<script src="{{ url_for('static', filename='js/chat.js') }}"></script>
+<script src="{{ url_for('static', filename='js/sfu.js') }}"></script>
 </body>
 </html>
