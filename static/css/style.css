@@ -914,32 +914,36 @@ label {
     width: min(760px, 100%);
     display: flex;
     align-items: center;
-    gap: 14px;
-    padding: 14px 22px;
-    border-radius: var(--radius-full);
-    background: color-mix(in srgb, var(--surface-elevated) 92%, transparent);
-    border: 1px solid color-mix(in srgb, var(--glass-border) 70%, transparent);
-    box-shadow: 0 28px 54px rgba(0, 0, 0, 0.28);
-    backdrop-filter: blur(calc(var(--glass-blur) * 0.9)) saturate(170%);
-    -webkit-backdrop-filter: blur(calc(var(--glass-blur) * 0.9)) saturate(170%);
+    gap: 16px;
+    padding: 16px 20px;
+    border-radius: 32px;
+    background: color-mix(in srgb, var(--surface-elevated) 96%, transparent);
+    border: 1px solid color-mix(in srgb, var(--input-border) 75%, transparent);
+    box-shadow: 0 20px 44px rgba(0, 0, 0, 0.22);
 }
 
 .chat-composer-floating input[type="text"] {
     flex: 1;
-    border: none;
-    background: transparent;
+    border: 1px solid color-mix(in srgb, var(--input-border) 80%, transparent);
+    background: color-mix(in srgb, var(--surface-muted) 92%, transparent);
     color: var(--text-color);
-    font-size: 15px;
+    font-size: 16px;
     min-width: 0;
-    padding: 0;
+    padding: 12px 18px;
+    border-radius: 999px;
+    transition: border-color var(--transition-fast) var(--easing-smooth),
+                box-shadow var(--transition-fast) var(--easing-smooth);
 }
 
 .chat-composer-floating input[type="text"]::placeholder {
-    color: color-mix(in srgb, var(--text-color-muted) 80%, transparent);
+    color: color-mix(in srgb, var(--text-color-muted) 75%, transparent);
 }
 
 .chat-composer-floating input[type="text"]:focus {
     outline: none;
+    border-color: color-mix(in srgb, var(--input-border) 90%, transparent);
+    box-shadow: none;
+    background: color-mix(in srgb, var(--surface-muted) 98%, transparent);
 }
 
 .composer-trailing {
@@ -962,24 +966,22 @@ label {
 }
 
 .icon-btn.composer-icon {
-    width: 42px;
-    height: 42px;
+    width: 44px;
+    height: 44px;
     margin: 0;
-    background: color-mix(in srgb, var(--input-bg) 75%, transparent);
-    border: 1px solid color-mix(in srgb, var(--glass-border) 60%, transparent);
-    backdrop-filter: blur(calc(var(--glass-blur) * 0.6)) saturate(150%);
-    -webkit-backdrop-filter: blur(calc(var(--glass-blur) * 0.6)) saturate(150%);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    background: color-mix(in srgb, var(--surface-muted) 94%, transparent);
+    border: 1px solid color-mix(in srgb, var(--input-border) 65%, transparent);
+    box-shadow: none;
 }
 
 .icon-btn.composer-icon svg {
-    width: 18px;
-    height: 18px;
+    width: 20px;
+    height: 20px;
 }
 
 .icon-btn.composer-icon:hover {
     transform: translateY(-1px);
-    background: color-mix(in srgb, var(--input-bg) 95%, transparent);
+    background: color-mix(in srgb, var(--surface-muted) 98%, transparent);
 }
 
 .icon-btn.composer-icon:active {
@@ -1039,26 +1041,42 @@ label {
 
 /* Превью файлов */
 #file-preview-area {
-    padding: 12px 24px;
-    border-top: 1px solid var(--glass-border);
-    background: var(--input-bg);
-    backdrop-filter: blur(20px);
+    padding: 0 24px 18px;
+    margin-top: 10px;
 }
 
 #file-preview-container {
-    display: flex;
-    gap: 12px;
-    flex-wrap: wrap;
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(clamp(140px, 22vw, 220px), 1fr);
+    gap: 14px;
+    overflow-x: auto;
+    padding: 14px 4px 6px;
+    scrollbar-width: thin;
+    scroll-snap-type: x proximity;
+}
+
+#file-preview-container::-webkit-scrollbar {
+    height: 6px;
+}
+
+#file-preview-container::-webkit-scrollbar-thumb {
+    background: color-mix(in srgb, var(--text-color-muted) 50%, transparent);
+    border-radius: 999px;
 }
 
 .file-preview-item {
     position: relative;
-    width: 100px;
-    height: 100px;
-    border-radius: var(--radius-md);
+    height: clamp(150px, 32vh, 220px);
+    border-radius: 22px;
     overflow: hidden;
-    background: var(--glass-bg);
-    border: 1px solid var(--glass-border);
+    background: color-mix(in srgb, var(--surface-elevated) 95%, transparent);
+    border: 1px solid color-mix(in srgb, var(--glass-border) 75%, transparent);
+    box-shadow: 0 16px 36px rgba(0, 0, 0, 0.24);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    scroll-snap-align: start;
 }
 
 .file-preview-item img,
@@ -1068,30 +1086,34 @@ label {
     object-fit: cover;
 }
 
+.file-preview-item video {
+    background: black;
+}
+
 .file-preview-remove {
     position: absolute;
-    top: 4px;
-    right: 4px;
-    background: rgba(255, 59, 48, 0.9);
+    top: 12px;
+    right: 12px;
+    background: rgba(15, 15, 20, 0.66);
     border: none;
-    color: white;
-    border-radius: 50%;
-    width: 24px;
-    height: 24px;
+    color: rgba(255, 255, 255, 0.9);
+    border-radius: 999px;
+    width: 32px;
+    height: 32px;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    font-size: 16px;
-    line-height: 1;
     padding: 0;
     margin: 0;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 8px 18px rgba(0, 0, 0, 0.25);
+    transition: transform var(--transition-fast) var(--easing-smooth),
+                background var(--transition-fast) var(--easing-smooth);
 }
 
 .file-preview-remove:hover {
-    background: var(--color-danger);
-    transform: scale(1.1);
+    background: rgba(255, 59, 48, 0.9);
+    transform: scale(1.05);
 }
 
 /* Медиа в сообщениях */
@@ -4141,14 +4163,12 @@ html {
     gap: 16px;
     padding: 12px clamp(14px, 3vw, 24px);
     border-radius: var(--thread-radius);
-    background: color-mix(in srgb, var(--surface-elevated) 90%, transparent);
-    border: 1px solid color-mix(in srgb, var(--glass-border) 60%, transparent);
-    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.2);
+    background: color-mix(in srgb, var(--surface-elevated) 98%, transparent);
+    border: 1px solid color-mix(in srgb, var(--glass-border) 75%, transparent);
+    box-shadow: none;
     position: sticky;
     top: clamp(8px, 2vw, 20px);
     z-index: 5;
-    backdrop-filter: blur(calc(var(--glass-blur) * 0.85)) saturate(170%);
-    -webkit-backdrop-filter: blur(calc(var(--glass-blur) * 0.85)) saturate(170%);
 }
 
 .thread-header-text {
@@ -4181,11 +4201,9 @@ html {
 .thread-root-card {
     padding: 18px clamp(16px, 3vw, 24px);
     border-radius: var(--thread-radius);
-    background: color-mix(in srgb, var(--surface-elevated) 92%, transparent);
-    border: 1px solid color-mix(in srgb, var(--glass-border) 60%, transparent);
-    box-shadow: 0 22px 52px rgba(0, 0, 0, 0.22);
-    backdrop-filter: blur(calc(var(--glass-blur) * 0.8)) saturate(160%);
-    -webkit-backdrop-filter: blur(calc(var(--glass-blur) * 0.8)) saturate(160%);
+    background: color-mix(in srgb, var(--surface-elevated) 98%, transparent);
+    border: 1px solid color-mix(in srgb, var(--glass-border) 75%, transparent);
+    box-shadow: none;
     display: flex;
     flex-direction: column;
     gap: 10px;
@@ -4205,13 +4223,13 @@ html {
 .thread-comments {
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 18px;
     flex: 1;
     min-height: 0;
     overflow-y: auto;
     padding-right: 6px;
     padding-bottom: clamp(140px, 22vh, 220px);
-    margin: 0 auto;
+    margin: 18px auto 0;
     width: min(720px, 100%);
     scrollbar-gutter: stable both-edges;
 }
@@ -4230,11 +4248,9 @@ html {
     width: min(680px, calc(100% - 16px));
     padding: 12px 18px;
     border-radius: var(--radius-full);
-    background: color-mix(in srgb, var(--surface-elevated) 95%, transparent);
-    border: 1px solid color-mix(in srgb, var(--glass-border) 55%, transparent);
-    box-shadow: 0 24px 48px rgba(0, 0, 0, 0.24);
-    backdrop-filter: blur(calc(var(--glass-blur) * 0.8)) saturate(150%);
-    -webkit-backdrop-filter: blur(calc(var(--glass-blur) * 0.8)) saturate(150%);
+    background: color-mix(in srgb, var(--surface-elevated) 98%, transparent);
+    border: 1px solid color-mix(in srgb, var(--glass-border) 75%, transparent);
+    box-shadow: none;
     color: var(--text-color-muted);
 }
 
@@ -4293,11 +4309,9 @@ html {
 .thread-comment-card {
     padding: 16px clamp(16px, 3vw, 22px);
     border-radius: var(--thread-radius);
-    background: color-mix(in srgb, var(--surface-elevated) 88%, transparent);
-    border: 1px solid color-mix(in srgb, var(--glass-border) 55%, transparent);
-    box-shadow: 0 20px 48px rgba(0, 0, 0, 0.2);
-    backdrop-filter: blur(calc(var(--glass-blur) * 0.75)) saturate(150%);
-    -webkit-backdrop-filter: blur(calc(var(--glass-blur) * 0.75)) saturate(150%);
+    background: color-mix(in srgb, var(--surface-elevated) 98%, transparent);
+    border: 1px solid color-mix(in srgb, var(--glass-border) 75%, transparent);
+    box-shadow: none;
     display: flex;
     flex-direction: column;
     gap: 8px;
@@ -4379,8 +4393,12 @@ html {
 .thread-input-area .chat-composer-floating {
     pointer-events: auto;
     width: min(680px, calc(100% - 16px));
-    padding: 14px 22px;
-    gap: 14px;
+    padding: 12px 18px;
+    gap: 12px;
+    border-radius: 26px;
+    background: color-mix(in srgb, var(--surface-elevated) 98%, transparent);
+    border: 1px solid color-mix(in srgb, var(--input-border) 80%, transparent);
+    box-shadow: none;
 }
 
 .thread-composer {
@@ -4389,6 +4407,7 @@ html {
 
 .thread-composer input[type="text"] {
     font-size: 15px;
+    background: color-mix(in srgb, var(--surface-muted) 92%, transparent);
 }
 
 .thread-composer-actions {
@@ -4441,7 +4460,7 @@ html {
     .thread-search-pill {
         width: calc(100% - 8px);
         padding: 12px clamp(14px, 6vw, 18px);
-        box-shadow: 0 20px 42px rgba(0, 0, 0, 0.28);
+        box-shadow: none;
     }
 
     .thread-search-empty {
@@ -4938,25 +4957,30 @@ html {
 }
 .file-preview-generic {
     display: flex;
+    flex-direction: column;
     align-items: center;
+    justify-content: center;
     gap: 10px;
-    padding: 12px 16px;
-    border-radius: var(--radius-sm);
-    background: rgba(255, 255, 255, 0.08);
+    padding: 18px 16px;
     width: 100%;
+    height: 100%;
     box-sizing: border-box;
+    color: var(--text-color);
+    background: color-mix(in srgb, var(--surface-muted) 85%, transparent);
 }
 
 .file-preview-generic .material-icons-round {
-    font-size: 24px;
-    opacity: 0.75;
+    font-size: 28px;
+    opacity: 0.8;
 }
 
 .file-preview-generic div {
     display: flex;
     flex-direction: column;
+    gap: 4px;
     font-size: 13px;
     line-height: 1.3;
+    text-align: center;
 }
 
 .file-preview-generic div span {

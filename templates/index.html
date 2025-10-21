@@ -1465,11 +1465,11 @@
 
                     <div class="chat-composer-floating">
                         <button class="icon-btn composer-icon" onclick="toggleStickerPicker(event)" title="Стикеры" aria-label="Открыть стикеры">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round">
-                                <circle cx="12" cy="12" r="10"></circle>
-                                <path d="M8 14s1.5 2 4 2 4-2 4-2"></path>
-                                <line x1="9" y1="9" x2="9.01" y2="9"></line>
-                                <line x1="15" y1="9" x2="15.01" y2="9"></line>
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="12" r="9"></circle>
+                                <path d="M15.2 15.1c-1.1.9-2.4 1.4-3.7 1.4s-2.6-.5-3.7-1.4"></path>
+                                <path d="M9.5 10.5h.01"></path>
+                                <path d="M14.5 10.5h.01"></path>
                             </svg>
                         </button>
 
@@ -1479,44 +1479,48 @@
                             <div class="composer-actions">
                                 <div class="composer-attach">
                                     <button class="icon-btn composer-icon" id="attach-btn" onclick="toggleAttachMenu(event)" title="Вложения" aria-label="Добавить вложение">
-                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round">
-                                            <line x1="12" y1="5" x2="12" y2="19"></line>
-                                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                            <circle cx="12" cy="12" r="9"></circle>
+                                            <path d="M12 8v8"></path>
+                                            <path d="M8 12h8"></path>
                                         </svg>
                                     </button>
                                     <!-- Выпадающее меню вложений -->
                                     <div class="attach-menu" id="attach-menu" style="display: none;">
                                         <div class="attach-menu-item" onclick="openMediaPicker(); event.stopPropagation();">
-                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-                                                <circle cx="8.5" cy="8.5" r="1.5"></circle>
-                                                <polyline points="21 15 16 10 5 21"></polyline>
+                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                                                <rect x="3" y="4" width="18" height="16" rx="3"></rect>
+                                                <circle cx="9" cy="10" r="1.8"></circle>
+                                                <path d="M21 16l-4.5-4.5-6 6"></path>
                                             </svg>
                                             <span>Медиа/Файлы</span>
                                         </div>
                                         <div class="attach-menu-item" onclick="openDocPicker(); event.stopPropagation();">
-                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                                <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path>
-                                                <polyline points="13 2 13 9 20 9"></polyline>
+                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                                                <path d="M14 2H8a3 3 0 0 0-3 3v14a3 3 0 0 0 3 3h8a3 3 0 0 0 3-3V7z"></path>
+                                                <path d="M14 2v5a1 1 0 0 0 1 1h5"></path>
+                                                <path d="M9 12h6"></path>
+                                                <path d="M9 16h4"></path>
                                             </svg>
                                             <span>Файлы</span>
                                         </div>
                                         <div class="attach-menu-item" onclick="createPoll(); event.stopPropagation();">
-                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                                <line x1="12" y1="20" x2="12" y2="10"></line>
-                                                <line x1="18" y1="20" x2="18" y2="4"></line>
-                                                <line x1="6" y1="20" x2="6" y2="16"></line>
+                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                                                <path d="M6 19V11"></path>
+                                                <path d="M12 19V5"></path>
+                                                <path d="M18 19v-8"></path>
+                                                <path d="M4 19h16"></path>
                                             </svg>
                                             <span>Голосование</span>
                                         </div>
                                     </div>
                                 </div>
                                 <button class="icon-btn composer-icon mic-button" onmousedown="startVoiceRecording(event)" onmouseup="stopVoiceRecording(event)" ontouchstart="startVoiceRecording(event)" ontouchend="stopVoiceRecording(event)" title="Голосовое сообщение" aria-label="Голосовое сообщение">
-                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round">
-                                        <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
-                                        <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
-                                        <line x1="12" y1="19" x2="12" y2="23"></line>
-                                        <line x1="8" y1="23" x2="16" y2="23"></line>
+                                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                        <rect x="9" y="3" width="6" height="11" rx="3"></rect>
+                                        <path d="M5 10v2a7 7 0 0 0 14 0v-2"></path>
+                                        <path d="M12 21v-3"></path>
+                                        <path d="M8 21h8"></path>
                                     </svg>
                                 </button>
                             </div>
@@ -1545,7 +1549,7 @@
 
             <!-- THREAD VIEW -->
             <div id="thread-view" class="content-view" style="display: none;">
-                <div class="thread-header glass">
+                <div class="thread-header">
                     <button class="icon-btn" id="thread-back-btn" title="Назад" onclick="closeThreadView()">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                             <line x1="19" y1="12" x2="5" y2="12"></line>
@@ -1558,17 +1562,17 @@
                     </div>
                     <div class="thread-meta" id="thread-meta"></div>
                 </div>
-                <div class="thread-root-card glass" id="thread-root-card" style="display: none;"></div>
+                <div class="thread-root-card" id="thread-root-card" style="display: none;"></div>
                 <div class="thread-comments" id="thread-comments"></div>
                 <div class="thread-empty" id="thread-empty" style="display: none;">Пока нет комментариев. Будьте первым!</div>
                 <div class="thread-input-area" id="thread-input-area" style="display: none;">
                     <div class="chat-composer-floating thread-composer">
                         <button class="icon-btn composer-icon" id="thread-emoji-btn" type="button" onclick="threadInput && threadInput.focus();" title="Комментарий">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round">
-                                <circle cx="12" cy="12" r="10"></circle>
-                                <path d="M8 14s1.5 2 4 2 4-2 4-2"></path>
-                                <line x1="9" y1="9" x2="9.01" y2="9"></line>
-                                <line x1="15" y1="9" x2="15.01" y2="9"></line>
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="12" r="9"></circle>
+                                <path d="M15.2 15.1c-1.1.9-2.4 1.4-3.7 1.4s-2.6-.5-3.7-1.4"></path>
+                                <path d="M9.5 10.5h.01"></path>
+                                <path d="M14.5 10.5h.01"></path>
                             </svg>
                         </button>
                         <input type="text" id="thread-input" placeholder="Написать комментарий..." maxlength="2000" autocomplete="off">
