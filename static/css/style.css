@@ -39,6 +39,12 @@
     --surface-elevated: rgba(255, 255, 255, 0.08);
     --surface-muted: rgba(255, 255, 255, 0.05);
     --thread-accent: rgba(0, 122, 255, 0.25);
+
+    --composer-bg: rgba(32, 32, 34, 0.92);
+    --composer-border: rgba(255, 255, 255, 0.08);
+    --composer-shadow: none;
+    --composer-icon-bg: rgba(255, 255, 255, 0.04);
+    --composer-icon-hover-bg: rgba(255, 255, 255, 0.12);
     
     /* Радиусы скругления - все круглое */
     --radius-full: 9999px;
@@ -80,6 +86,12 @@
     --surface-elevated: rgba(255, 255, 255, 0.9);
     --surface-muted: rgba(255, 255, 255, 0.8);
     --thread-accent: rgba(0, 122, 255, 0.18);
+
+    --composer-bg: rgba(255, 255, 255, 0.95);
+    --composer-border: rgba(0, 0, 0, 0.08);
+    --composer-shadow: none;
+    --composer-icon-bg: rgba(0, 0, 0, 0.04);
+    --composer-icon-hover-bg: rgba(0, 0, 0, 0.08);
 }
 
 [data-theme="ocean"] {
@@ -95,6 +107,12 @@
     --thread-accent: rgba(0, 180, 255, 0.25);
     --surface-elevated: rgba(0, 70, 140, 0.55);
     --surface-muted: rgba(0, 60, 120, 0.35);
+
+    --composer-bg: rgba(5, 52, 92, 0.9);
+    --composer-border: rgba(0, 212, 255, 0.18);
+    --composer-shadow: none;
+    --composer-icon-bg: rgba(0, 212, 255, 0.08);
+    --composer-icon-hover-bg: rgba(0, 212, 255, 0.16);
 }
 
 [data-theme="amoled"] {
@@ -113,6 +131,12 @@
     --thread-accent: rgba(0, 132, 255, 0.3);
     --surface-elevated: rgba(20, 20, 20, 0.9);
     --surface-muted: rgba(18, 18, 18, 0.75);
+
+    --composer-bg: rgba(14, 14, 16, 0.92);
+    --composer-border: rgba(255, 255, 255, 0.05);
+    --composer-shadow: none;
+    --composer-icon-bg: rgba(255, 255, 255, 0.04);
+    --composer-icon-hover-bg: rgba(255, 255, 255, 0.12);
 }
 
 body {
@@ -516,69 +540,42 @@ label {
 }
 
 .icon-btn {
-    background: var(--input-bg);
-    backdrop-filter: blur(20px);
-    border: none;
+    background: var(--composer-icon-bg);
+    border: 1px solid transparent;
     color: var(--text-color);
-    font-size: 18px;
     cursor: pointer;
-    padding: 10px;
-    margin: 0 6px;
-    width: 38px;
-    height: 38px;
+    padding: 8px;
+    margin: 0 4px;
+    width: 36px;
+    height: 36px;
     border-radius: var(--radius-full);
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: all var(--transition-normal) var(--easing-smooth);
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
-    position: relative;
-    overflow: hidden;
-}
-
-.icon-btn::before {
-    content: '';
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    width: 0;
-    height: 0;
-    border-radius: 50%;
-    background: var(--color-primary);
-    opacity: 0.15;
-    transform: translate(-50%, -50%);
-    transition: width var(--transition-normal) var(--easing-smooth), 
-                height var(--transition-normal) var(--easing-smooth);
-}
-
-.icon-btn:hover::before {
-    width: 100px;
-    height: 100px;
+    transition: background var(--transition-fast) var(--easing-smooth),
+                transform var(--transition-fast) var(--easing-smooth),
+                color var(--transition-fast) var(--easing-smooth);
+    box-shadow: none;
 }
 
 .icon-btn svg {
-    transition: all var(--transition-normal) var(--easing-bounce);
-    z-index: 1;
+    transition: transform var(--transition-fast) var(--easing-smooth);
 }
 
 .icon-btn:hover {
-    color: var(--color-primary);
-    background: var(--glass-bg-hover);
-    transform: translateY(-2px) scale(1.05);
-    box-shadow: 0 6px 16px rgba(0, 122, 255, 0.2);
-}
-
-.icon-btn:hover svg {
-    transform: rotate(10deg) scale(1.1);
+    background: var(--composer-icon-hover-bg);
+    color: var(--text-color);
+    transform: translateY(-1px);
 }
 
 .icon-btn:active {
-    transform: translateY(0) scale(0.95);
-    transition: all var(--transition-fast) var(--easing-smooth);
+    transform: scale(0.96);
 }
 
-.icon-btn:active svg {
-    transform: rotate(0deg) scale(1);
+.icon-btn:focus,
+.icon-btn:focus-visible {
+    outline: none;
+    box-shadow: none;
 }
 
 .logout-btn {
@@ -911,17 +908,17 @@ label {
 }
 
 .chat-composer-floating {
-    width: min(760px, 100%);
+    width: min(820px, 100%);
     display: flex;
     align-items: center;
-    gap: 14px;
-    padding: 14px 22px;
-    border-radius: var(--radius-full);
-    background: color-mix(in srgb, var(--surface-elevated) 92%, transparent);
-    border: 1px solid color-mix(in srgb, var(--glass-border) 70%, transparent);
-    box-shadow: 0 28px 54px rgba(0, 0, 0, 0.28);
-    backdrop-filter: blur(calc(var(--glass-blur) * 0.9)) saturate(170%);
-    -webkit-backdrop-filter: blur(calc(var(--glass-blur) * 0.9)) saturate(170%);
+    gap: 16px;
+    padding: 10px 18px;
+    border-radius: 20px;
+    background: var(--composer-bg);
+    border: 1px solid var(--composer-border);
+    box-shadow: var(--composer-shadow);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
 }
 
 .chat-composer-floating input[type="text"] {
@@ -931,7 +928,7 @@ label {
     color: var(--text-color);
     font-size: 15px;
     min-width: 0;
-    padding: 0;
+    padding: 10px 0;
 }
 
 .chat-composer-floating input[type="text"]::placeholder {
@@ -945,14 +942,14 @@ label {
 .composer-trailing {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 12px;
     margin-left: auto;
 }
 
 .composer-actions {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 12px;
 }
 
 .composer-attach {
@@ -962,28 +959,20 @@ label {
 }
 
 .icon-btn.composer-icon {
-    width: 42px;
-    height: 42px;
+    width: 40px;
+    height: 40px;
     margin: 0;
-    background: color-mix(in srgb, var(--input-bg) 75%, transparent);
-    border: 1px solid color-mix(in srgb, var(--glass-border) 60%, transparent);
-    backdrop-filter: blur(calc(var(--glass-blur) * 0.6)) saturate(150%);
-    -webkit-backdrop-filter: blur(calc(var(--glass-blur) * 0.6)) saturate(150%);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    background: transparent;
+    border: none;
 }
 
 .icon-btn.composer-icon svg {
-    width: 18px;
-    height: 18px;
+    width: 20px;
+    height: 20px;
 }
 
 .icon-btn.composer-icon:hover {
-    transform: translateY(-1px);
-    background: color-mix(in srgb, var(--input-bg) 95%, transparent);
-}
-
-.icon-btn.composer-icon:active {
-    transform: scale(0.94);
+    background: var(--composer-icon-hover-bg);
 }
 
 .mic-button {
@@ -1039,26 +1028,36 @@ label {
 
 /* Превью файлов */
 #file-preview-area {
-    padding: 12px 24px;
-    border-top: 1px solid var(--glass-border);
-    background: var(--input-bg);
-    backdrop-filter: blur(20px);
+    padding: 0 24px 16px;
+    border-top: none;
+    background: transparent;
+    backdrop-filter: none;
+    display: flex;
+    justify-content: center;
 }
 
 #file-preview-container {
     display: flex;
-    gap: 12px;
-    flex-wrap: wrap;
+    gap: 16px;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    width: min(820px, 100%);
+    padding: 8px 4px 4px;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
 }
 
 .file-preview-item {
     position: relative;
-    width: 100px;
-    height: 100px;
-    border-radius: var(--radius-md);
+    flex: 0 0 clamp(140px, 28vw, 200px);
+    height: clamp(180px, 32vw, 240px);
+    border-radius: 22px;
     overflow: hidden;
-    background: var(--glass-bg);
-    border: 1px solid var(--glass-border);
+    background: var(--composer-bg);
+    border: 1px solid var(--composer-border);
+    box-shadow: var(--composer-shadow);
+    scroll-snap-align: start;
 }
 
 .file-preview-item img,
@@ -1070,28 +1069,32 @@ label {
 
 .file-preview-remove {
     position: absolute;
-    top: 4px;
-    right: 4px;
-    background: rgba(255, 59, 48, 0.9);
-    border: none;
-    color: white;
-    border-radius: 50%;
-    width: 24px;
-    height: 24px;
+    top: 10px;
+    right: 10px;
+    background: rgba(16, 16, 18, 0.55);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    color: #fff;
+    border-radius: 999px;
+    width: 30px;
+    height: 30px;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    font-size: 16px;
     line-height: 1;
     padding: 0;
     margin: 0;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    backdrop-filter: blur(6px);
+}
+
+.file-preview-remove svg {
+    width: 16px;
+    height: 16px;
 }
 
 .file-preview-remove:hover {
-    background: var(--color-danger);
-    transform: scale(1.1);
+    background: rgba(255, 255, 255, 0.12);
+    color: #fff;
 }
 
 /* Медиа в сообщениях */
@@ -4139,16 +4142,16 @@ html {
     display: flex;
     align-items: center;
     gap: 16px;
-    padding: 12px clamp(14px, 3vw, 24px);
-    border-radius: var(--thread-radius);
-    background: color-mix(in srgb, var(--surface-elevated) 90%, transparent);
-    border: 1px solid color-mix(in srgb, var(--glass-border) 60%, transparent);
-    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.2);
+    padding: 8px clamp(14px, 3vw, 24px) 12px;
+    border-radius: 0;
+    background: transparent;
+    border: none;
+    box-shadow: none;
     position: sticky;
     top: clamp(8px, 2vw, 20px);
     z-index: 5;
-    backdrop-filter: blur(calc(var(--glass-blur) * 0.85)) saturate(170%);
-    -webkit-backdrop-filter: blur(calc(var(--glass-blur) * 0.85)) saturate(170%);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
 }
 
 .thread-header-text {
@@ -4205,13 +4208,13 @@ html {
 .thread-comments {
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 16px;
     flex: 1;
     min-height: 0;
     overflow-y: auto;
     padding-right: 6px;
     padding-bottom: clamp(140px, 22vh, 220px);
-    margin: 0 auto;
+    margin: clamp(8px, 2vw, 20px) auto 0;
     width: min(720px, 100%);
     scrollbar-gutter: stable both-edges;
 }
@@ -4229,12 +4232,10 @@ html {
     gap: 12px;
     width: min(680px, calc(100% - 16px));
     padding: 12px 18px;
-    border-radius: var(--radius-full);
-    background: color-mix(in srgb, var(--surface-elevated) 95%, transparent);
-    border: 1px solid color-mix(in srgb, var(--glass-border) 55%, transparent);
-    box-shadow: 0 24px 48px rgba(0, 0, 0, 0.24);
-    backdrop-filter: blur(calc(var(--glass-blur) * 0.8)) saturate(150%);
-    -webkit-backdrop-filter: blur(calc(var(--glass-blur) * 0.8)) saturate(150%);
+    border-radius: 16px;
+    background: var(--composer-bg);
+    border: 1px solid var(--composer-border);
+    box-shadow: none;
     color: var(--text-color-muted);
 }
 
@@ -4291,13 +4292,11 @@ html {
 }
 
 .thread-comment-card {
-    padding: 16px clamp(16px, 3vw, 22px);
-    border-radius: var(--thread-radius);
-    background: color-mix(in srgb, var(--surface-elevated) 88%, transparent);
-    border: 1px solid color-mix(in srgb, var(--glass-border) 55%, transparent);
-    box-shadow: 0 20px 48px rgba(0, 0, 0, 0.2);
-    backdrop-filter: blur(calc(var(--glass-blur) * 0.75)) saturate(150%);
-    -webkit-backdrop-filter: blur(calc(var(--glass-blur) * 0.75)) saturate(150%);
+    padding: 18px clamp(18px, 4vw, 24px);
+    border-radius: 20px;
+    background: var(--composer-bg);
+    border: 1px solid var(--composer-border);
+    box-shadow: none;
     display: flex;
     flex-direction: column;
     gap: 8px;
@@ -4367,20 +4366,18 @@ html {
     align-items: center;
     gap: 12px;
     width: min(680px, calc(100% - 16px));
-    padding: 12px clamp(16px, 4vw, 22px);
-    border-radius: var(--radius-full);
-    border: 1px solid color-mix(in srgb, var(--glass-border) 60%, transparent);
-    background: color-mix(in srgb, var(--surface-elevated) 92%, transparent);
-    box-shadow: 0 32px 68px rgba(0, 0, 0, 0.3);
-    backdrop-filter: blur(calc(var(--glass-blur) * 0.9)) saturate(170%);
-    -webkit-backdrop-filter: blur(calc(var(--glass-blur) * 0.9)) saturate(170%);
+    padding: 10px clamp(16px, 4vw, 20px);
+    border-radius: 20px;
+    border: 1px solid var(--composer-border);
+    background: var(--composer-bg);
+    box-shadow: none;
 }
 
 .thread-input-area .chat-composer-floating {
     pointer-events: auto;
     width: min(680px, calc(100% - 16px));
-    padding: 14px 22px;
-    gap: 14px;
+    padding: 10px 18px;
+    gap: 16px;
 }
 
 .thread-composer {
@@ -4392,7 +4389,7 @@ html {
 }
 
 .thread-composer-actions {
-    gap: 10px;
+    gap: 12px;
 }
 
 .thread-input-area textarea {
@@ -4405,7 +4402,7 @@ html {
     line-height: 1.45;
     min-height: 44px;
     max-height: 180px;
-    padding: 4px 0;
+    padding: 10px 0;
 }
 
 .thread-input-area textarea::placeholder {
@@ -4441,7 +4438,7 @@ html {
     .thread-search-pill {
         width: calc(100% - 8px);
         padding: 12px clamp(14px, 6vw, 18px);
-        box-shadow: 0 20px 42px rgba(0, 0, 0, 0.28);
+        box-shadow: none;
     }
 
     .thread-search-empty {
@@ -4938,29 +4935,41 @@ html {
 }
 .file-preview-generic {
     display: flex;
-    align-items: center;
+    flex-direction: column;
+    justify-content: center;
     gap: 10px;
-    padding: 12px 16px;
-    border-radius: var(--radius-sm);
-    background: rgba(255, 255, 255, 0.08);
-    width: 100%;
+    height: 100%;
+    padding: 18px;
     box-sizing: border-box;
+    color: inherit;
 }
 
-.file-preview-generic .material-icons-round {
-    font-size: 24px;
-    opacity: 0.75;
+.file-preview-generic-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 16px;
+    background: var(--composer-icon-bg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-color);
 }
 
-.file-preview-generic div {
+.file-preview-generic-icon svg {
+    width: 26px;
+    height: 26px;
+}
+
+.file-preview-generic-info {
     display: flex;
     flex-direction: column;
+    gap: 4px;
     font-size: 13px;
     line-height: 1.3;
 }
 
-.file-preview-generic div span {
-    opacity: 0.7;
+.file-preview-generic-info span {
+    opacity: 0.65;
     font-size: 12px;
 }
 

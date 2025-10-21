@@ -1997,9 +1997,14 @@ function displayFilePreview() {
         
         const removeBtn = document.createElement('button');
         removeBtn.className = 'file-preview-remove';
-        removeBtn.innerHTML = '×';
+        removeBtn.innerHTML = `
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+        `;
         removeBtn.onclick = () => removeFileFromPreview(index);
-        
+
         if (file.type.startsWith('image/')) {
             const img = document.createElement('img');
             img.src = URL.createObjectURL(file);
@@ -2012,7 +2017,32 @@ function displayFilePreview() {
         } else {
             const generic = document.createElement('div');
             generic.className = 'file-preview-generic';
-            generic.innerHTML = `<span class="material-icons-round">description</span><div><strong>${file.name}</strong><span>${formatFileSize(file.size)}</span></div>`;
+            const iconWrapper = document.createElement('div');
+            iconWrapper.className = 'file-preview-generic-icon';
+            iconWrapper.innerHTML = `
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M14 2H7a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"></path>
+                    <path d="M14 2v6h6"></path>
+                    <path d="M16 13H9"></path>
+                    <path d="M16 17H9"></path>
+                    <path d="M11 9H9"></path>
+                </svg>
+            `;
+
+            const info = document.createElement('div');
+            info.className = 'file-preview-generic-info';
+
+            const nameEl = document.createElement('strong');
+            nameEl.textContent = file.name;
+
+            const sizeEl = document.createElement('span');
+            sizeEl.textContent = formatFileSize(file.size);
+
+            info.appendChild(nameEl);
+            info.appendChild(sizeEl);
+
+            generic.appendChild(iconWrapper);
+            generic.appendChild(info);
             preview.appendChild(generic);
         }
 
