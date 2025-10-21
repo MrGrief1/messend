@@ -516,9 +516,9 @@ label {
 }
 
 .icon-btn {
-    background: var(--input-bg);
-    backdrop-filter: blur(20px);
-    border: none;
+    background: color-mix(in srgb, var(--surface-muted) 85%, transparent);
+    backdrop-filter: blur(18px) saturate(140%);
+    border: 1px solid color-mix(in srgb, var(--glass-border) 45%, transparent);
     color: var(--text-color);
     font-size: 18px;
     cursor: pointer;
@@ -530,55 +530,39 @@ label {
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: all var(--transition-normal) var(--easing-smooth);
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+    transition: color var(--transition-fast) var(--easing-smooth),
+                background var(--transition-fast) var(--easing-smooth),
+                transform var(--transition-fast) var(--easing-smooth);
     position: relative;
     overflow: hidden;
 }
 
-.icon-btn::before {
-    content: '';
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    width: 0;
-    height: 0;
-    border-radius: 50%;
-    background: var(--color-primary);
-    opacity: 0.15;
-    transform: translate(-50%, -50%);
-    transition: width var(--transition-normal) var(--easing-smooth), 
-                height var(--transition-normal) var(--easing-smooth);
-}
-
-.icon-btn:hover::before {
-    width: 100px;
-    height: 100px;
-}
-
 .icon-btn svg {
-    transition: all var(--transition-normal) var(--easing-bounce);
+    transition: transform var(--transition-fast) var(--easing-bounce);
     z-index: 1;
 }
 
 .icon-btn:hover {
     color: var(--color-primary);
-    background: var(--glass-bg-hover);
-    transform: translateY(-2px) scale(1.05);
-    box-shadow: 0 6px 16px rgba(0, 122, 255, 0.2);
+    background: color-mix(in srgb, var(--surface-elevated) 92%, transparent);
+    transform: translateY(-1px);
 }
 
 .icon-btn:hover svg {
-    transform: rotate(10deg) scale(1.1);
+    transform: scale(1.08);
 }
 
 .icon-btn:active {
-    transform: translateY(0) scale(0.95);
-    transition: all var(--transition-fast) var(--easing-smooth);
+    transform: scale(0.94);
 }
 
-.icon-btn:active svg {
-    transform: rotate(0deg) scale(1);
+.icon-btn:focus {
+    outline: none;
+}
+
+.icon-btn:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 20%, transparent);
 }
 
 .logout-btn {
@@ -898,8 +882,8 @@ label {
 }
 
 .chat-input-area {
-    padding: 24px;
-    padding-bottom: calc(24px + env(safe-area-inset-bottom, 0));
+    padding: 20px clamp(16px, 4vw, 28px);
+    padding-bottom: calc(20px + env(safe-area-inset-bottom, 0));
     border-top: none;
     background: transparent;
     display: flex;
@@ -911,17 +895,24 @@ label {
 }
 
 .chat-composer-floating {
-    width: min(760px, 100%);
+    width: min(840px, 100%);
     display: flex;
     align-items: center;
     gap: 14px;
-    padding: 14px 22px;
+    padding: 16px 24px;
     border-radius: var(--radius-full);
-    background: color-mix(in srgb, var(--surface-elevated) 92%, transparent);
-    border: 1px solid color-mix(in srgb, var(--glass-border) 70%, transparent);
-    box-shadow: 0 28px 54px rgba(0, 0, 0, 0.28);
-    backdrop-filter: blur(calc(var(--glass-blur) * 0.9)) saturate(170%);
-    -webkit-backdrop-filter: blur(calc(var(--glass-blur) * 0.9)) saturate(170%);
+    background: color-mix(in srgb, #ffffff 88%, var(--surface-elevated));
+    border: 1px solid color-mix(in srgb, rgba(15, 23, 42, 0.14) 60%, transparent);
+    box-shadow: 0 16px 36px rgba(15, 23, 42, 0.18);
+    backdrop-filter: blur(calc(var(--glass-blur) * 0.6)) saturate(150%);
+    -webkit-backdrop-filter: blur(calc(var(--glass-blur) * 0.6)) saturate(150%);
+    transition: border-color var(--transition-fast) var(--easing-smooth),
+                box-shadow var(--transition-fast) var(--easing-smooth);
+}
+
+.chat-composer-floating:focus-within {
+    border-color: color-mix(in srgb, var(--color-primary) 35%, transparent);
+    box-shadow: 0 18px 42px rgba(15, 23, 42, 0.22);
 }
 
 .chat-composer-floating input[type="text"] {
@@ -965,29 +956,24 @@ label {
     width: 42px;
     height: 42px;
     margin: 0;
-    background: color-mix(in srgb, var(--input-bg) 75%, transparent);
-    border: 1px solid color-mix(in srgb, var(--glass-border) 60%, transparent);
-    backdrop-filter: blur(calc(var(--glass-blur) * 0.6)) saturate(150%);
-    -webkit-backdrop-filter: blur(calc(var(--glass-blur) * 0.6)) saturate(150%);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.9);
+    border: 1px solid rgba(15, 23, 42, 0.08);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6);
 }
 
 .icon-btn.composer-icon svg {
-    width: 18px;
-    height: 18px;
+    width: 20px;
+    height: 20px;
 }
 
 .icon-btn.composer-icon:hover {
-    transform: translateY(-1px);
-    background: color-mix(in srgb, var(--input-bg) 95%, transparent);
-}
-
-.icon-btn.composer-icon:active {
-    transform: scale(0.94);
+    background: rgba(255, 255, 255, 0.95);
 }
 
 .mic-button {
     color: var(--color-primary);
+    background: rgba(0, 122, 255, 0.12);
+    border-color: rgba(0, 122, 255, 0.24);
 }
 
 .message-banner {
@@ -1039,26 +1025,28 @@ label {
 
 /* Превью файлов */
 #file-preview-area {
-    padding: 12px 24px;
-    border-top: 1px solid var(--glass-border);
-    background: var(--input-bg);
-    backdrop-filter: blur(20px);
+    padding: 16px clamp(16px, 4vw, 28px);
+    border-top: none;
+    background: transparent;
 }
 
 #file-preview-container {
-    display: flex;
-    gap: 12px;
-    flex-wrap: wrap;
+    display: grid;
+    gap: 14px;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
 }
 
 .file-preview-item {
     position: relative;
-    width: 100px;
-    height: 100px;
-    border-radius: var(--radius-md);
+    border-radius: 20px;
     overflow: hidden;
-    background: var(--glass-bg);
-    border: 1px solid var(--glass-border);
+    background: rgba(255, 255, 255, 0.86);
+    border: 1px solid rgba(15, 23, 42, 0.08);
+    box-shadow: 0 18px 32px rgba(15, 23, 42, 0.18);
+    min-height: 148px;
+    display: flex;
+    align-items: stretch;
+    justify-content: center;
 }
 
 .file-preview-item img,
@@ -1068,30 +1056,37 @@ label {
     object-fit: cover;
 }
 
+.file-preview-item[data-type="file"] {
+    padding: 18px;
+    background: linear-gradient(135deg, rgba(0, 122, 255, 0.12), rgba(56, 189, 248, 0.12));
+    align-items: center;
+}
+
 .file-preview-remove {
     position: absolute;
-    top: 4px;
-    right: 4px;
-    background: rgba(255, 59, 48, 0.9);
+    top: 10px;
+    right: 10px;
+    background: rgba(15, 23, 42, 0.55);
     border: none;
-    color: white;
+    color: #fff;
     border-radius: 50%;
-    width: 24px;
-    height: 24px;
+    width: 28px;
+    height: 28px;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    font-size: 16px;
+    font-size: 18px;
     line-height: 1;
     padding: 0;
     margin: 0;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    transition: transform var(--transition-fast) var(--easing-smooth),
+                background var(--transition-fast) var(--easing-smooth);
 }
 
 .file-preview-remove:hover {
-    background: var(--color-danger);
-    transform: scale(1.1);
+    background: rgba(255, 59, 48, 0.9);
+    transform: scale(1.05);
 }
 
 /* Медиа в сообщениях */
@@ -1135,35 +1130,37 @@ label {
 .message-attachments {
     display: flex;
     flex-direction: column;
-    gap: 8px;
-    margin-top: 8px;
+    gap: 10px;
+    margin-top: 10px;
 }
 
 .message-attachment {
     display: flex;
     align-items: center;
-    gap: 12px;
-    padding: 12px 14px;
-    border-radius: var(--radius-md);
-    background: rgba(255, 255, 255, 0.08);
+    gap: 14px;
+    padding: 14px 18px;
+    border-radius: 18px;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.12), rgba(56, 189, 248, 0.08));
     color: inherit;
     text-decoration: none;
-    transition: background 0.2s ease, transform 0.2s ease;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    transition: transform var(--transition-fast) var(--easing-smooth),
+                background var(--transition-fast) var(--easing-smooth);
 }
 
 .message-attachment:hover {
-    background: rgba(255, 255, 255, 0.14);
     transform: translateY(-1px);
+    background: linear-gradient(135deg, rgba(0, 122, 255, 0.18), rgba(56, 189, 248, 0.12));
 }
 
 .message-attachment-icon {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 36px;
-    height: 36px;
-    border-radius: var(--radius-sm);
-    background: rgba(255, 255, 255, 0.12);
+    width: 40px;
+    height: 40px;
+    border-radius: 14px;
+    background: rgba(0, 122, 255, 0.12);
     color: var(--color-primary);
 }
 
@@ -4139,16 +4136,13 @@ html {
     display: flex;
     align-items: center;
     gap: 16px;
-    padding: 12px clamp(14px, 3vw, 24px);
+    padding: 14px clamp(16px, 4vw, 26px);
     border-radius: var(--thread-radius);
-    background: color-mix(in srgb, var(--surface-elevated) 90%, transparent);
-    border: 1px solid color-mix(in srgb, var(--glass-border) 60%, transparent);
-    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.2);
+    background: color-mix(in srgb, var(--surface-elevated) 75%, rgba(255, 255, 255, 0.08));
+    border: 1px solid color-mix(in srgb, var(--glass-border) 40%, transparent);
     position: sticky;
     top: clamp(8px, 2vw, 20px);
     z-index: 5;
-    backdrop-filter: blur(calc(var(--glass-blur) * 0.85)) saturate(170%);
-    -webkit-backdrop-filter: blur(calc(var(--glass-blur) * 0.85)) saturate(170%);
 }
 
 .thread-header-text {
@@ -4179,13 +4173,10 @@ html {
 }
 
 .thread-root-card {
-    padding: 18px clamp(16px, 3vw, 24px);
+    padding: 18px clamp(18px, 3vw, 26px);
     border-radius: var(--thread-radius);
-    background: color-mix(in srgb, var(--surface-elevated) 92%, transparent);
-    border: 1px solid color-mix(in srgb, var(--glass-border) 60%, transparent);
-    box-shadow: 0 22px 52px rgba(0, 0, 0, 0.22);
-    backdrop-filter: blur(calc(var(--glass-blur) * 0.8)) saturate(160%);
-    -webkit-backdrop-filter: blur(calc(var(--glass-blur) * 0.8)) saturate(160%);
+    background: color-mix(in srgb, var(--surface-muted) 92%, rgba(255, 255, 255, 0.08));
+    border: 1px solid color-mix(in srgb, var(--glass-border) 40%, transparent);
     display: flex;
     flex-direction: column;
     gap: 10px;
@@ -4205,15 +4196,20 @@ html {
 .thread-comments {
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 16px;
     flex: 1;
     min-height: 0;
     overflow-y: auto;
-    padding-right: 6px;
-    padding-bottom: clamp(140px, 22vh, 220px);
+    padding: 12px 6px clamp(140px, 22vh, 220px) 6px;
     margin: 0 auto;
     width: min(720px, 100%);
     scrollbar-gutter: stable both-edges;
+}
+
+.thread-comments::before {
+    content: '';
+    display: block;
+    height: 6px;
 }
 
 .thread-search-wrapper {
@@ -4232,7 +4228,7 @@ html {
     border-radius: var(--radius-full);
     background: color-mix(in srgb, var(--surface-elevated) 95%, transparent);
     border: 1px solid color-mix(in srgb, var(--glass-border) 55%, transparent);
-    box-shadow: 0 24px 48px rgba(0, 0, 0, 0.24);
+    box-shadow: 0 12px 28px rgba(15, 23, 42, 0.18);
     backdrop-filter: blur(calc(var(--glass-blur) * 0.8)) saturate(150%);
     -webkit-backdrop-filter: blur(calc(var(--glass-blur) * 0.8)) saturate(150%);
     color: var(--text-color-muted);
@@ -4286,18 +4282,15 @@ html {
     border: 1px dashed color-mix(in srgb, var(--glass-border) 55%, transparent);
     text-align: center;
     color: var(--text-color-muted);
-    backdrop-filter: blur(calc(var(--glass-blur) * 0.6));
-    -webkit-backdrop-filter: blur(calc(var(--glass-blur) * 0.6));
+    backdrop-filter: blur(calc(var(--glass-blur) * 0.4));
+    -webkit-backdrop-filter: blur(calc(var(--glass-blur) * 0.4));
 }
 
 .thread-comment-card {
-    padding: 16px clamp(16px, 3vw, 22px);
+    padding: 16px clamp(18px, 3vw, 24px);
     border-radius: var(--thread-radius);
-    background: color-mix(in srgb, var(--surface-elevated) 88%, transparent);
-    border: 1px solid color-mix(in srgb, var(--glass-border) 55%, transparent);
-    box-shadow: 0 20px 48px rgba(0, 0, 0, 0.2);
-    backdrop-filter: blur(calc(var(--glass-blur) * 0.75)) saturate(150%);
-    -webkit-backdrop-filter: blur(calc(var(--glass-blur) * 0.75)) saturate(150%);
+    background: color-mix(in srgb, var(--surface-muted) 94%, rgba(255, 255, 255, 0.1));
+    border: 1px solid color-mix(in srgb, var(--glass-border) 35%, transparent);
     display: flex;
     flex-direction: column;
     gap: 8px;
@@ -4367,13 +4360,11 @@ html {
     align-items: center;
     gap: 12px;
     width: min(680px, calc(100% - 16px));
-    padding: 12px clamp(16px, 4vw, 22px);
+    padding: 14px clamp(18px, 4vw, 24px);
     border-radius: var(--radius-full);
-    border: 1px solid color-mix(in srgb, var(--glass-border) 60%, transparent);
-    background: color-mix(in srgb, var(--surface-elevated) 92%, transparent);
-    box-shadow: 0 32px 68px rgba(0, 0, 0, 0.3);
-    backdrop-filter: blur(calc(var(--glass-blur) * 0.9)) saturate(170%);
-    -webkit-backdrop-filter: blur(calc(var(--glass-blur) * 0.9)) saturate(170%);
+    border: 1px solid rgba(15, 23, 42, 0.12);
+    background: rgba(255, 255, 255, 0.9);
+    box-shadow: 0 14px 32px rgba(15, 23, 42, 0.16);
 }
 
 .thread-input-area .chat-composer-floating {
@@ -4939,28 +4930,29 @@ html {
 .file-preview-generic {
     display: flex;
     align-items: center;
-    gap: 10px;
-    padding: 12px 16px;
-    border-radius: var(--radius-sm);
-    background: rgba(255, 255, 255, 0.08);
+    gap: 14px;
     width: 100%;
     box-sizing: border-box;
+    color: rgba(15, 23, 42, 0.9);
 }
 
-.file-preview-generic .material-icons-round {
-    font-size: 24px;
-    opacity: 0.75;
+.file-preview-generic svg {
+    width: 32px;
+    height: 32px;
+    flex-shrink: 0;
+    color: rgba(15, 23, 42, 0.65);
 }
 
-.file-preview-generic div {
+.file-preview-generic-info {
     display: flex;
     flex-direction: column;
     font-size: 13px;
-    line-height: 1.3;
+    line-height: 1.35;
+    gap: 2px;
 }
 
-.file-preview-generic div span {
-    opacity: 0.7;
+.file-preview-generic-info span {
+    opacity: 0.65;
     font-size: 12px;
 }
 

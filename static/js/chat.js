@@ -1994,17 +1994,25 @@ function displayFilePreview() {
     selectedFiles.forEach((file, index) => {
         const preview = document.createElement('div');
         preview.className = 'file-preview-item';
-        
+        const typeGroup = file.type || '';
+        if (typeGroup.startsWith('image/')) {
+            preview.dataset.type = 'image';
+        } else if (typeGroup.startsWith('video/')) {
+            preview.dataset.type = 'video';
+        } else {
+            preview.dataset.type = 'file';
+        }
+
         const removeBtn = document.createElement('button');
         removeBtn.className = 'file-preview-remove';
         removeBtn.innerHTML = '×';
         removeBtn.onclick = () => removeFileFromPreview(index);
-        
-        if (file.type.startsWith('image/')) {
+
+        if (typeGroup.startsWith('image/')) {
             const img = document.createElement('img');
             img.src = URL.createObjectURL(file);
             preview.appendChild(img);
-        } else if (file.type.startsWith('video/')) {
+        } else if (typeGroup.startsWith('video/')) {
             const video = document.createElement('video');
             video.src = URL.createObjectURL(file);
             video.controls = true;
@@ -2012,7 +2020,21 @@ function displayFilePreview() {
         } else {
             const generic = document.createElement('div');
             generic.className = 'file-preview-generic';
-            generic.innerHTML = `<span class="material-icons-round">description</span><div><strong>${file.name}</strong><span>${formatFileSize(file.size)}</span></div>`;
+            generic.innerHTML = `
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M8.4 7.2h7.2m-7.2 3.6h7.2m-7.2 3.6H12m-5.4-12h10.8a2.4 2.4 0 0 1 2.4 2.4v14.4a2.4 2.4 0 0 1-2.4 2.4H6.6a2.4 2.4 0 0 1-2.4-2.4V4.8a2.4 2.4 0 0 1 2.4-2.4Z"></path>
+                </svg>`;
+            const info = document.createElement('div');
+            info.className = 'file-preview-generic-info';
+            const nameEl = document.createElement('strong');
+            nameEl.textContent = file.name || 'Файл';
+            info.appendChild(nameEl);
+            if (file.size !== undefined && file.size !== null) {
+                const sizeEl = document.createElement('span');
+                sizeEl.textContent = formatFileSize(file.size);
+                info.appendChild(sizeEl);
+            }
+            generic.appendChild(info);
             preview.appendChild(generic);
         }
 
@@ -2378,12 +2400,8 @@ function displayMessage(data) {
                 const iconWrapper = document.createElement('span');
                 iconWrapper.className = 'message-attachment-icon';
                 iconWrapper.innerHTML = `
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path>
-                        <polyline points="14 3 14 9 20 9"></polyline>
-                        <path d="M16 13H8"></path>
-                        <path d="M16 17H8"></path>
-                        <path d="M10 9H9"></path>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M8.4 7.2h7.2m-7.2 3.6h7.2m-7.2 3.6H12m-5.4-12h10.8a2.4 2.4 0 0 1 2.4 2.4v14.4a2.4 2.4 0 0 1-2.4 2.4H6.6a2.4 2.4 0 0 1-2.4-2.4V4.8a2.4 2.4 0 0 1 2.4-2.4Z"></path>
                     </svg>`;
 
                 const infoWrapper = document.createElement('span');
