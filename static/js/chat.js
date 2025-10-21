@@ -14,6 +14,7 @@ const chatWithName = document.getElementById('chat-with-name');
 const roomList = document.getElementById('room-list');
 const callButton = document.getElementById('call-button');
 const sendButton = document.getElementById('send-button');
+const messageField = document.getElementById('message-field');
 // Доп. элементы заголовка чата
 const membersBtn = document.getElementById('room-members-btn');
 const roomSettingsBtn = document.getElementById('room-settings-btn');
@@ -116,6 +117,35 @@ let pollCommentContext = null;
 let pollCommentPreviousPlaceholder = null;
 let activeThreadContext = null;
 let threadSearchQuery = '';
+
+function autoResizeComposer() {
+    if (!messageInput) return;
+    messageInput.style.height = 'auto';
+    const maxHeight = 220;
+    const nextHeight = Math.min(messageInput.scrollHeight, maxHeight);
+    messageInput.style.height = `${nextHeight}px`;
+}
+
+if (messageInput) {
+    messageInput.addEventListener('input', () => {
+        autoResizeComposer();
+        if (currentRoomId) throttleTyping();
+    });
+    window.requestAnimationFrame(() => autoResizeComposer());
+}
+
+function autoResizeThreadComposer() {
+    if (!threadInput) return;
+    threadInput.style.height = 'auto';
+    const maxHeight = 180;
+    const nextHeight = Math.min(threadInput.scrollHeight, maxHeight);
+    threadInput.style.height = `${nextHeight}px`;
+}
+
+if (threadInput) {
+    threadInput.addEventListener('input', autoResizeThreadComposer);
+    window.requestAnimationFrame(() => autoResizeThreadComposer());
+}
 
 const sentMessageStatus = new Map();
 const roomReadReceipts = new Map();
@@ -1857,6 +1887,7 @@ function cancelEditing() {
     editingMessage = null;
     document.getElementById('editing-banner').style.display = 'none';
     messageInput.value = '';
+    autoResizeComposer();
     // Кнопка отправки скрыта в UI, но переключатели оставляем на случай будущего возврата
     const si = document.getElementById('send-icon'); if (si) si.style.display = 'inline-block';
     const ei = document.getElementById('edit-confirm-icon'); if (ei) ei.style.display = 'none';
@@ -1982,24 +2013,30 @@ function formatFileSize(bytes) {
 function displayFilePreview() {
     const previewArea = document.getElementById('file-preview-area');
     const container = document.getElementById('file-preview-container');
-    
+    const composerField = messageField;
+
     if (selectedFiles.length === 0) {
-        previewArea.style.display = 'none';
+        previewArea.classList.remove('visible');
+        previewArea.setAttribute('aria-hidden', 'true');
+        container.innerHTML = '';
+        if (composerField) composerField.classList.remove('has-attachments');
         return;
     }
-    
-    previewArea.style.display = 'block';
+
+    previewArea.classList.add('visible');
+    previewArea.removeAttribute('aria-hidden');
     container.innerHTML = '';
-    
+    if (composerField) composerField.classList.add('has-attachments');
+
     selectedFiles.forEach((file, index) => {
         const preview = document.createElement('div');
         preview.className = 'file-preview-item';
-        
+
         const removeBtn = document.createElement('button');
         removeBtn.className = 'file-preview-remove';
-        removeBtn.innerHTML = '×';
+        removeBtn.innerHTML = '<svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#ui-xmark"></use></svg>';
         removeBtn.onclick = () => removeFileFromPreview(index);
-        
+
         if (file.type.startsWith('image/')) {
             const img = document.createElement('img');
             img.src = URL.createObjectURL(file);
@@ -2007,18 +2044,31 @@ function displayFilePreview() {
         } else if (file.type.startsWith('video/')) {
             const video = document.createElement('video');
             video.src = URL.createObjectURL(file);
-            video.controls = true;
+            video.muted = true;
+            video.loop = true;
+            video.playsInline = true;
+            video.addEventListener('mouseenter', () => video.play());
+            video.addEventListener('mouseleave', () => video.pause());
             preview.appendChild(video);
         } else {
             const generic = document.createElement('div');
             generic.className = 'file-preview-generic';
-            generic.innerHTML = `<span class="material-icons-round">description</span><div><strong>${file.name}</strong><span>${formatFileSize(file.size)}</span></div>`;
+            generic.innerHTML = `
+                <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
+                    <use href="#ui-document"></use>
+                </svg>
+                <strong>${file.name}</strong>
+                <span>${formatFileSize(file.size)}</span>`;
             preview.appendChild(generic);
         }
 
         preview.appendChild(removeBtn);
         container.appendChild(preview);
     });
+
+    if (previewArea) {
+        previewArea.scrollTo({ left: previewArea.scrollWidth, behavior: 'smooth' });
+    }
 }
 
 async function sendMessage() {
@@ -2053,6 +2103,7 @@ async function sendMessage() {
         await sendFilesMessage(finalContent);
         selectedFiles = [];
         displayFilePreview();
+        autoResizeComposer();
     } else if (currentRoomId) {
         // Обычное текстовое сообщение
         socket.emit('send_message', {
@@ -3291,9 +3342,10 @@ async function runConnectivityTest() {
 }
 
 function handleKeyPress(event) {
-    if (event.key === 'Enter' && !messageInput.disabled) sendMessage();
-    else {
-        if (currentRoomId) throttleTyping();
+    if (!messageInput || messageInput.disabled) return;
+    if (event.key === 'Enter' && !event.shiftKey) {
+        event.preventDefault();
+        sendMessage();
     }
 }
 
@@ -3986,7 +4038,10 @@ function closeThreadView(options = {}) {
         if (threadSearchInput) threadSearchInput.value = '';
         if (threadSearchEmptyState) threadSearchEmptyState.style.display = 'none';
     }
-    if (threadInput) threadInput.value = '';
+    if (threadInput) {
+        threadInput.value = '';
+        autoResizeThreadComposer();
+    }
     activeThreadContext = null;
     threadView.style.display = 'none';
     if (chatViewContainer) chatViewContainer.style.display = 'flex';
@@ -4328,6 +4383,7 @@ function sendThreadComment() {
     });
 
     threadInput.value = '';
+    autoResizeThreadComposer();
 }
 
 function startPollComment(messageId, question) {

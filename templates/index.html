@@ -267,8 +267,8 @@
             -webkit-tap-highlight-color: transparent;
         }
         
-        .telegram-nav-item .material-icons-round {
-            font-size: 26px;
+        .telegram-nav-item .ui-icon {
+            --icon-size: 26px;
             transition: all 0.4s var(--easing-bounce);
             will-change: transform;
         }
@@ -305,7 +305,7 @@
             }
         }
         
-        .telegram-nav-item.active .material-icons-round {
+        .telegram-nav-item.active .ui-icon {
             transform: scale(1.15) rotate(5deg);
         }
         
@@ -1171,6 +1171,7 @@
     </style>
 </head>
 <body data-theme="{{ user.theme }}">
+    {% include 'partials/icon-sprite.html' %}
     <!-- Жидкий анимированный фон -->
     <div class="liquid-bg">
         <div class="blob blob-1"></div>
@@ -1187,29 +1188,30 @@
                 <!-- Вкладки Чаты / Архив -->
                 <div style="display: flex; gap: 6px; align-items: center;">
                     <button class="tab-btn active" id="chats-tab" onclick="switchToTab('chats')" style="width: 38px; height: 38px; padding: 0; border: none; background: var(--color-primary); color: white; border-radius: var(--radius-full); font-weight: 600; font-size: 12px; cursor: pointer; transition: all 0.3s ease; display: flex; align-items: center; justify-content: center;">
-                        💬
+                        <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
+                            <use href="#ui-chat"></use>
+                        </svg>
                     </button>
                     <button class="tab-btn" id="archive-tab" onclick="switchToTab('archive')" style="width: 38px; height: 38px; padding: 0; border: none; background: var(--input-bg); color: var(--text-color); border-radius: var(--radius-full); font-weight: 600; font-size: 12px; cursor: pointer; transition: all 0.3s ease; display: flex; align-items: center; justify-content: center;">
-                        📦
+                        <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
+                            <use href="#ui-archive"></use>
+                        </svg>
                     </button>
                 </div>
                 <div style="display: flex; gap: 4px; margin-left: 8px;">
                     <button class="icon-btn" onclick="openModal('createRoomModal')" title="Создать Группу/Канал">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
-                            <line x1="12" y1="5" x2="12" y2="19"></line>
-                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                        <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
+                            <use href="#ui-plus-circle"></use>
                         </svg>
                     </button>
                     <button class="icon-btn" onclick="openModal('searchModal')" title="Поиск пользователей">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
-                            <circle cx="11" cy="11" r="8"></circle>
-                            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                        <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
+                            <use href="#ui-search"></use>
                         </svg>
                     </button>
                     <button class="icon-btn" onclick="openInlineSettings()" title="Настройки">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                            <circle cx="12" cy="12" r="3"></circle>
-                            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06A1.65 1.65 0 0 0 15 19.4a1.65 1.65 0 0 0-1 .6 1.65 1.65 0 0 0-.33 1.82l.02.06a2 2 0 1 1-3.38 0l.02-.06A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-.6-1 1.65 1.65 0 0 0-1.82-.33l-.06.02a2 2 0 1 1 0-3.38l.06.02A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06A2 2 0 1 1 7.04 4.3l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-.6 1.65 1.65 0 0 0 .33-1.82l-.02-.06a2 2 0 1 1 3.38 0l-.02.06A1.65 1.65 0 0 0 15 4.6a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9c.38 0 .74.14 1.02.38.29.24.5.57.6 1a1.65 1.65 0 0 0 1.82.33l.06-.02a2 2 0 1 1 0 3.38l-.06-.02a1.65 1.65 0 0 0-1.82.33 1.65 1.65 0 0 0-.6 1z"></path>
+                        <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
+                            <use href="#ui-cog"></use>
                         </svg>
                     </button>
                 </div>
@@ -1224,17 +1226,16 @@
                                     {% if room.avatar_url %}
                                         <img src="{{ room.avatar_url }}" alt="Avatar">
                                     {% elif room.type == 'dm' %}
-                                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-                                            <circle cx="12" cy="8" r="5"></circle>
-                                            <path d="M20 21a8 8 0 1 0-16 0"></path>
+                                        <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
+                                            <use href="#ui-user-circle"></use>
                                         </svg>
                                     {% elif room.type == 'group' %}
-                                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                                        <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
+                                            <use href="#ui-users"></use>
                                         </svg>
                                     {% elif room.type == 'channel' %}
-                                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-                                            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                                        <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
+                                            <use href="#ui-megaphone"></use>
                                         </svg>
                                     {% endif %}
                                 </span>
@@ -1258,17 +1259,16 @@
                                     {% if room.avatar_url %}
                                         <img src="{{ room.avatar_url }}" alt="Avatar">
                                     {% elif room.type == 'dm' %}
-                                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-                                            <circle cx="12" cy="8" r="5"></circle>
-                                            <path d="M20 21a8 8 0 1 0-16 0"></path>
+                                        <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
+                                            <use href="#ui-user-circle"></use>
                                         </svg>
                                     {% elif room.type == 'group' %}
-                                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                                        <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
+                                            <use href="#ui-users"></use>
                                         </svg>
                                     {% elif room.type == 'channel' %}
-                                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-                                            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                                        <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
+                                            <use href="#ui-megaphone"></use>
                                         </svg>
                                     {% endif %}
                                 </span>
@@ -1290,9 +1290,8 @@
                         {% if user.avatar_url %}
                             <img id="my-avatar-img" src="{{ user.avatar_url }}" alt="Avatar">
                         {% else %}
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <circle cx="12" cy="8" r="5"></circle>
-                                <path d="M20 21a8 8 0 1 0-16 0"></path>
+                            <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
+                                <use href="#ui-user-circle"></use>
                             </svg>
                         {% endif %}
                     </span>
@@ -1303,29 +1302,26 @@
                 <!-- Mobile табы (Telegram стиль) -->
                 <div class="mobile-tabs" style="display: none;">
                     <button class="mobile-tab active" onclick="toggleMobileTab('chats')" id="tab-chats">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-                            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                        <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
+                            <use href="#ui-chat"></use>
                         </svg>
                         <span>Чаты</span>
                     </button>
                     <button class="mobile-tab" onclick="openModal('searchModal')" id="tab-search">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-                            <circle cx="11" cy="11" r="8"></circle>
-                            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                        <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
+                            <use href="#ui-search"></use>
                         </svg>
                         <span>Поиск</span>
                     </button>
                     <button class="mobile-tab" onclick="openModal('createRoomModal')" id="tab-create">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
-                            <line x1="12" y1="5" x2="12" y2="19"></line>
-                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                        <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
+                            <use href="#ui-plus-circle"></use>
                         </svg>
                         <span>Создать</span>
                     </button>
                     <button class="mobile-tab" onclick="openInlineSettings()" id="tab-settings">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <circle cx="12" cy="12" r="3"></circle>
-                            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06A1.65 1.65 0 0 0 15 19.4a1.65 1.65 0 0 0-1 .6 1.65 1.65 0 0 0-.33 1.82l.02.06a2 2 0 1 1-3.38 0l.02-.06A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-.6-1 1.65 1.65 0 0 0-1.82-.33l-.06.02a2 2 0 1 1 0-3.38l.06.02A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06A2 2 0 1 1 7.04 4.3l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-.6 1.65 1.65 0 0 0 .33-1.82l-.02-.06a2 2 0 1 1 3.38 0l-.02.06A1.65 1.65 0 0 0 15 4.6a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9c.38 0 .74.14 1.02.38.29.24.5.57.6 1a1.65 1.65 0 0 0 1.82.33l.06-.02a2 2 0 1 1 0 3.38l-.06-.02a1.65 1.65 0 0 0-1.82.33 1.65 1.65 0 0 0-.6 1z"></path>
+                        <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
+                            <use href="#ui-cog"></use>
                         </svg>
                         <span>Настройки</span>
                     </button>
@@ -1339,9 +1335,8 @@
             <div id="chat-view" class="content-view">
                 <div class="chat-header" id="chat-header" style="display: none;">
                     <button class="mobile-back-btn" onclick="closeMobileChat()" style="display: none;">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
-                            <line x1="19" y1="12" x2="5" y2="12"></line>
-                            <polyline points="12 19 5 12 12 5"></polyline>
+                        <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" style="--icon-size:24px; --icon-stroke:2.2;">
+                            <use href="#ui-arrow-left"></use>
                         </svg>
                     </button>
                     <h3 id="chat-with-name"></h3>
@@ -1349,40 +1344,34 @@
                         <!-- Объединенная кнопка звонка со стрелкой -->
                         <div class="call-button-wrapper" style="display: flex; align-items: center; gap: 0; position: relative;">
                             <button class="call-button-header" id="call-button" onclick="startCall()" style="height: 38px; display: flex; align-items: center;">
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
-                                    <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
+                                <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" style="--icon-size:18px; --icon-stroke:1.9;">
+                                    <use href="#ui-phone"></use>
                                 </svg>
                                 <span class="call-button-text">Позвонить</span>
                             </button>
                             <button class="call-dropdown-btn" onclick="event.stopPropagation(); toggleCallDropdown(event);" title="Опции" style="height: 38px;">
-                                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round">
-                                    <polyline points="6 9 12 15 18 9"></polyline>
+                                <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" style="--icon-size:18px; --icon-stroke:2.2;">
+                                    <use href="#ui-chevron-down"></use>
                                 </svg>
                             </button>
                             <div class="call-dropdown-menu" id="call-dropdown-menu">
                                 <div class="call-dropdown-item" onclick="startVideoCall()">
-                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                        <path d="M23 7l-7 5 7 5V7z"></path>
-                                        <rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect>
+                                    <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
+                                        <use href="#ui-video-camera"></use>
                                     </svg>
                                     <span>Видеозвонок</span>
                                 </div>
                                 <div class="call-dropdown-item" onclick="startAudioCall()">
-                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                        <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
-                                        <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
-                                        <line x1="12" y1="19" x2="12" y2="23"></line>
-                                        <line x1="8" y1="23" x2="16" y2="23"></line>
+                                    <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
+                                        <use href="#ui-mic"></use>
                                     </svg>
                                     <span>Аудиозвонок</span>
                                 </div>
                             </div>
                         </div>
                         <button class="icon-btn" id="room-settings-btn" onclick="openContextSettings()" title="Настройки чата">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                                <circle cx="12" cy="5" r="1.5"></circle>
-                                <circle cx="12" cy="12" r="1.5"></circle>
-                                <circle cx="12" cy="19" r="1.5"></circle>
+                            <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
+                                <use href="#ui-ellipsis"></use>
                             </svg>
                         </button>
                     </div>
@@ -1393,8 +1382,8 @@
                 <div class="active-call-indicator" id="active-call-indicator" style="display:none;" onclick="returnToCall()">
                     <div class="call-indicator-left">
                         <div class="call-indicator-icon">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="white" stroke="white" stroke-width="2">
-                                <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
+                            <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
+                                <use href="#ui-phone"></use>
                             </svg>
                         </div>
                         <div class="call-indicator-info">
@@ -1415,15 +1404,13 @@
                     <span id="unknown-banner-text">Этот пользователь не в ваших контактах.</span>
                     <div class="unknown-actions">
                         <button class="icon-btn" title="Добавить в контакты" onclick="addUnknownToContacts()" style="background: white; color: var(--color-success);">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
-                                <line x1="12" y1="5" x2="12" y2="19"></line>
-                                <line x1="5" y1="12" x2="19" y2="12"></line>
+                            <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
+                                <use href="#ui-user-plus"></use>
                             </svg>
                         </button>
                         <button class="icon-btn" title="Заблокировать" onclick="blockUnknownContact()" style="background: white; color: var(--color-danger);">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
-                                <circle cx="12" cy="12" r="10"></circle>
-                                <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line>
+                            <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
+                                <use href="#ui-no-entry"></use>
                             </svg>
                         </button>
                     </div>
@@ -1433,21 +1420,25 @@
                 <!-- Editing Message Banner -->
                 <div id="editing-banner" class="message-banner" style="display: none;">
                     <div class="banner-icon">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                        <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
+                            <use href="#ui-doc-upload"></use>
+                        </svg>
                     </div>
                     <div class="banner-content">
                         <div class="banner-title">Редактирование</div>
                         <div id="editing-banner-text" class="banner-text"></div>
                     </div>
                     <button class="icon-btn" id="cancel-editing-btn">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                        <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
+                            <use href="#ui-xmark"></use>
+                        </svg>
                     </button>
                 </div>
 
                 <div id="poll-comment-banner" class="message-banner" style="display: none;">
                     <div class="banner-icon comment-icon">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M21 15a2 2 0 0 1-2 2H9l-4 4v-4H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                        <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
+                            <use href="#ui-chart"></use>
                         </svg>
                     </div>
                     <div class="banner-content">
@@ -1455,7 +1446,9 @@
                         <div id="poll-comment-text" class="banner-text"></div>
                     </div>
                     <button class="icon-btn" id="cancel-poll-comment-btn" title="Отменить комментарий">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                        <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
+                            <use href="#ui-xmark"></use>
+                        </svg>
                     </button>
                 </div>
 
@@ -1463,70 +1456,65 @@
                     <input type="file" id="file-input" accept="*/*" style="display: none;" onchange="handleFileSelect(event)" multiple>
                     <input type="file" id="file-input-docs" accept="*/*" style="display: none;" onchange="handleFileSelect(event)" multiple>
 
-                    <div class="chat-composer-floating">
-                        <button class="icon-btn composer-icon" onclick="toggleStickerPicker(event)" title="Стикеры" aria-label="Открыть стикеры">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round">
-                                <circle cx="12" cy="12" r="10"></circle>
-                                <path d="M8 14s1.5 2 4 2 4-2 4-2"></path>
-                                <line x1="9" y1="9" x2="9.01" y2="9"></line>
-                                <line x1="15" y1="9" x2="15.01" y2="9"></line>
-                            </svg>
-                        </button>
+                    <div class="chat-composer-floating" role="group" aria-label="Поле ввода сообщения">
+                        <div class="composer-main">
+                            <button class="icon-btn composer-icon" onclick="toggleStickerPicker(event)" title="Стикеры" aria-label="Открыть стикеры">
+                                <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
+                                    <use href="#ui-face-smile"></use>
+                                </svg>
+                            </button>
 
-                        <input type="text" id="message-input" placeholder="Введите сообщение..." autocomplete="off" onkeypress="handleKeyPress(event)">
+                            <div class="composer-field" id="message-field">
+                                <div id="file-preview-area" class="composer-attachments" aria-hidden="true">
+                                    <div id="file-preview-container" class="composer-attachments-scroll"></div>
+                                </div>
+                                <textarea id="message-input" placeholder="Введите сообщение..." autocomplete="off" rows="1" onkeydown="handleKeyPress(event)"></textarea>
+                            </div>
 
-                        <div class="composer-trailing">
-                            <div class="composer-actions">
-                                <div class="composer-attach">
-                                    <button class="icon-btn composer-icon" id="attach-btn" onclick="toggleAttachMenu(event)" title="Вложения" aria-label="Добавить вложение">
-                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round">
-                                            <line x1="12" y1="5" x2="12" y2="19"></line>
-                                            <line x1="5" y1="12" x2="19" y2="12"></line>
-                                        </svg>
-                                    </button>
-                                    <!-- Выпадающее меню вложений -->
-                                    <div class="attach-menu" id="attach-menu" style="display: none;">
-                                        <div class="attach-menu-item" onclick="openMediaPicker(); event.stopPropagation();">
-                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-                                                <circle cx="8.5" cy="8.5" r="1.5"></circle>
-                                                <polyline points="21 15 16 10 5 21"></polyline>
+                            <div class="composer-trailing">
+                                <div class="composer-actions">
+                                    <div class="composer-attach">
+                                        <button class="icon-btn composer-icon" id="attach-btn" onclick="toggleAttachMenu(event)" title="Вложения" aria-label="Добавить вложение">
+                                            <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
+                                                <use href="#ui-paperclip"></use>
                                             </svg>
-                                            <span>Медиа/Файлы</span>
-                                        </div>
-                                        <div class="attach-menu-item" onclick="openDocPicker(); event.stopPropagation();">
-                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                                <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path>
-                                                <polyline points="13 2 13 9 20 9"></polyline>
-                                            </svg>
-                                            <span>Файлы</span>
-                                        </div>
-                                        <div class="attach-menu-item" onclick="createPoll(); event.stopPropagation();">
-                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                                <line x1="12" y1="20" x2="12" y2="10"></line>
-                                                <line x1="18" y1="20" x2="18" y2="4"></line>
-                                                <line x1="6" y1="20" x2="6" y2="16"></line>
-                                            </svg>
-                                            <span>Голосование</span>
+                                        </button>
+                                        <!-- Выпадающее меню вложений -->
+                                        <div class="attach-menu" id="attach-menu" style="display: none;">
+                                            <div class="attach-menu-item" onclick="openMediaPicker(); event.stopPropagation();">
+                                                <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
+                                                    <use href="#ui-photo"></use>
+                                                </svg>
+                                                <span>Медиа</span>
+                                            </div>
+                                            <div class="attach-menu-item" onclick="openDocPicker(); event.stopPropagation();">
+                                                <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
+                                                    <use href="#ui-doc-upload"></use>
+                                                </svg>
+                                                <span>Файлы</span>
+                                            </div>
+                                            <div class="attach-menu-item" onclick="createPoll(); event.stopPropagation();">
+                                                <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
+                                                    <use href="#ui-chart"></use>
+                                                </svg>
+                                                <span>Опрос</span>
+                                            </div>
                                         </div>
                                     </div>
+                                    <button class="icon-btn composer-icon mic-button" onmousedown="startVoiceRecording(event)" onmouseup="stopVoiceRecording(event)" ontouchstart="startVoiceRecording(event)" ontouchend="stopVoiceRecording(event)" title="Голосовое сообщение" aria-label="Голосовое сообщение">
+                                        <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
+                                            <use href="#ui-mic"></use>
+                                        </svg>
+                                    </button>
                                 </div>
-                                <button class="icon-btn composer-icon mic-button" onmousedown="startVoiceRecording(event)" onmouseup="stopVoiceRecording(event)" ontouchstart="startVoiceRecording(event)" ontouchend="stopVoiceRecording(event)" title="Голосовое сообщение" aria-label="Голосовое сообщение">
-                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round">
-                                        <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
-                                        <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
-                                        <line x1="12" y1="19" x2="12" y2="23"></line>
-                                        <line x1="8" y1="23" x2="16" y2="23"></line>
+                                <button class="primary-send" id="send-button" onclick="sendMessage()" aria-label="Отправить сообщение">
+                                    <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
+                                        <use href="#ui-send"></use>
                                     </svg>
                                 </button>
                             </div>
                         </div>
                     </div>
-                </div>
-                
-                <!-- Превью выбранных файлов -->
-                <div id="file-preview-area" style="display: none;">
-                    <div id="file-preview-container"></div>
                 </div>
             
             <!-- Floating Action Bar for Selection (перенесено внутрь main-content) -->
@@ -1534,10 +1522,14 @@
                 <span id="selection-count"></span>
                 <div class="selection-actions">
                     <button class="icon-btn" id="delete-selected-btn" title="Удалить выбранные">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                        <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" style="--icon-size:20px; --icon-stroke:1.8;">
+                            <use href="#ui-trash"></use>
+                        </svg>
                     </button>
                     <button class="icon-btn" id="cancel-selection-btn" title="Отменить выделение">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                        <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" style="--icon-size:20px; --icon-stroke:2.2;">
+                            <use href="#ui-xmark"></use>
+                        </svg>
                     </button>
                 </div>
             </div>
@@ -1547,9 +1539,8 @@
             <div id="thread-view" class="content-view" style="display: none;">
                 <div class="thread-header glass">
                     <button class="icon-btn" id="thread-back-btn" title="Назад" onclick="closeThreadView()">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                            <line x1="19" y1="12" x2="5" y2="12"></line>
-                            <polyline points="12 19 5 12 12 5"></polyline>
+                        <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" style="--icon-size:22px; --icon-stroke:2.1;">
+                            <use href="#ui-arrow-left"></use>
                         </svg>
                     </button>
                     <div class="thread-header-text">
@@ -1563,17 +1554,22 @@
                 <div class="thread-empty" id="thread-empty" style="display: none;">Пока нет комментариев. Будьте первым!</div>
                 <div class="thread-input-area" id="thread-input-area" style="display: none;">
                     <div class="chat-composer-floating thread-composer">
-                        <button class="icon-btn composer-icon" id="thread-emoji-btn" type="button" onclick="threadInput && threadInput.focus();" title="Комментарий">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round">
-                                <circle cx="12" cy="12" r="10"></circle>
-                                <path d="M8 14s1.5 2 4 2 4-2 4-2"></path>
-                                <line x1="9" y1="9" x2="9.01" y2="9"></line>
-                                <line x1="15" y1="9" x2="15.01" y2="9"></line>
-                            </svg>
-                        </button>
-                        <input type="text" id="thread-input" placeholder="Написать комментарий..." maxlength="2000" autocomplete="off">
-                        <div class="composer-trailing thread-composer-actions">
-                            <button class="primary-btn" id="thread-send-btn" onclick="sendThreadComment()">Отправить</button>
+                        <div class="composer-main">
+                            <button class="icon-btn composer-icon" id="thread-emoji-btn" type="button" onclick="threadInput && threadInput.focus();" title="Комментарий">
+                                <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
+                                    <use href="#ui-face-smile"></use>
+                                </svg>
+                            </button>
+                            <div class="composer-field thread-field" id="thread-field">
+                                <textarea id="thread-input" placeholder="Написать комментарий..." maxlength="2000" autocomplete="off" rows="1"></textarea>
+                            </div>
+                            <div class="composer-trailing thread-composer-actions">
+                                <button class="primary-send thread-send" id="thread-send-btn" onclick="sendThreadComment()" aria-label="Отправить комментарий">
+                                    <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
+                                        <use href="#ui-send"></use>
+                                    </svg>
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -1583,9 +1579,8 @@
             <div id="settings-view-inline" class="content-view" style="display: none;">
                 <div class="settings-header-inline">
                     <button class="icon-btn" onclick="closeInlineSettings()" title="Назад">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                            <line x1="19" y1="12" x2="5" y2="12"></line>
-                            <polyline points="12 19 5 12 12 5"></polyline>
+                        <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" style="--icon-size:22px; --icon-stroke:2.1;">
+                            <use href="#ui-arrow-left"></use>
                         </svg>
                     </button>
                     <h2>Настройки</h2>
@@ -1598,9 +1593,8 @@
                                 {% if user.avatar_url %}
                                     <img id="inline-settings-avatar-img" src="{{ user.avatar_url }}" alt="Avatar">
                                 {% else %}
-                                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                        <circle cx="12" cy="8" r="5"></circle>
-                                        <path d="M20 21a8 8 0 1 0-16 0"></path>
+                                    <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" style="--icon-size:32px; --icon-stroke:1.8;">
+                                        <use href="#ui-user-circle"></use>
                                     </svg>
                                 {% endif %}
                             </div>
@@ -2534,27 +2528,37 @@
     <nav class="telegram-mobile-nav" id="telegram-mobile-nav">
         <div class="telegram-nav-container">
             <button class="telegram-nav-item active" data-nav="chats" onclick="switchMobileNav('chats', this)">
-                <span class="material-icons-round">forum</span>
+                <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" style="--icon-size:24px; --icon-stroke:1.6;">
+                    <use href="#ui-chat"></use>
+                </svg>
                 <span>Чаты</span>
             </button>
 
             <button class="telegram-nav-item" data-nav="archive" onclick="switchMobileNav('archive', this)">
-                <span class="material-icons-round">inventory_2</span>
+                <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" style="--icon-size:24px; --icon-stroke:1.6;">
+                    <use href="#ui-archive"></use>
+                </svg>
                 <span>Архив</span>
             </button>
 
             <button class="telegram-nav-item" data-nav="search" onclick="switchMobileNav('search', this)">
-                <span class="material-icons-round">search</span>
+                <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" style="--icon-size:24px; --icon-stroke:1.6;">
+                    <use href="#ui-search"></use>
+                </svg>
                 <span>Поиск</span>
             </button>
-            
+
             <button class="telegram-nav-item" data-nav="create" onclick="switchMobileNav('create', this)">
-                <span class="material-icons-round">add_circle</span>
+                <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" style="--icon-size:24px; --icon-stroke:1.6;">
+                    <use href="#ui-plus-circle"></use>
+                </svg>
                 <span>Создать</span>
             </button>
-            
+
             <button class="telegram-nav-item" data-nav="settings" onclick="switchMobileNav('settings', this)">
-                <span class="material-icons-round">settings</span>
+                <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" style="--icon-size:24px; --icon-stroke:1.6;">
+                    <use href="#ui-cog"></use>
+                </svg>
                 <span>Настройки</span>
             </button>
         </div>
