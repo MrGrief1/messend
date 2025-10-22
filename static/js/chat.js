@@ -36,6 +36,11 @@ const threadSearchClear = document.getElementById('thread-search-clear');
 const threadSearchEmptyState = document.getElementById('thread-search-empty');
 const chatViewContainer = document.getElementById('chat-view');
 const settingsViewContainer = document.getElementById('settings-view-inline');
+const filePreviewModal = document.getElementById('filePreviewModal');
+const filePreviewStage = document.getElementById('filePreviewStage');
+const filePreviewTitle = document.getElementById('filePreviewTitle');
+const filePreviewMeta = document.getElementById('filePreviewMeta');
+const filePreviewDownload = document.getElementById('filePreviewDownload');
 // Вызовы
 let localStream = null;
 let isMicEnabled = true;
@@ -68,10 +73,19 @@ let isCallModalOpen = false;
 let reactionTargetMessageId = null; // ID сообщения, на которое мы реагируем
 
 function handleCallButtonClick(event) {
-    const arrowZone = event.target.closest('.call-button-split');
+    const path = typeof event.composedPath === 'function' ? event.composedPath() : null;
+    let arrowZone = null;
+
+    if (path) {
+        arrowZone = path.find(el => el && el.classList && el.classList.contains('call-button-split')) || null;
+    }
+
+    if (!arrowZone && event.target && typeof event.target.closest === 'function') {
+        arrowZone = event.target.closest('.call-button-split');
+    }
 
     if (arrowZone) {
-        toggleCallDropdown(event);
+        toggleCallDropdown(event, true);
         return;
     }
 
@@ -232,6 +246,158 @@ function getFileIconDescriptor(filename, mime) {
         icon,
         className: `file-icon--${type}`
     };
+}
+
+function describeFileKind(mime = '', filename = '') {
+    const normalizedMime = (mime || '').toLowerCase();
+    if (normalizedMime.startsWith('image/')) return 'Изображение';
+    if (normalizedMime.startsWith('video/')) return 'Видео';
+    if (normalizedMime.startsWith('audio/')) return 'Аудио';
+    if (normalizedMime.includes('pdf')) return 'PDF документ';
+    if (normalizedMime.includes('zip') || normalizedMime.includes('rar') || normalizedMime.includes('compressed')) return 'Архив';
+    if (normalizedMime.includes('spreadsheet') || normalizedMime.includes('excel')) return 'Электронная таблица';
+    if (normalizedMime.includes('presentation') || normalizedMime.includes('powerpoint')) return 'Презентация';
+    if (normalizedMime.includes('word') || normalizedMime.includes('rtf')) return 'Документ';
+    if (normalizedMime.includes('text')) return 'Текстовый файл';
+    if (normalizedMime.includes('json')) return 'JSON файл';
+
+    const lowerName = (filename || '').toLowerCase();
+    const extMatch = lowerName.match(/\.([a-z0-9]+)$/);
+    if (extMatch && extMatch[1]) {
+        return `${extMatch[1].toUpperCase()} файл`;
+    }
+
+    return 'Файл';
+}
+
+function buildFilePreviewFallback(descriptor, message) {
+    const fallback = document.createElement('div');
+    fallback.className = 'file-preview-fallback';
+
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('class', 'ui-icon');
+    svg.setAttribute('viewBox', '0 0 24 24');
+    svg.setAttribute('aria-hidden', 'true');
+
+    const use = document.createElementNS('http://www.w3.org/2000/svg', 'use');
+    use.setAttribute('href', descriptor.icon);
+    use.setAttributeNS('http://www.w3.org/1999/xlink', 'xlink:href', descriptor.icon);
+    svg.appendChild(use);
+
+    const text = document.createElement('span');
+    text.textContent = message;
+
+    fallback.appendChild(svg);
+    fallback.appendChild(text);
+
+    return fallback;
+}
+
+function createFilePreviewElement(item, mime, displayName) {
+    const normalizedMime = (mime || '').toLowerCase();
+
+    if (normalizedMime.startsWith('image/') || item.type === 'image') {
+        const img = document.createElement('img');
+        img.src = item.url;
+        img.alt = displayName || 'Изображение';
+        img.loading = 'lazy';
+        return img;
+    }
+
+    if (normalizedMime.startsWith('video/') || item.type === 'video') {
+        const video = document.createElement('video');
+        video.src = item.url;
+        video.controls = true;
+        video.playsInline = true;
+        video.preload = 'metadata';
+        video.controlsList = 'nodownload';
+        return video;
+    }
+
+    if (normalizedMime.startsWith('audio/') || item.type === 'audio') {
+        const audio = document.createElement('audio');
+        audio.src = item.url;
+        audio.controls = true;
+        audio.preload = 'metadata';
+        return audio;
+    }
+
+    if (normalizedMime.includes('pdf') || (item.url && item.url.toLowerCase().endsWith('.pdf'))) {
+        const frame = document.createElement('iframe');
+        frame.src = item.url;
+        frame.title = displayName || 'PDF документ';
+        frame.loading = 'lazy';
+        return frame;
+    }
+
+    return null;
+}
+
+function openFilePreviewModal(item) {
+    if (!item || !item.url) {
+        return;
+    }
+
+    if (!filePreviewModal || !filePreviewStage || !filePreviewTitle || !filePreviewMeta || !filePreviewDownload) {
+        window.open(item.url, '_blank');
+        return;
+    }
+
+    while (filePreviewStage.firstChild) {
+        filePreviewStage.removeChild(filePreviewStage.firstChild);
+    }
+    filePreviewMeta.innerHTML = '';
+
+    const mime = (item.mime_type || item.type || '').toLowerCase();
+    const displayName = item.name || (item.url ? item.url.split('/').pop() : 'Файл');
+    filePreviewTitle.textContent = displayName;
+
+    const descriptor = getFileIconDescriptor(displayName, mime);
+    const previewElement = createFilePreviewElement(item, mime, displayName);
+
+    if (previewElement) {
+        const onError = () => {
+            filePreviewStage.innerHTML = '';
+            filePreviewStage.appendChild(buildFilePreviewFallback(descriptor, 'Предпросмотр недоступен. Нажмите «Скачать», чтобы открыть файл.'));
+        };
+
+        const tagName = previewElement.tagName;
+        if (tagName === 'IMG' || tagName === 'VIDEO' || tagName === 'AUDIO' || tagName === 'IFRAME') {
+            previewElement.addEventListener('error', onError, { once: true });
+        }
+
+        filePreviewStage.appendChild(previewElement);
+    } else {
+        filePreviewStage.appendChild(buildFilePreviewFallback(descriptor, 'Предпросмотр недоступен. Нажмите «Скачать», чтобы открыть файл.'));
+    }
+
+    if (filePreviewDownload) {
+        filePreviewDownload.href = item.url;
+        if (displayName) {
+            filePreviewDownload.setAttribute('download', displayName);
+            filePreviewDownload.setAttribute('aria-label', `Скачать файл ${displayName}`);
+        } else {
+            filePreviewDownload.removeAttribute('download');
+            filePreviewDownload.setAttribute('aria-label', 'Скачать файл');
+        }
+        filePreviewDownload.setAttribute('rel', 'noopener noreferrer');
+    }
+
+    const nameEl = document.createElement('strong');
+    nameEl.textContent = displayName;
+    filePreviewMeta.appendChild(nameEl);
+
+    const typeEl = document.createElement('span');
+    typeEl.textContent = describeFileKind(mime, displayName);
+    filePreviewMeta.appendChild(typeEl);
+
+    if (typeof item.size === 'number' && !Number.isNaN(item.size)) {
+        const sizeEl = document.createElement('span');
+        sizeEl.textContent = formatFileSize(item.size);
+        filePreviewMeta.appendChild(sizeEl);
+    }
+
+    openModal('filePreviewModal');
 }
 
 const pollUserSelections = new Map();
@@ -2565,14 +2731,11 @@ function displayMessage(data) {
             attachmentsContainer.className = 'message-attachments';
 
             fileItems.forEach(item => {
-                const attachmentLink = document.createElement('a');
-                attachmentLink.href = item.url;
-                attachmentLink.target = '_blank';
-                attachmentLink.rel = 'noopener noreferrer';
-                attachmentLink.className = 'message-attachment';
-                if (item.name) {
-                    attachmentLink.download = item.name;
-                }
+                const attachmentButton = document.createElement('button');
+                attachmentButton.type = 'button';
+                attachmentButton.className = 'message-attachment';
+                attachmentButton.title = 'Предпросмотр файла';
+                attachmentButton.addEventListener('click', () => openFilePreviewModal(item));
 
                 const iconWrapper = document.createElement('span');
                 const descriptor = getFileIconDescriptor(item.name, item.mime_type || item.type);
@@ -2587,7 +2750,9 @@ function displayMessage(data) {
 
                 const nameEl = document.createElement('span');
                 nameEl.className = 'message-attachment-name';
-                nameEl.textContent = item.name || item.url.split('/').pop();
+                const displayName = item.name || item.url.split('/').pop();
+                nameEl.textContent = displayName;
+                attachmentButton.setAttribute('aria-label', `Открыть «${displayName}»`);
 
                 infoWrapper.appendChild(nameEl);
 
@@ -2598,9 +2763,9 @@ function displayMessage(data) {
                     infoWrapper.appendChild(sizeEl);
                 }
 
-                attachmentLink.appendChild(iconWrapper);
-                attachmentLink.appendChild(infoWrapper);
-                attachmentsContainer.appendChild(attachmentLink);
+                attachmentButton.appendChild(iconWrapper);
+                attachmentButton.appendChild(infoWrapper);
+                attachmentsContainer.appendChild(attachmentButton);
             });
 
             messageElement.appendChild(attachmentsContainer);
