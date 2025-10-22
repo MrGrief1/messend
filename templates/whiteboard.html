@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Белая доска — {{ display_name }}</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@excalidraw/excalidraw@0.17.6/dist/excalidraw.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            color-scheme: light dark;
+        }
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #0f172a;
+            color: #f8fafc;
+            min-height: 100vh;
+            display: flex;
+        }
+        body[data-theme="light"] {
+            background: #f8fafc;
+            color: #0f172a;
+        }
+        .whiteboard-shell {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            min-height: 100vh;
+        }
+        header.whiteboard-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            padding: 0.85rem 1.2rem;
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(18px);
+            border-bottom: 1px solid rgba(148, 163, 184, 0.25);
+        }
+        body[data-theme="light"] header.whiteboard-header {
+            background: rgba(255, 255, 255, 0.85);
+            border-color: rgba(71, 85, 105, 0.18);
+        }
+        .header-left,
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            min-width: 0;
+        }
+        .room-title {
+            font-size: 1rem;
+            font-weight: 600;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .status-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            padding: 0.35rem 0.65rem;
+            border-radius: 999px;
+            font-size: 0.78rem;
+            font-weight: 500;
+            background: rgba(34, 197, 94, 0.18);
+            color: #4ade80;
+            transition: background 0.3s ease, color 0.3s ease;
+        }
+        .status-pill.offline {
+            background: rgba(248, 113, 113, 0.18);
+            color: #f87171;
+        }
+        .status-dot {
+            width: 0.6rem;
+            height: 0.6rem;
+            border-radius: 50%;
+            background: currentColor;
+            box-shadow: 0 0 12px currentColor;
+        }
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        button.icon-btn,
+        button.primary-btn,
+        button.ghost-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.4rem;
+            border: none;
+            border-radius: 0.75rem;
+            padding: 0.5rem 0.9rem;
+            font-size: 0.85rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+            background: rgba(148, 163, 184, 0.16);
+            color: inherit;
+        }
+        button.icon-btn svg,
+        button.primary-btn svg,
+        button.ghost-btn svg {
+            width: 1rem;
+            height: 1rem;
+        }
+        button.icon-btn:hover,
+        button.primary-btn:hover,
+        button.ghost-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 18px rgba(15, 23, 42, 0.25);
+        }
+        button.primary-btn {
+            background: linear-gradient(135deg, #0ea5e9, #6366f1);
+            color: #fff;
+        }
+        button.primary-btn:hover {
+            box-shadow: 0 8px 25px rgba(14, 165, 233, 0.45);
+        }
+        button.ghost-btn {
+            background: transparent;
+            border: 1px solid rgba(148, 163, 184, 0.3);
+        }
+        main.whiteboard-canvas {
+            flex: 1;
+            position: relative;
+            min-height: 0;
+        }
+        #excalidraw-root {
+            position: absolute;
+            inset: 0;
+        }
+        .participants-list {
+            display: flex;
+            align-items: center;
+            gap: 0.35rem;
+            flex-wrap: wrap;
+            max-width: 320px;
+        }
+        .participant-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            object-fit: cover;
+            background: rgba(148, 163, 184, 0.35);
+            border: 1px solid rgba(148, 163, 184, 0.3);
+        }
+        .participant-placeholder {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: rgba(148, 163, 184, 0.25);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        .participants-list span.more {
+            font-size: 0.8rem;
+            opacity: 0.7;
+        }
+        @media (max-width: 768px) {
+            header.whiteboard-header {
+                flex-wrap: wrap;
+                gap: 0.75rem;
+                padding: 0.75rem 0.9rem;
+            }
+            .room-title {
+                font-size: 0.95rem;
+            }
+            .header-left {
+                width: 100%;
+                justify-content: space-between;
+            }
+            .header-right {
+                width: 100%;
+                flex-wrap: wrap;
+                justify-content: space-between;
+            }
+            .participants-list {
+                order: 3;
+                width: 100%;
+                padding-top: 0.4rem;
+            }
+            button.icon-btn,
+            button.primary-btn,
+            button.ghost-btn {
+                flex: 1;
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="whiteboard-shell">
+    <header class="whiteboard-header">
+        <div class="header-left">
+            <a class="icon-btn" href="{{ url_for('index') }}" title="Вернуться в чат">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="15 18 9 12 15 6"></polyline>
+                </svg>
+            </a>
+            <div class="room-title" title="{{ display_name }}">{{ display_name }}</div>
+            <div class="status-pill" id="connectionStatus">
+                <span class="status-dot"></span>
+                <span class="status-label">Подключаемся…</span>
+            </div>
+        </div>
+        <div class="header-right">
+            <div class="participants-list" id="participantsList"></div>
+            <button class="ghost-btn" id="copyLinkBtn" title="Скопировать ссылку">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                </svg>
+                Поделиться
+            </button>
+            <button class="icon-btn" id="toggleThemeBtn" title="Переключить тему">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                </svg>
+            </button>
+            <button class="primary-btn" id="resetBoardBtn" title="Очистить доску">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M3 6h18"></path>
+                    <path d="M6 6v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V6"></path>
+                    <path d="M9 6V4a3 3 0 0 1 6 0v2"></path>
+                </svg>
+                Очистить
+            </button>
+        </div>
+    </header>
+    <main class="whiteboard-canvas">
+        <div id="excalidraw-root"></div>
+    </main>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.5/socket.io.min.js"></script>
+<script>
+    window.WHITEBOARD_BOOTSTRAP = {
+        boardId: {{ board_id|tojson }},
+        roomId: {{ room.id }},
+        roomType: {{ room.type|tojson }},
+        roomName: {{ display_name|tojson }},
+        shareUrl: {{ share_url|tojson }},
+        user: {
+            id: {{ user.id }},
+            username: {{ user.username|tojson }},
+            avatar_url: {{ user.avatar_url|tojson }}
+        }
+    };
+</script>
+<script type="module">
+    import React from "https://esm.sh/react@18.2.0?dev";
+    import ReactDOM from "https://esm.sh/react-dom@18.2.0/client?dev";
+    import { Excalidraw } from "https://esm.sh/@excalidraw/excalidraw@0.17.6?bundle";
+
+    const { useCallback, useEffect, useMemo, useRef, useState } = React;
+    const bootstrap = window.WHITEBOARD_BOOTSTRAP;
+
+    const socket = io({ transports: ['polling'], upgrade: false });
+
+    const useIsomorphicLayoutEffect = typeof window !== 'undefined' ? React.useLayoutEffect : React.useEffect;
+
+    function WhiteboardApp() {
+        const excalidrawRef = useRef(null);
+        const lastSyncedVersion = useRef(0);
+        const throttledTimer = useRef(null);
+        const lastSceneElements = useRef([]);
+        const isApplyingRemote = useRef(false);
+        const [connectionStatus, setConnectionStatus] = useState('connecting');
+        const [participants, setParticipants] = useState([]);
+
+        const handlePresenceUpdate = useCallback((payload) => {
+            if (!payload || payload.board_id !== bootstrap.boardId) return;
+            setParticipants(payload.participants || []);
+        }, []);
+
+        const updateStatus = useCallback((status) => {
+            setConnectionStatus(status);
+            const pill = document.getElementById('connectionStatus');
+            if (!pill) return;
+            pill.classList.toggle('offline', status !== 'online');
+            const label = status === 'online' ? 'Подключено' : (status === 'connecting' ? 'Подключаемся…' : 'Отключено');
+            const labelNode = pill.querySelector('.status-label');
+            if (labelNode) {
+                labelNode.textContent = label;
+            }
+        }, []);
+
+        useEffect(() => {
+            updateStatus('connecting');
+
+            socket.on('connect', () => {
+                updateStatus('online');
+                socket.emit('whiteboard_join', {
+                    board_id: bootstrap.boardId,
+                    room_id: bootstrap.roomId,
+                });
+            });
+
+            socket.on('disconnect', () => {
+                updateStatus('offline');
+            });
+
+            socket.on('whiteboard_state', (state) => {
+                if (!state || !excalidrawRef.current) return;
+                lastSyncedVersion.current = state.version || 0;
+                lastSceneElements.current = state.elements || [];
+                excalidrawRef.current.updateScene({
+                    elements: state.elements || [],
+                    appState: {
+                        viewBackgroundColor: '#fff',
+                        ...state.appState,
+                    },
+                    files: state.files || {},
+                });
+            });
+
+            socket.on('whiteboard_update', (payload) => {
+                if (!payload || payload.board_id !== bootstrap.boardId) return;
+                if (!excalidrawRef.current) return;
+
+                if (payload.version && payload.version <= lastSyncedVersion.current) {
+                    return;
+                }
+
+                isApplyingRemote.current = true;
+                lastSyncedVersion.current = payload.version || 0;
+                lastSceneElements.current = payload.elements || [];
+
+                excalidrawRef.current.updateScene({
+                    elements: payload.elements || [],
+                    appState: {
+                        viewBackgroundColor: '#fff',
+                        ...payload.appState,
+                    },
+                    files: payload.files || {},
+                });
+
+                isApplyingRemote.current = false;
+            });
+
+            socket.on('whiteboard_reset', (payload) => {
+                if (!payload || payload.board_id !== bootstrap.boardId) return;
+                if (!excalidrawRef.current) return;
+                isApplyingRemote.current = true;
+                lastSyncedVersion.current = (payload.version || 0);
+                lastSceneElements.current = [];
+                excalidrawRef.current.updateScene({
+                    elements: [],
+                    appState: {
+                        viewBackgroundColor: '#fff',
+                        ...(payload.appState || {}),
+                    },
+                    files: {},
+                });
+                isApplyingRemote.current = false;
+            });
+
+            socket.on('whiteboard_presence', handlePresenceUpdate);
+
+            return () => {
+                if (socket.connected) {
+                    socket.emit('whiteboard_leave');
+                }
+                socket.off('whiteboard_state');
+                socket.off('whiteboard_update');
+                socket.off('whiteboard_reset');
+                socket.off('whiteboard_presence', handlePresenceUpdate);
+                socket.disconnect();
+            };
+        }, [handlePresenceUpdate, updateStatus]);
+
+        const broadcastScene = useCallback((elements, appState, files) => {
+            if (!socket.connected) return;
+            const version = elements.reduce((acc, el) => Math.max(acc, el.version || 0), 0);
+            lastSyncedVersion.current = version;
+            lastSceneElements.current = elements;
+            socket.emit('whiteboard_update', {
+                board_id: bootstrap.boardId,
+                room_id: bootstrap.roomId,
+                elements,
+                appState: {
+                    viewBackgroundColor: appState?.viewBackgroundColor,
+                    currentItemStrokeColor: appState?.currentItemStrokeColor,
+                    currentItemBackgroundColor: appState?.currentItemBackgroundColor,
+                    currentItemFontFamily: appState?.currentItemFontFamily,
+                },
+                files,
+                version,
+            });
+        }, []);
+
+        const scheduleBroadcast = useCallback((elements, appState, files) => {
+            if (isApplyingRemote.current) return;
+            if (throttledTimer.current) {
+                clearTimeout(throttledTimer.current);
+            }
+            throttledTimer.current = setTimeout(() => {
+                broadcastScene(elements, appState, files);
+            }, 350);
+        }, [broadcastScene]);
+
+        useEffect(() => {
+            return () => {
+                if (throttledTimer.current) {
+                    clearTimeout(throttledTimer.current);
+                }
+            };
+        }, []);
+
+        const onChange = useCallback((elements, appState, files) => {
+            lastSceneElements.current = elements;
+            scheduleBroadcast(elements, appState, files);
+        }, [scheduleBroadcast]);
+
+        useEffect(() => {
+            const copyBtn = document.getElementById('copyLinkBtn');
+            if (!copyBtn) return;
+            copyBtn.addEventListener('click', async () => {
+                try {
+                    await navigator.clipboard.writeText(bootstrap.shareUrl);
+                    copyBtn.classList.add('success');
+                    copyBtn.textContent = 'Ссылка скопирована';
+                    setTimeout(() => {
+                        copyBtn.classList.remove('success');
+                        copyBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>Поделиться`;
+                    }, 1500);
+                } catch (error) {
+                    copyBtn.textContent = 'Не удалось скопировать';
+                    setTimeout(() => {
+                        copyBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>Поделиться`;
+                    }, 2000);
+                }
+            });
+        }, []);
+
+        useEffect(() => {
+            const resetBtn = document.getElementById('resetBoardBtn');
+            if (!resetBtn) return;
+            resetBtn.addEventListener('click', () => {
+                if (!confirm('Очистить доску для всех участников?')) return;
+                const version = (lastSyncedVersion.current || 0) + 1;
+                socket.emit('whiteboard_reset', {
+                    board_id: bootstrap.boardId,
+                    room_id: bootstrap.roomId,
+                    version,
+                    appState: { viewBackgroundColor: '#ffffff' },
+                });
+                if (excalidrawRef.current) {
+                    excalidrawRef.current.updateScene({ elements: [] });
+                }
+            });
+        }, []);
+
+        useEffect(() => {
+            const btn = document.getElementById('toggleThemeBtn');
+            if (!btn) return;
+            const toggle = () => {
+                const current = document.body.dataset.theme === 'dark' ? 'light' : 'dark';
+                document.body.dataset.theme = current;
+            };
+            btn.addEventListener('click', toggle);
+            return () => btn.removeEventListener('click', toggle);
+        }, []);
+
+        useIsomorphicLayoutEffect(() => {
+            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            document.body.dataset.theme = prefersDark ? 'dark' : 'light';
+        }, []);
+
+        useEffect(() => {
+            const container = document.getElementById('participantsList');
+            if (!container) return;
+            container.innerHTML = '';
+            if (!participants.length) {
+                const placeholder = document.createElement('span');
+                placeholder.style.opacity = '0.6';
+                placeholder.style.fontSize = '0.8rem';
+                placeholder.textContent = 'Ожидаем участников…';
+                container.appendChild(placeholder);
+                return;
+            }
+            const visible = participants.slice(0, 4);
+            visible.forEach((participant) => {
+                if (participant.avatar_url) {
+                    const img = document.createElement('img');
+                    img.src = participant.avatar_url;
+                    img.alt = participant.username;
+                    img.className = 'participant-avatar';
+                    container.appendChild(img);
+                } else {
+                    const placeholder = document.createElement('div');
+                    placeholder.className = 'participant-placeholder';
+                    placeholder.textContent = (participant.username || '?').slice(0, 2);
+                    container.appendChild(placeholder);
+                }
+            });
+            if (participants.length > visible.length) {
+                const more = document.createElement('span');
+                more.className = 'more';
+                more.textContent = `+${participants.length - visible.length}`;
+                container.appendChild(more);
+            }
+        }, [participants]);
+
+        return React.createElement(
+            'div',
+            { className: 'excalidraw-wrapper' },
+            React.createElement(Excalidraw, {
+                ref: excalidrawRef,
+                onChange,
+                UIOptions: {
+                    canvasActions: {
+                        loadScene: false,
+                        export: true,
+                        changeViewBackgroundColor: true,
+                    },
+                },
+                initialData: {
+                    elements: lastSceneElements.current,
+                    scrollToContent: true,
+                },
+            })
+        );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById('excalidraw-root'));
+    root.render(React.createElement(WhiteboardApp));
+</script>
+</body>
+</html>

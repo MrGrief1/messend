@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, jsonify, redirect, url_for, session
+from flask import Flask, render_template, request, jsonify, redirect, url_for, session, abort
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_socketio import SocketIO, emit, join_room, leave_room
@@ -340,6 +340,9 @@ class PollVote(db.Model):
 # --- Вспомогательные функции ---
 ONLINE_USERS = set()
 SID_TO_USER = {}
+WHITEBOARD_STATES = {}
+WHITEBOARD_PARTICIPANTS = {}
+WHITEBOARD_SESSION_TO_BOARD = {}
 def notify_user_about_new_room(user, room):
     room_data = room.to_dict(user)
     socketio.emit('new_room', room_data, room=f"user_{user.id}")
@@ -459,7 +462,7 @@ def index():
         if user and user.is_verified:
             user_contacts_data = user.get_contacts_data()
             participant_entries = user.rooms.options(db.joinedload(RoomParticipant.room)).all()
-            
+
             # Разделяем на обычные и архивированные чаты
             active_rooms = []
             archived_rooms = []
@@ -469,11 +472,41 @@ def index():
                     archived_rooms.append(room_dict)
                 else:
                     active_rooms.append(room_dict)
-            
+
             sfu_url = os.environ.get('SFU_URL')
-            return render_template('index.html', user=user, contacts=user_contacts_data, 
+            return render_template('index.html', user=user, contacts=user_contacts_data,
                                  rooms=active_rooms, archived_rooms=archived_rooms, sfu_url=sfu_url)
     return redirect(url_for('auth'))
+
+
+@app.route('/whiteboard/<int:room_id>')
+def whiteboard(room_id: int):
+    if 'user_id' not in session:
+        return redirect(url_for('auth'))
+
+    current_user = db.session.get(User, session['user_id'])
+    if not current_user or not current_user.is_verified:
+        return redirect(url_for('auth'))
+
+    room = db.session.get(Room, room_id)
+    if not room:
+        abort(404)
+
+    participant = RoomParticipant.query.filter_by(user_id=current_user.id, room_id=room.id).first()
+    if not participant:
+        abort(403)
+
+    display_name, *_ = room.get_room_data_for_user(current_user)
+    board_id = f"room-{room.id}"
+
+    return render_template(
+        'whiteboard.html',
+        user=current_user,
+        room=room,
+        board_id=board_id,
+        display_name=display_name,
+        share_url=url_for('whiteboard', room_id=room.id, _external=True),
+    )
 # ... (Auth, Logout, Confirm, Register, Login API)
 @app.route('/auth')
 def auth():
@@ -1876,35 +1909,132 @@ def handle_system_message(data):
     
     return message_dict
 
-@socketio.on('whiteboard_draw')
-def handle_whiteboard_draw(data):
-    """Синхронизация рисования на доске между участниками"""
-    if 'user_id' not in session: return
-    
-    room_id = data.get('room_id')
-    if not room_id: return
-    
-    # Проверяем доступ к комнате
-    if not RoomParticipant.query.filter_by(user_id=session['user_id'], room_id=room_id).first():
-        return
-    
-    # Отправляем всем участникам кроме отправителя
-    emit('whiteboard_draw', data, room=str(room_id), include_self=False)
+def _broadcast_whiteboard_presence(board_id: str):
+    participants = list(WHITEBOARD_PARTICIPANTS.get(board_id, {}).values())
+    socketio.emit(
+        'whiteboard_presence',
+        {'board_id': board_id, 'participants': participants},
+        room=f'whiteboard:{board_id}'
+    )
 
-@socketio.on('whiteboard_clear')
-def handle_whiteboard_clear(data):
-    """Очистка доски для всех участников"""
-    if 'user_id' not in session: return
-    
+
+@socketio.on('whiteboard_join')
+def handle_whiteboard_join(data):
+    if 'user_id' not in session:
+        return
+
+    board_id = data.get('board_id')
     room_id = data.get('room_id')
-    if not room_id: return
-    
-    # Проверяем доступ к комнате
+    if not board_id or not room_id:
+        return
+
     if not RoomParticipant.query.filter_by(user_id=session['user_id'], room_id=room_id).first():
         return
-    
-    # Отправляем всем участникам кроме отправителя
-    emit('whiteboard_clear', {'room_id': room_id}, room=str(room_id), include_self=False)
+
+    join_room(f'whiteboard:{board_id}')
+    WHITEBOARD_SESSION_TO_BOARD[flask_request.sid] = board_id
+    participants = WHITEBOARD_PARTICIPANTS.setdefault(board_id, {})
+
+    user = db.session.get(User, session['user_id'])
+    participants[flask_request.sid] = {
+        'id': user.id,
+        'username': user.username,
+        'avatar_url': user.avatar_url,
+    }
+
+    state = WHITEBOARD_STATES.get(board_id)
+    emit(
+        'whiteboard_state',
+        state or {
+            'board_id': board_id,
+            'elements': [],
+            'appState': {},
+            'files': {},
+            'version': 0,
+        },
+        room=flask_request.sid
+    )
+
+    _broadcast_whiteboard_presence(board_id)
+
+
+@socketio.on('whiteboard_leave')
+def handle_whiteboard_leave():
+    board_id = WHITEBOARD_SESSION_TO_BOARD.pop(flask_request.sid, None)
+    if not board_id:
+        return
+
+    leave_room(f'whiteboard:{board_id}')
+    participants = WHITEBOARD_PARTICIPANTS.get(board_id)
+    if participants and flask_request.sid in participants:
+        participants.pop(flask_request.sid, None)
+        if not participants:
+            WHITEBOARD_PARTICIPANTS.pop(board_id, None)
+        _broadcast_whiteboard_presence(board_id)
+
+
+@socketio.on('whiteboard_update')
+def handle_whiteboard_update(data):
+    if 'user_id' not in session:
+        return
+
+    board_id = data.get('board_id')
+    room_id = data.get('room_id')
+    if not board_id or not room_id:
+        return
+
+    if not RoomParticipant.query.filter_by(user_id=session['user_id'], room_id=room_id).first():
+        return
+
+    elements = data.get('elements') or []
+    app_state = data.get('appState') or {}
+    files = data.get('files') or {}
+    version = data.get('version', 0)
+
+    payload = {
+        'board_id': board_id,
+        'elements': elements,
+        'appState': app_state,
+        'files': files,
+        'version': version,
+        'updated_at': datetime.utcnow().isoformat() + 'Z',
+        'sender_id': session['user_id'],
+    }
+
+    WHITEBOARD_STATES[board_id] = payload
+    emit('whiteboard_update', payload, room=f'whiteboard:{board_id}', include_self=False)
+
+
+@socketio.on('whiteboard_reset')
+def handle_whiteboard_reset(data):
+    if 'user_id' not in session:
+        return
+
+    board_id = data.get('board_id')
+    room_id = data.get('room_id')
+    if not board_id or not room_id:
+        return
+
+    if not RoomParticipant.query.filter_by(user_id=session['user_id'], room_id=room_id).first():
+        return
+
+    WHITEBOARD_STATES[board_id] = {
+        'board_id': board_id,
+        'elements': [],
+        'appState': data.get('appState') or {},
+        'files': {},
+        'version': data.get('version', 0),
+        'updated_at': datetime.utcnow().isoformat() + 'Z',
+        'sender_id': session['user_id'],
+    }
+
+    reset_payload = {
+        'board_id': board_id,
+        'version': data.get('version', 0),
+        'appState': data.get('appState') or {},
+    }
+
+    emit('whiteboard_reset', reset_payload, room=f'whiteboard:{board_id}', include_self=False)
 
 @socketio.on('document_update')
 def handle_document_update(data):
@@ -1973,6 +2103,15 @@ def handle_update_call_card(data):
 @socketio.on('disconnect')
 def on_disconnect():
     sid = flask_request.sid
+    board_id = WHITEBOARD_SESSION_TO_BOARD.pop(sid, None)
+    if board_id:
+        participants = WHITEBOARD_PARTICIPANTS.get(board_id)
+        if participants and sid in participants:
+            participants.pop(sid, None)
+            if not participants:
+                WHITEBOARD_PARTICIPANTS.pop(board_id, None)
+            _broadcast_whiteboard_presence(board_id)
+
     user_id = SID_TO_USER.pop(sid, None)
     if user_id and user_id in ONLINE_USERS:
         ONLINE_USERS.discard(user_id)
