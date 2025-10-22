@@ -1361,7 +1361,7 @@
                                     </svg>
                                     <span class="call-button-text">Позвонить</span>
                                 </span>
-                                <span class="call-button-split" aria-hidden="true">
+                                <span class="call-button-split">
                                     <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
                                         <use href="#ui-chevron-down"></use>
                                     </svg>
@@ -2576,6 +2576,34 @@
         </div>
     </div>
 
+
+    <!-- Модальное окно предпросмотра файла -->
+    <div id="filePreviewModal" class="modal-overlay file-preview-modal" onclick="closeModal(event)" style="display:none;">
+        <div class="modal-content glass">
+            <div class="file-preview-header">
+                <h3 class="file-preview-title" id="file-preview-title">Предпросмотр файла</h3>
+                <button class="close-btn file-preview-close" onclick="closeModal(event)" title="Закрыть">&times;</button>
+            </div>
+            <div class="file-preview-body">
+                <div class="file-preview-visual" id="file-preview-visual"></div>
+                <div class="file-preview-meta">
+                    <div class="file-preview-name" id="file-preview-name"></div>
+                    <div class="file-preview-details">
+                        <span id="file-preview-type"></span>
+                        <span id="file-preview-size"></span>
+                    </div>
+                </div>
+                <div class="file-preview-actions">
+                    <a id="file-preview-download" class="primary-btn" href="#" download>
+                        <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
+                            <use href="#ui-download"></use>
+                        </svg>
+                        Скачать
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- Telegram-style мобильная навигация -->
     <nav class="telegram-mobile-nav" id="telegram-mobile-nav">

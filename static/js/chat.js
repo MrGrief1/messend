@@ -15,6 +15,15 @@ const roomList = document.getElementById('room-list');
 const callButton = document.getElementById('call-button');
 const sendButton = document.getElementById('send-button');
 const messageField = document.getElementById('message-field');
+const callButtonSplit = document.querySelector('#call-button .call-button-split');
+const filePreviewModal = document.getElementById('filePreviewModal');
+const filePreviewVisual = document.getElementById('file-preview-visual');
+const filePreviewName = document.getElementById('file-preview-name');
+const filePreviewType = document.getElementById('file-preview-type');
+const filePreviewSize = document.getElementById('file-preview-size');
+const filePreviewDownload = document.getElementById('file-preview-download');
+const filePreviewTitle = document.getElementById('file-preview-title');
+let filePreviewKeyHandler = null;
 // Доп. элементы заголовка чата
 const membersBtn = document.getElementById('room-members-btn');
 const roomSettingsBtn = document.getElementById('room-settings-btn');
@@ -2600,6 +2609,22 @@ function displayMessage(data) {
 
                 attachmentLink.appendChild(iconWrapper);
                 attachmentLink.appendChild(infoWrapper);
+
+                attachmentLink.addEventListener('click', (event) => {
+                    if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
+                        return;
+                    }
+                    event.preventDefault();
+                    openAttachmentPreview(item);
+                });
+
+                attachmentLink.addEventListener('keydown', (event) => {
+                    if (event.key === ' ') {
+                        event.preventDefault();
+                        openAttachmentPreview(item);
+                    }
+                });
+
                 attachmentsContainer.appendChild(attachmentLink);
             });
 
@@ -2670,6 +2695,199 @@ function displayMessage(data) {
     }
 
     chatWindow.scrollTop = chatWindow.scrollHeight;
+}
+
+function openAttachmentPreview(item) {
+    if (!item || !item.url) {
+        return;
+    }
+
+    if (!filePreviewModal || !filePreviewVisual || !filePreviewDownload) {
+        window.open(item.url, '_blank');
+        return;
+    }
+
+    const previewElement = createFilePreviewElement(item) ||
+        createFilePreviewPlaceholder('Предпросмотр недоступен. Скачайте файл, чтобы открыть его.');
+
+    filePreviewVisual.innerHTML = '';
+    filePreviewVisual.appendChild(previewElement);
+
+    const displayName = resolveFileDisplayName(item);
+    if (filePreviewTitle) {
+        filePreviewTitle.textContent = 'Предпросмотр файла';
+    }
+    if (filePreviewName) {
+        filePreviewName.textContent = displayName;
+    }
+
+    const typeLabel = describeFileType(item);
+    if (filePreviewType) {
+        filePreviewType.textContent = typeLabel;
+        filePreviewType.style.display = typeLabel ? 'inline' : 'none';
+    }
+
+    let sizeLabel = '';
+    if (typeof item.size === 'number' && !Number.isNaN(item.size)) {
+        sizeLabel = `Размер: ${formatFileSize(item.size)}`;
+    }
+    if (filePreviewSize) {
+        filePreviewSize.textContent = sizeLabel;
+        filePreviewSize.style.display = sizeLabel ? 'inline' : 'none';
+    }
+
+    filePreviewDownload.href = item.url;
+    if (item.name) {
+        filePreviewDownload.download = item.name;
+    } else {
+        filePreviewDownload.removeAttribute('download');
+    }
+
+    openModal('filePreviewModal');
+
+    if (filePreviewKeyHandler) {
+        document.removeEventListener('keydown', filePreviewKeyHandler, true);
+    }
+    filePreviewKeyHandler = (event) => {
+        if (event.key === 'Escape') {
+            closeFilePreviewModal();
+        }
+    };
+    document.addEventListener('keydown', filePreviewKeyHandler, true);
+}
+
+function closeFilePreviewModal() {
+    cleanupFilePreviewModal();
+    if (filePreviewModal) {
+        closeModal({ target: filePreviewModal, forceClose: true });
+    }
+}
+
+function cleanupFilePreviewModal() {
+    if (filePreviewKeyHandler) {
+        document.removeEventListener('keydown', filePreviewKeyHandler, true);
+        filePreviewKeyHandler = null;
+    }
+
+    if (filePreviewModal) {
+        filePreviewModal.removeAttribute('data-open');
+    }
+
+    if (filePreviewVisual) {
+        filePreviewVisual.innerHTML = '';
+    }
+}
+
+function createFilePreviewElement(item) {
+    const url = item.url;
+    if (!url) return null;
+
+    const extension = getFileExtension(item);
+    const mime = (item.mime_type || item.type || '').toLowerCase();
+    const lowerExt = (extension || '').toLowerCase();
+
+    const imageExt = new Set(['png', 'jpg', 'jpeg', 'gif', 'bmp', 'webp', 'svg', 'heic', 'heif', 'avif']);
+    const videoExt = new Set(['mp4', 'mov', 'webm', 'mkv', 'avi', 'm4v']);
+    const audioExt = new Set(['mp3', 'wav', 'aac', 'ogg', 'flac', 'm4a', 'weba']);
+
+    if (item.type === 'image' || mime.startsWith('image/') || imageExt.has(lowerExt)) {
+        const img = document.createElement('img');
+        img.src = url;
+        img.alt = item.name || 'Изображение';
+        img.loading = 'lazy';
+        return img;
+    }
+
+    if (item.type === 'video' || mime.startsWith('video/') || videoExt.has(lowerExt)) {
+        const video = document.createElement('video');
+        video.src = url;
+        video.controls = true;
+        video.preload = 'metadata';
+        video.playsInline = true;
+        return video;
+    }
+
+    if (item.type === 'audio' || mime.startsWith('audio/') || audioExt.has(lowerExt)) {
+        const audio = document.createElement('audio');
+        audio.src = url;
+        audio.controls = true;
+        audio.preload = 'metadata';
+        return audio;
+    }
+
+    if (lowerExt === 'pdf' || mime === 'application/pdf') {
+        const iframe = document.createElement('iframe');
+        iframe.src = url;
+        iframe.loading = 'lazy';
+        iframe.title = item.name || 'PDF-файл';
+        return iframe;
+    }
+
+    return null;
+}
+
+function createFilePreviewPlaceholder(message) {
+    const placeholder = document.createElement('div');
+    placeholder.className = 'file-preview-placeholder';
+    placeholder.innerHTML = `
+        <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
+            <use href="#ui-document"></use>
+        </svg>`;
+    const text = document.createElement('span');
+    text.textContent = message;
+    placeholder.appendChild(text);
+    return placeholder;
+}
+
+function describeFileType(item) {
+    const parts = [];
+    const extension = getFileExtension(item);
+    if (extension) {
+        parts.push(extension.toUpperCase());
+    }
+    const mime = (item.mime_type || item.type || '').toLowerCase();
+    if (mime) {
+        parts.push(mime);
+    }
+    return parts.length ? `Тип: ${parts.join(' • ')}` : '';
+}
+
+function getFileExtension(item) {
+    const fromName = (item.name || '').split('?')[0];
+    if (fromName.includes('.')) {
+        const nameParts = fromName.split('.');
+        const ext = nameParts[nameParts.length - 1];
+        if (ext) return ext.toLowerCase();
+    }
+
+    const url = item.url || '';
+    const cleanUrl = url.split('?')[0].split('#')[0];
+    if (cleanUrl.includes('.')) {
+        const urlParts = cleanUrl.split('.');
+        const ext = urlParts[urlParts.length - 1];
+        if (ext) return ext.toLowerCase();
+    }
+
+    return '';
+}
+
+function resolveFileDisplayName(item) {
+    if (item.name) {
+        return item.name;
+    }
+
+    if (item.url) {
+        const path = item.url.split('?')[0].split('#')[0];
+        const segments = path.split('/');
+        const rawName = segments[segments.length - 1] || '';
+        try {
+            return decodeURIComponent(rawName) || 'Файл';
+        } catch {
+            return rawName || 'Файл';
+        }
+    }
+
+    return 'Файл';
 }
 
 // --- НОВОЕ: Функции Реакций и редактирования ---
@@ -7993,6 +8211,30 @@ let callStartTime = null; // Время начала звонка
 let callTimerInterval = null; // Интервал для таймера
 let callDropdownCloseHandler = null;
 let callDropdownKeyHandler = null;
+
+if (callButtonSplit) {
+    callButtonSplit.addEventListener('click', (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        toggleCallDropdown(event, true);
+    });
+
+    callButtonSplit.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            event.stopPropagation();
+            toggleCallDropdown(event, true);
+        }
+    });
+}
+
+if (filePreviewModal) {
+    filePreviewModal.addEventListener('click', (event) => {
+        if (event.target === filePreviewModal || event.target.closest('.close-btn')) {
+            cleanupFilePreviewModal();
+        }
+    });
+}
 
 function setCallDropdownVisibility(visible, focusFirstItem = false) {
     const menu = document.getElementById('call-dropdown-menu');
