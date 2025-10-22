@@ -590,9 +590,20 @@
             cursor: pointer;
             transition: all 0.2s ease;
             color: var(--text-color);
+            width: 100%;
+            border: none;
+            background: transparent;
+            font: inherit;
+            text-align: left;
+            border-radius: 0;
         }
-        
+
         .call-dropdown-item:hover {
+            background: var(--glass-bg-hover);
+        }
+
+        .call-dropdown-item:focus-visible {
+            outline: none;
             background: var(--glass-bg-hover);
         }
         
@@ -1342,31 +1353,33 @@
                     <h3 id="chat-with-name"></h3>
                     <div id="chat-header-actions">
                         <!-- Объединенная кнопка звонка со стрелкой -->
-                        <div class="call-button-wrapper" style="display: flex; align-items: center; gap: 0; position: relative;">
-                            <button class="call-button-header" id="call-button" onclick="startCall()" style="height: 38px; display: flex; align-items: center;">
-                                <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" style="--icon-size:18px; --icon-stroke:1.9;">
-                                    <use href="#ui-phone"></use>
-                                </svg>
-                                <span class="call-button-text">Позвонить</span>
+                        <div class="call-button-wrapper">
+                            <button class="call-button-combined" id="call-button" type="button" onclick="handleCallButtonClick(event)" aria-haspopup="menu" aria-controls="call-dropdown-menu" aria-expanded="false">
+                                <span class="call-button-main">
+                                    <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
+                                        <use href="#ui-phone"></use>
+                                    </svg>
+                                    <span class="call-button-text">Позвонить</span>
+                                </span>
+                                <span class="call-button-split" aria-hidden="true">
+                                    <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
+                                        <use href="#ui-chevron-down"></use>
+                                    </svg>
+                                </span>
                             </button>
-                            <button class="call-dropdown-btn" onclick="event.stopPropagation(); toggleCallDropdown(event);" title="Опции" style="height: 38px;">
-                                <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" style="--icon-size:18px; --icon-stroke:2.2;">
-                                    <use href="#ui-chevron-down"></use>
-                                </svg>
-                            </button>
-                            <div class="call-dropdown-menu" id="call-dropdown-menu">
-                                <div class="call-dropdown-item" onclick="startVideoCall()">
+                            <div class="call-dropdown-menu" id="call-dropdown-menu" role="menu" aria-hidden="true" aria-labelledby="call-button" hidden>
+                                <button type="button" class="call-dropdown-item" role="menuitem" onclick="startVideoCall()">
                                     <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
                                         <use href="#ui-video-camera"></use>
                                     </svg>
                                     <span>Видеозвонок</span>
-                                </div>
-                                <div class="call-dropdown-item" onclick="startAudioCall()">
+                                </button>
+                                <button type="button" class="call-dropdown-item" role="menuitem" onclick="startAudioCall()">
                                     <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
                                         <use href="#ui-mic"></use>
                                     </svg>
                                     <span>Аудиозвонок</span>
-                                </div>
+                                </button>
                             </div>
                         </div>
                         <button class="icon-btn" id="room-settings-btn" onclick="openContextSettings()" title="Настройки чата">
@@ -1668,7 +1681,12 @@
                     </div>
 
                     <div class="settings-section">
-                        <h3>🎨 Эффект стекла</h3>
+                        <h3 class="heading-with-icon">
+                            <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
+                                <use href="#ui-paint-brush"></use>
+                            </svg>
+                            <span>Эффект стекла</span>
+                        </h3>
                         <div class="setting-item-inline">
                             <label>Прозрачность: <span id="inline-opacityValue">0.15</span></label>
                             <input type="range" id="inline-glassOpacity" min="0.05" max="0.4" step="0.01" value="0.15" oninput="updateGlassEffectInline()">
@@ -1684,13 +1702,23 @@
                             <input type="range" id="inline-glassBorder" min="0.05" max="0.5" step="0.05" value="0.2" oninput="updateGlassEffectInline()">
                         </div>
                         
-                        <button onclick="resetGlassEffectInline()" style="background: var(--color-warning); margin-top: 12px;">🔄 Сбросить</button>
+                        <button class="button-with-icon" onclick="resetGlassEffectInline()" style="background: var(--color-warning); margin-top: 12px;">
+                            <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
+                                <use href="#ui-arrow-path"></use>
+                            </svg>
+                            <span>Сбросить</span>
+                        </button>
                     </div>
 
                     <div class="settings-section">
                         <h3>Звук вызова</h3>
                         <div class="setting-item-inline">
-                            <label for="inlineSettingsRingtone">🔔 Рингтон</label>
+                            <label for="inlineSettingsRingtone" class="input-label-with-icon">
+                                <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
+                                    <use href="#ui-bell"></use>
+                                </svg>
+                                <span>Рингтон</span>
+                            </label>
                             <select id="inlineSettingsRingtone" onchange="previewRingtone()">
                                 <option value="marimba">Marimba (iPhone)</option>
                                 <option value="ascending">Восходящая</option>
@@ -1698,7 +1726,12 @@
                                 <option value="gentle">Нежная</option>
                                 <option value="cheerful">Веселая</option>
                             </select>
-                            <button onclick="previewRingtone()" style="margin-top: 8px;">🎵 Прослушать</button>
+                            <button class="button-with-icon" onclick="previewRingtone()" style="margin-top: 8px;">
+                                <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
+                                    <use href="#ui-music-note"></use>
+                                </svg>
+                                <span>Прослушать</span>
+                            </button>
                         </div>
                     </div>
 
@@ -1986,7 +2019,12 @@
             </div>
 
             <div class="input-group">
-                <label for="settingsRingtone">🔔 Рингтон звонка</label>
+                <label for="settingsRingtone" class="input-label-with-icon">
+                    <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
+                        <use href="#ui-bell"></use>
+                    </svg>
+                    <span>Рингтон звонка</span>
+                </label>
                 <select id="settingsRingtone" onchange="previewRingtone()">
                     <option value="marimba">Marimba (iPhone)</option>
                     <option value="ascending">Восходящая</option>
@@ -1994,7 +2032,12 @@
                     <option value="gentle">Нежная</option>
                     <option value="cheerful">Веселая</option>
                 </select>
-                <button onclick="previewRingtone()" style="margin-top: 8px;">🎵 Прослушать</button>
+                <button class="button-with-icon" onclick="previewRingtone()" style="margin-top: 8px;">
+                    <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
+                        <use href="#ui-music-note"></use>
+                    </svg>
+                    <span>Прослушать</span>
+                </button>
             </div>
 
             <div class="input-group">
@@ -2004,7 +2047,12 @@
             </div>
             
             <hr>
-            <h3 style="font-size: 18px; margin-bottom: 16px;">🎨 Настройки эффекта стекла</h3>
+            <h3 class="heading-with-icon" style="font-size: 18px; margin-bottom: 16px;">
+                <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
+                    <use href="#ui-paint-brush"></use>
+                </svg>
+                <span>Настройки эффекта стекла</span>
+            </h3>
             
             <div class="input-group">
                 <label for="glassOpacity">Прозрачность стекла: <span id="opacityValue">0.15</span></label>
@@ -2021,7 +2069,12 @@
                 <input type="range" id="glassBorder" min="0.05" max="0.5" step="0.05" value="0.2" oninput="updateGlassEffect()">
             </div>
             
-            <button onclick="resetGlassEffect()" style="background: var(--color-warning); margin-top: 12px;">🔄 Сбросить по умолчанию</button>
+            <button class="button-with-icon" onclick="resetGlassEffect()" style="background: var(--color-warning); margin-top: 12px;">
+                <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
+                    <use href="#ui-arrow-path"></use>
+                </svg>
+                <span>Сбросить по умолчанию</span>
+            </button>
             
             <button onclick="saveSettings()">Сохранить</button>
             <div id="settingsMessage" class="modal-message"></div>

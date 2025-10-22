@@ -67,14 +67,26 @@ let isCallModalOpen = false;
 
 let reactionTargetMessageId = null; // ID сообщения, на которое мы реагируем
 
+function handleCallButtonClick(event) {
+    const arrowZone = event.target.closest('.call-button-split');
+
+    if (arrowZone) {
+        toggleCallDropdown(event);
+        return;
+    }
+
+    setCallDropdownVisibility(false);
+    startCall();
+}
+
 const reactionIconTemplates = {
-    '👍': `<svg class="reaction-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 11v8a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-6a2 2 0 0 1 2-2h3Z"></path><path d="M7 11V6.5A3.5 3.5 0 0 1 10.5 3h0a1 1 0 0 1 .95.68L12.5 7H18a2 2 0 0 1 1.94 2.5l-1.33 5.02A2 2 0 0 1 16.68 16H11"></path></svg>`,
-    '👎': `<svg class="reaction-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 13V5a2 2 0 0 1 2-2h1a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2h-3Z"></path><path d="M17 13v4.5A3.5 3.5 0 0 1 13.5 21h0a1 1 0 0 1-.95-.68L11.5 17H6a2 2 0 0 1-1.94-2.5l1.33-5.02A2 2 0 0 1 7.32 8H13"></path></svg>`,
-    '❤️': `<svg class="reaction-svg" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"><path d="M12 20.5c-4.4-3.6-6.5-5.8-6.5-9A3.5 3.5 0 0 1 9 8a3.6 3.6 0 0 1 3 1.6A3.6 3.6 0 0 1 15 8a3.5 3.5 0 0 1 3.5 3.5c0 3.2-2.1 5.4-6.5 9Z"></path></svg>`,
-    '😂': `<svg class="reaction-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"></circle><path d="M8.2 10.4c.4-.7 1-.7 1.4 0"></path><path d="M14.4 10.4c.4-.7 1-.7 1.4 0"></path><path d="M7.5 13.5c1.4 1.4 3 2.1 4.5 2.1s3.1-.7 4.5-2.1"></path><path d="M6 13.6c-.8.1-1.4.6-1.4 1.3 0 .6.5 1.1 1.6.9"></path><path d="M18 13.6c.8.1 1.4.6 1.4 1.3 0 .6-.5 1.1-1.6.9"></path></svg>`,
-    '😮': `<svg class="reaction-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"></circle><circle cx="9" cy="10" r="1.1" fill="currentColor" stroke="none"></circle><circle cx="15" cy="10" r="1.1" fill="currentColor" stroke="none"></circle><circle cx="12" cy="15" r="2.2"></circle></svg>`,
-    '😢': `<svg class="reaction-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"></circle><path d="M8.2 10.4c.4-.7 1-.7 1.4 0"></path><path d="M14.4 10.4c.4-.7 1-.7 1.4 0"></path><path d="M8.5 15c1 .8 2.2 1.2 3.5 1.2s2.5-.4 3.5-1.2"></path><path d="M16.1 14.8c.8.7 1.4 1.7 1.4 2.6 0 .9-.6 1.6-1.4 1.6-.7 0-1.2-.5-1.2-1.1 0-.9 1.2-2.1 1.2-2.1Z" fill="currentColor" stroke="none"></path></svg>`,
-    '🔥': `<svg class="reaction-svg" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21c-3.5-1.5-5-3.8-5-6.2 0-2.4 1.7-4 3-5.4 1.2-1.3 2.2-2.6 2.2-4.4 1.6 1.1 4.1 3.4 4.1 6.1 0 1.1-.4 2.1-1 3 1.6.8 2.7 2.2 2.7 3.8 0 1.9-1.3 3.4-3.5 4.4Z"></path></svg>`
+    '👍': `<svg class="reaction-svg" viewBox="0 0 24 24" aria-hidden="true"><use href="#ui-reaction-like"></use></svg>`,
+    '👎': `<svg class="reaction-svg" viewBox="0 0 24 24" aria-hidden="true"><use href="#ui-reaction-dislike"></use></svg>`,
+    '❤️': `<svg class="reaction-svg" viewBox="0 0 24 24" aria-hidden="true"><use href="#ui-reaction-heart"></use></svg>`,
+    '😂': `<svg class="reaction-svg" viewBox="0 0 24 24" aria-hidden="true"><use href="#ui-reaction-laugh"></use></svg>`,
+    '😮': `<svg class="reaction-svg" viewBox="0 0 24 24" aria-hidden="true"><use href="#ui-reaction-wow"></use></svg>`,
+    '😢': `<svg class="reaction-svg" viewBox="0 0 24 24" aria-hidden="true"><use href="#ui-reaction-sad"></use></svg>`,
+    '🔥': `<svg class="reaction-svg" viewBox="0 0 24 24" aria-hidden="true"><use href="#ui-reaction-fire"></use></svg>`
 };
 
 const reactionLabels = {
@@ -110,6 +122,118 @@ function getReactionLabel(emoji) {
     return reactionLabels[emoji] || '';
 }
 
+const FILE_ICON_TYPES = {
+    pdf: 'pdf',
+    doc: 'doc',
+    docx: 'doc',
+    docm: 'doc',
+    odt: 'doc',
+    pages: 'doc',
+    rtf: 'doc',
+    xls: 'sheet',
+    xlsx: 'sheet',
+    xlsm: 'sheet',
+    xlsb: 'sheet',
+    csv: 'sheet',
+    tsv: 'sheet',
+    ods: 'sheet',
+    numbers: 'sheet',
+    ppt: 'slides',
+    pptx: 'slides',
+    pptm: 'slides',
+    pps: 'slides',
+    ppsx: 'slides',
+    key: 'slides',
+    zip: 'archive',
+    rar: 'archive',
+    '7z': 'archive',
+    tar: 'archive',
+    gz: 'archive',
+    bz2: 'archive',
+    xz: 'archive',
+    tgz: 'archive',
+    jar: 'archive',
+    apk: 'archive',
+    iso: 'archive',
+    txt: 'text',
+    text: 'text',
+    log: 'text',
+    ini: 'text',
+    cfg: 'text',
+    conf: 'text',
+    md: 'text',
+    json: 'code',
+    js: 'code',
+    jsx: 'code',
+    ts: 'code',
+    tsx: 'code',
+    py: 'code',
+    go: 'code',
+    rs: 'code',
+    php: 'code',
+    rb: 'code',
+    java: 'code',
+    kt: 'code',
+    swift: 'code',
+    c: 'code',
+    cpp: 'code',
+    cxx: 'code',
+    h: 'code',
+    hpp: 'code',
+    sh: 'code',
+    bat: 'code',
+    ps1: 'code',
+    sql: 'code',
+    yaml: 'code',
+    yml: 'code',
+    xml: 'code',
+    html: 'code',
+    css: 'code'
+};
+
+const FILE_ICON_SYMBOLS = {
+    archive: '#ui-archive',
+    sheet: '#ui-file-sheet',
+    slides: '#ui-file-slides',
+    code: '#ui-file-code',
+    doc: '#ui-file-doc',
+    pdf: '#ui-file-doc',
+    text: '#ui-file-doc',
+    generic: '#ui-document'
+};
+
+function getFileTypeKey(filename = '', mime = '') {
+    const lowerName = filename.toLowerCase();
+    const extMatch = lowerName.match(/\.([a-z0-9]+)$/i);
+    if (extMatch) {
+        const ext = extMatch[1];
+        if (FILE_ICON_TYPES[ext]) {
+            return FILE_ICON_TYPES[ext];
+        }
+    }
+
+    if (mime) {
+        if (mime.includes('pdf')) return 'pdf';
+        if (mime.includes('word') || mime.includes('rtf')) return 'doc';
+        if (mime.includes('sheet') || mime.includes('excel') || mime.includes('spreadsheet')) return 'sheet';
+        if (mime.includes('presentation') || mime.includes('powerpoint')) return 'slides';
+        if (mime.includes('zip') || mime.includes('compressed')) return 'archive';
+        if (mime.startsWith('text/')) return 'text';
+        if (mime.includes('json') || mime.includes('javascript')) return 'code';
+    }
+
+    return 'generic';
+}
+
+function getFileIconDescriptor(filename, mime) {
+    const type = getFileTypeKey(filename, mime);
+    const icon = FILE_ICON_SYMBOLS[type] || '#ui-document';
+    return {
+        icon,
+        className: `file-icon--${type}`
+    };
+}
+
 const pollUserSelections = new Map();
 const pollSelectionPromises = new Map();
 const pollTipTimers = new Map();
@@ -132,6 +256,25 @@ if (messageInput) {
         if (currentRoomId) throttleTyping();
     });
     window.requestAnimationFrame(() => autoResizeComposer());
+}
+
+if (callButton) {
+    callButton.addEventListener('keydown', (event) => {
+        if (event.key === 'ArrowDown') {
+            const menu = document.getElementById('call-dropdown-menu');
+            if (menu && menu.classList.contains('show')) {
+                const firstItem = menu.querySelector('.call-dropdown-item');
+                if (firstItem) {
+                    event.preventDefault();
+                    firstItem.focus();
+                }
+                return;
+            }
+            toggleCallDropdown(event, true);
+        } else if (event.key === 'Escape') {
+            setCallDropdownVisibility(false);
+        }
+    });
 }
 
 function autoResizeThreadComposer() {
@@ -1301,92 +1444,92 @@ const stickerDefinitions = {
     smile: {
         label: 'Улыбка',
         color: '#F6B73C',
-        svg: `<svg class="sticker-icon" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M15.182 15.182a4.5 4.5 0 0 1-6.364 0"/><path d="M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/><path d="M9.75 9.75c0 .414-.168.75-.375.75S9 10.164 9 9.75 9.168 9 9.375 9s.375.336.375.75Zm5.625 0c0 .414-.168.75-.375.75s-.375-.336-.375-.75.168-.75.375-.75.375.336.375.75Z"/></svg>`
+        svg: `<svg class="sticker-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#ui-sticker-smile"></use></svg>`
     },
     sad: {
         label: 'Грусть',
         color: '#4C6EF5',
-        svg: `<svg class="sticker-icon" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M15.182 16.318A4.486 4.486 0 0 0 12.016 15a4.486 4.486 0 0 0-3.198 1.318"/><path d="M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/><path d="M9.75 9.75c0 .414-.168.75-.375.75S9 10.164 9 9.75 9.168 9 9.375 9s.375.336.375.75Zm5.625 0c0 .414-.168.75-.375.75s-.375-.336-.375-.75.168-.75.375-.75.375.336.375.75Z"/></svg>`
+        svg: `<svg class="sticker-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#ui-sticker-sad"></use></svg>`
     },
     sparkles: {
         label: 'Искры',
         color: '#F472B6',
-        svg: `<svg class="sticker-icon" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09Z"/><path d="M18.259 8.715 18 9.75l-.259-1.035a3.375 3.375 0 0 0-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 0 0 2.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 0 0 2.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 0 0-2.456 2.456Z"/><path d="M16.894 20.567 16.5 21.75l-.394-1.183a2.25 2.25 0 0 0-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 0 0 1.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 0 0 1.423 1.423l1.183.394-1.183.394a2.25 2.25 0 0 0-1.423 1.423Z"/></svg>`
+        svg: `<svg class="sticker-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#ui-sticker-sparkles"></use></svg>`
     },
     idea: {
         label: 'Идея',
         color: '#FACC15',
-        svg: `<svg class="sticker-icon" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M12 18v-5.25"/><path d="M10.5 12.75a6.01 6.01 0 0 0 3 0"/><path d="M15.75 18v-.192c0-.983.658-1.823 1.508-2.316a7.5 7.5 0 1 0-7.517 0c.85.493 1.509 1.333 1.509 2.316V18"/><path d="M11.25 21.728a14.406 14.406 0 0 0 3 0"/><path d="M12.75 19.289a12.06 12.06 0 0 0 4.5 0"/></svg>`
+        svg: `<svg class="sticker-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#ui-sticker-idea"></use></svg>`
     },
     wink: {
         label: 'Подмигивание',
         color: '#FB7185',
-        svg: `<svg class="sticker-icon" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Z"/><circle cx="9" cy="10" r="0.75" fill="currentColor" stroke="none"/><path d="M14.25 10.5h3"/><path d="M8.25 14.25s1.5 2.25 3.75 2.25 3.75-2.25 3.75-2.25"/></svg>`
+        svg: `<svg class="sticker-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#ui-sticker-wink"></use></svg>`
     },
     laugh: {
         label: 'Смех',
         color: '#F97316',
-        svg: `<svg class="sticker-icon" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Z"/><circle cx="9" cy="10.5" r="0.75" fill="currentColor" stroke="none"/><circle cx="15" cy="10.5" r="0.75" fill="currentColor" stroke="none"/><path d="M7.5 13.5c.9 2.1 2.7 3.75 4.5 3.75s3.6-1.65 4.5-3.75"/></svg>`
+        svg: `<svg class="sticker-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#ui-sticker-laugh"></use></svg>`
     },
     thumbsUp: {
         label: 'Лайк',
         color: '#34D399',
-        svg: `<svg class="sticker-icon" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M6.633 10.25c.806 0 1.533-.446 2.031-1.08a9.041 9.041 0 0 1 2.861-2.4c.723-.384 1.35-.956 1.653-1.715a4.498 4.498 0 0 0 .322-1.672V2.75a.75.75 0 0 1 .75-.75 2.25 2.25 0 0 1 2.25 2.25c0 1.152-.26 2.243-.723 3.218-.266.558.107 1.282.725 1.282"/><path d="M15.483 8.75h3.126c1.026 0 1.945.694 2.054 1.715.045.422.068.85.068 1.285a11.95 11.95 0 0 1-2.649 7.521c-.388.482-.987.729-1.605.729H13.48a4.5 4.5 0 0 1-1.423-.23l-3.114-1.04a4.501 4.501 0 0 0-1.423-.23H5.904"/><path d="M5.904 18.5a5.87 5.87 0 0 1-.253-.602"/><path d="M5.904 18.5H4.996a2.25 2.25 0 0 1-2.07-1.368 12 12 0 0 1-.521-3.507c0-1.553.295-3.036.831-4.398C3.387 9.953 4.167 9.5 5 9.5h1.053c.472 0 .745.556.5.96a8.958 8.958 0 0 0-1.302 4.665c0 1.194.232 2.333.654 3.375"/></svg>`
+        svg: `<svg class="sticker-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#ui-sticker-thumbsup"></use></svg>`
     },
     thumbsDown: {
         label: 'Дизлайк',
         color: '#F97316',
-        svg: `<svg class="sticker-icon" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M7.498 15.25H4.372c-1.026 0-1.945-.694-2.054-1.715a12.137 12.137 0 0 1-.068-1.285c0-2.848.992-5.464 2.649-7.521C5.287 4.247 5.886 4 6.504 4h4.016a4.5 4.5 0 0 1 1.423.23l3.114 1.04a4.5 4.5 0 0 0 1.423.23h1.294"/><path d="M7.498 15.25c.618 0 .991.724.725 1.282A7.471 7.471 0 0 0 7.5 19.75 2.25 2.25 0 0 0 9.75 22a.75.75 0 0 0 .75-.75v-.633c0-.573.11-1.14.322-1.672.304-.76.93-1.33 1.653-1.715a9.04 9.04 0 0 0 2.861-2.4c.498-.634 1.226-1.08 2.032-1.08h.384"/><path d="M5.904 18.5H4.996a2.25 2.25 0 0 1-2.07-1.368 12 12 0 0 1-.521-3.507c0-1.553.295-3.036.831-4.398C3.387 9.953 4.167 9.5 5 9.5h1.053c.472 0 .745.556.5.96a8.958 8.958 0 0 0-1.302 4.665c0 1.194.232 2.333.654 3.375"/><path d="M18.096 7.75c.01.05.027.1.05.148.593 1.2.925 2.55.925 3.977 0 1.487-.36 2.89-.999 4.125"/><path d="M18.072 7.75c-.076-.365.183-.75.575-.75h.908a2.25 2.25 0 0 1 2.07 1.368c.339 1.11.521 2.287.521 3.507 0 1.553-.295 3.036-.831 4.398-.306.774-1.086 1.227-1.918 1.227h-1.053c-.472 0-.745-.556-.5-.96.11-.194.214-.39.303-.54"/></svg>`
+        svg: `<svg class="sticker-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#ui-sticker-thumbsdown"></use></svg>`
     },
     wave: {
         label: 'Привет',
         color: '#60A5FA',
-        svg: `<svg class="sticker-icon" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M10.05 4.575a1.575 1.575 0 1 0-3.15 0v3"/><path d="M10.05 4.575v-1.5a1.575 1.575 0 0 1 3.15 0v1.5"/><path d="M10.125 10.5 10.2 4.575"/><path d="M13.2 11.25V4.575a1.575 1.575 0 0 1 3.15 0V15"/><path d="M6.9 7.575a1.575 1.575 0 1 0-3.15 0v8.175a6.75 6.75 0 0 0 6.75 6.75h2.018a5.25 5.25 0 0 0 3.712-1.538l1.732-1.732a5.25 5.25 0 0 0 1.538-3.712l.003-2.024a.668.668 0 0 1 .198-.471 1.575 1.575 0 1 0-2.228-2.228 3.818 3.818 0 0 0-1.12 2.687"/><path d="M6.9 7.575V12"/><path d="M13.17 16.068A4.49 4.49 0 0 1 16.35 15"/></svg>`
+        svg: `<svg class="sticker-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#ui-sticker-wave"></use></svg>`
     },
     heart: {
         label: 'Сердце',
         color: '#F43F5E',
-        svg: `<svg class="sticker-icon" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733C11.285 4.876 9.623 3.75 7.687 3.75 5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12Z"/></svg>`
+        svg: `<svg class="sticker-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#ui-sticker-heart"></use></svg>`
     },
     fire: {
         label: 'Огонь',
         color: '#FB923C',
-        svg: `<svg class="sticker-icon" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M15.362 5.214A8.252 8.252 0 0 1 12 21 8.25 8.25 0 0 1 6.038 7.047 8.287 8.287 0 0 0 9 9.601a8.983 8.983 0 0 1 3.361-6.867 8.21 8.21 0 0 0 3 2.48Z"/><path d="M12 18a3.75 3.75 0 0 0 .495-7.468 5.99 5.99 0 0 0-1.925 3.547 5.975 5.975 0 0 1-2.133-1.001A3.75 3.75 0 0 0 12 18Z"/></svg>`
+        svg: `<svg class="sticker-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#ui-sticker-fire"></use></svg>`
     },
     star: {
         label: 'Звезда',
         color: '#FCD34D',
-        svg: `<svg class="sticker-icon" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M11.48 3.499a.562.562 0 0 1 1.04 0l2.125 5.111a.563.563 0 0 0 .475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 0 0-.182.557l1.285 5.385a.562.562 0 0 1-.84.61l-4.725-2.885a.562.562 0 0 0-.586 0L6.982 20.54a.562.562 0 0 1-.84-.61l1.285-5.386a.562.562 0 0 0-.182-.557l-4.204-3.602a.562.562 0 0 1 .321-.988l5.518-.442a.563.563 0 0 0 .475-.345L11.48 3.5Z"/></svg>`
+        svg: `<svg class="sticker-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#ui-sticker-star"></use></svg>`
     },
     gift: {
         label: 'Подарок',
         color: '#A855F7',
-        svg: `<svg class="sticker-icon" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M20.625 11.505v8.25a1.5 1.5 0 0 1-1.5 1.5H4.875a1.5 1.5 0 0 1-1.5-1.5v-8.25"/><path d="M11.25 5.13A2.625 2.625 0 1 0 9 7.755h2.625"/><path d="M12 5.13v2.625"/><path d="M12 5.13a2.625 2.625 0 1 1 2.625 2.625H12"/><path d="M12 7.755v13.5"/><path d="M3 11.505h18c.621 0 1.125-.504 1.125-1.125v-1.5c0-.622-.504-1.125-1.125-1.125H3c-.621 0-1.125.503-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125Z"/></svg>`
+        svg: `<svg class="sticker-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#ui-sticker-gift"></use></svg>`
     },
     rocket: {
         label: 'Ракета',
         color: '#38BDF8',
-        svg: `<svg class="sticker-icon" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M15.59 14.37a6 6 0 0 1-5.84 7.38v-4.8"/><path d="M15.59 14.37a14.98 14.98 0 0 0 6.16-12.12A14.98 14.98 0 0 0 9.631 8.41"/><path d="M15.59 14.37a14.926 14.926 0 0 1-5.841 2.58"/><path d="M9.749 8.41a6 6 0 0 0-7.381 5.84h4.8"/><path d="M7.168 14.25a14.927 14.927 0 0 0-2.58 5.84"/><path d="M7.287 20.89a4.493 4.493 0 0 0-1.757 4.306 4.493 4.493 0 0 0 4.306-1.758"/><path d="M16.5 9a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0Z"/></svg>`
+        svg: `<svg class="sticker-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#ui-sticker-rocket"></use></svg>`
     },
     ok: {
         label: 'ОК',
         color: '#22C55E',
-        svg: `<svg class="sticker-icon" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Z"/><path d="m9.75 12.75 2.25 2.25 4.5-4.5"/></svg>`
+        svg: `<svg class="sticker-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#ui-sticker-ok"></use></svg>`
     },
     peace: {
         label: 'Мир',
         color: '#60A5FA',
-        svg: `<svg class="sticker-icon" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Z"/><path d="M12 6.75v10.5"/><path d="M7.5 9.75 12 12l4.5-2.25"/><path d="M7.5 14.25 12 12l4.5 2.25"/></svg>`
+        svg: `<svg class="sticker-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#ui-sticker-peace"></use></svg>`
     },
     sun: {
         label: 'Солнце',
         color: '#FBBF24',
-        svg: `<svg class="sticker-icon" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M12 18.75a6.75 6.75 0 1 0 0-13.5 6.75 6.75 0 0 0 0 13.5Z"/><path d="M12 1.5v2.25"/><path d="M12 20.25v2.25"/><path d="M4.219 4.219l1.591 1.591"/><path d="M18.19 18.192l1.591 1.591"/><path d="M1.5 12h2.25"/><path d="M20.25 12h2.25"/><path d="M4.219 19.781l1.591-1.591"/><path d="M18.19 5.808l1.591-1.591"/></svg>`
+        svg: `<svg class="sticker-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#ui-sticker-sun"></use></svg>`
     },
     moon: {
         label: 'Луна',
         color: '#A855F7',
-        svg: `<svg class="sticker-icon" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.75A9 9 0 1 1 11.25 3 7.5 7.5 0 0 0 21 12.75Z"/></svg>`
+        svg: `<svg class="sticker-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#ui-sticker-moon"></use></svg>`
     }
 };
 
@@ -1716,7 +1859,9 @@ function closeAllMenus(exceptId = null) {
             return;
         }
 
-        if (menu.classList.contains('call-dropdown-menu') || menu.classList.contains('device-menu')) {
+        if (menu.classList.contains('call-dropdown-menu')) {
+            setCallDropdownVisibility(false);
+        } else if (menu.classList.contains('device-menu')) {
             menu.classList.remove('show');
             menu.style.display = '';
         } else {
@@ -2053,10 +2198,13 @@ function displayFilePreview() {
         } else {
             const generic = document.createElement('div');
             generic.className = 'file-preview-generic';
+            const { className, icon } = getFileIconDescriptor(file.name, file.type);
             generic.innerHTML = `
-                <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
-                    <use href="#ui-document"></use>
-                </svg>
+                <span class="file-preview-icon ${className}">
+                    <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
+                        <use href="${icon}"></use>
+                    </svg>
+                </span>
                 <strong>${file.name}</strong>
                 <span>${formatFileSize(file.size)}</span>`;
             preview.appendChild(generic);
@@ -2427,14 +2575,11 @@ function displayMessage(data) {
                 }
 
                 const iconWrapper = document.createElement('span');
-                iconWrapper.className = 'message-attachment-icon';
+                const descriptor = getFileIconDescriptor(item.name, item.mime_type || item.type);
+                iconWrapper.className = `message-attachment-icon ${descriptor.className}`;
                 iconWrapper.innerHTML = `
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path>
-                        <polyline points="14 3 14 9 20 9"></polyline>
-                        <path d="M16 13H8"></path>
-                        <path d="M16 17H8"></path>
-                        <path d="M10 9H9"></path>
+                    <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
+                        <use href="${descriptor.icon}"></use>
                     </svg>`;
 
                 const infoWrapper = document.createElement('span');
@@ -3491,8 +3636,6 @@ async function openCall() {
 
 // Переиспользуем кнопку «Позвонить» - по умолчанию видеозвонок
 function startCall() {
-    console.log('startCall() вызвана. currentRoomType:', currentRoomType, 'currentRoomId:', currentRoomId);
-    
     // Проверяем что выбрана комната
     if (!currentRoomId) {
         alert('Выберите чат для звонка');
@@ -3508,8 +3651,7 @@ function startCall() {
     }
     
     isAudioOnly = false; // По умолчанию видео
-    console.log('Вызов openCall()');
-    openCall(); 
+    openCall();
 }
 
 // --- Вспомогательные элементы входящего звонка ---
@@ -7849,43 +7991,97 @@ let blockedUsers = new Set();
 let isAudioOnly = false; // Флаг: аудио-звонок (без видео) или видео-звонок
 let callStartTime = null; // Время начала звонка
 let callTimerInterval = null; // Интервал для таймера
+let callDropdownCloseHandler = null;
+let callDropdownKeyHandler = null;
 
-function toggleCallDropdown(event) {
-    event.stopPropagation();
-    event.preventDefault();
-    
+function setCallDropdownVisibility(visible, focusFirstItem = false) {
+    const menu = document.getElementById('call-dropdown-menu');
+    const button = document.getElementById('call-button');
+
+    if (!menu) {
+        console.error('call-dropdown-menu не найдено!');
+        return;
+    }
+
+    const wasVisible = menu.classList.contains('show');
+
+    if (!visible) {
+        menu.classList.remove('show');
+        menu.hidden = true;
+        menu.setAttribute('aria-hidden', 'true');
+        if (button) {
+            button.setAttribute('aria-expanded', 'false');
+        }
+        if (callDropdownCloseHandler) {
+            document.removeEventListener('click', callDropdownCloseHandler, true);
+            callDropdownCloseHandler = null;
+        }
+        if (callDropdownKeyHandler) {
+            document.removeEventListener('keydown', callDropdownKeyHandler, true);
+            callDropdownKeyHandler = null;
+        }
+        return;
+    }
+
+    menu.hidden = false;
+    menu.setAttribute('aria-hidden', 'false');
+    if (button) {
+        button.setAttribute('aria-expanded', 'true');
+    }
+
+    if (wasVisible) {
+        return;
+    }
+
+    menu.classList.add('show');
+
+    if (callDropdownCloseHandler) {
+        document.removeEventListener('click', callDropdownCloseHandler, true);
+    }
+    callDropdownCloseHandler = (event) => {
+        if (!event.target.closest('.call-button-wrapper')) {
+            setCallDropdownVisibility(false);
+        }
+    };
+    setTimeout(() => {
+        document.addEventListener('click', callDropdownCloseHandler, true);
+    }, 0);
+
+    if (callDropdownKeyHandler) {
+        document.removeEventListener('keydown', callDropdownKeyHandler, true);
+    }
+    callDropdownKeyHandler = (event) => {
+        if (event.key === 'Escape') {
+            setCallDropdownVisibility(false);
+            if (button) {
+                button.focus();
+            }
+        }
+    };
+    document.addEventListener('keydown', callDropdownKeyHandler, true);
+
+    if (focusFirstItem) {
+        const firstItem = menu.querySelector('.call-dropdown-item');
+        if (firstItem) {
+            requestAnimationFrame(() => firstItem.focus());
+        }
+    }
+}
+
+function toggleCallDropdown(event, focusFirstItem = false) {
+    if (event) {
+        event.preventDefault();
+        event.stopPropagation();
+    }
+
     const menu = document.getElementById('call-dropdown-menu');
     if (!menu) {
         console.error('call-dropdown-menu не найдено!');
         return;
     }
-    
-    const isVisible = menu.classList.contains('show');
-    console.log('toggleCallDropdown вызвана, isVisible:', isVisible);
-    
-    if (isVisible) {
-        // вместо мгновенного скрытия дадим возможность повторного открытия без конфликтов
-        menu.classList.remove('show');
-        // не выходим, чтобы переустановить обработчик внешнего клика корректно
-        menu.style.display = '';
-        return;
-    }
 
-    menu.classList.add('show');
-    menu.style.display = '';
-    
-    // Закрыть при клике вне меню
-    setTimeout(() => {
-        function closeDropdown(e) {
-            // если клик по самой кнопке-стрелке — игнорим (чтобы не закрывалось до toggle)
-            const inWrapper = e.target.closest('.call-button-wrapper');
-            if (!inWrapper) {
-                menu.classList.remove('show');
-                document.removeEventListener('click', closeDropdown);
-            }
-        }
-        document.addEventListener('click', closeDropdown, { capture: true, once: true });
-    }, 50);
+    const shouldOpen = !menu.classList.contains('show');
+    setCallDropdownVisibility(shouldOpen, focusFirstItem);
 }
 
 async function startVideoCall() {
@@ -7896,10 +8092,9 @@ async function startVideoCall() {
             return;
         }
     }
-    
-    // Закрываем меню
-    document.getElementById('call-dropdown-menu').classList.remove('show');
-    
+
+    setCallDropdownVisibility(false);
+
     isAudioOnly = false; // Видео звонок
     await openCall(); // Используем существующую функцию
 }
@@ -7913,9 +8108,8 @@ async function startAudioCall() {
         }
     }
     
-    // Закрываем меню
-    document.getElementById('call-dropdown-menu').classList.remove('show');
-    
+    setCallDropdownVisibility(false);
+
     isAudioOnly = true; // Аудио звонок (без видео)
     await openCall(); // Используем существующую функцию
 }
