@@ -15,6 +15,17 @@ const roomList = document.getElementById('room-list');
 const callButton = document.getElementById('call-button');
 const sendButton = document.getElementById('send-button');
 const messageField = document.getElementById('message-field');
+const filePreviewModal = document.getElementById('file-preview-modal');
+const fileLightboxPreview = document.getElementById('file-lightbox-preview');
+const fileLightboxTitle = document.getElementById('file-lightbox-title');
+const fileLightboxDetails = document.getElementById('file-lightbox-details');
+const fileLightboxDownload = document.getElementById('file-lightbox-download');
+const fileLightboxOpen = document.getElementById('file-lightbox-open');
+const fileLightboxRemove = document.getElementById('file-lightbox-remove');
+const fileLightboxCloseBtn = document.getElementById('file-lightbox-close');
+const fileLightboxCopyName = document.getElementById('file-lightbox-copy');
+const fileLightboxBackdrop = document.querySelector('[data-file-lightbox-close]');
+const fileLightboxCopyDefaultLabel = fileLightboxCopyName ? fileLightboxCopyName.textContent : '';
 // Доп. элементы заголовка чата
 const membersBtn = document.getElementById('room-members-btn');
 const roomSettingsBtn = document.getElementById('room-settings-btn');
@@ -241,6 +252,8 @@ let pollCommentContext = null;
 let pollCommentPreviousPlaceholder = null;
 let activeThreadContext = null;
 let threadSearchQuery = '';
+let currentPreviewIndex = null;
+let currentPreviewObjectUrl = null;
 
 function autoResizeComposer() {
     if (!messageInput) return;
@@ -804,6 +817,58 @@ document.addEventListener('DOMContentLoaded', (event) => {
             event.stopPropagation();
             cancelPollComment();
         };
+    }
+
+    if (fileLightboxCloseBtn) {
+        fileLightboxCloseBtn.addEventListener('click', (event) => {
+            event.preventDefault();
+            closeFilePreviewModal();
+        });
+    }
+
+    if (fileLightboxBackdrop) {
+        fileLightboxBackdrop.addEventListener('click', (event) => {
+            event.preventDefault();
+            closeFilePreviewModal();
+        });
+    }
+
+    if (fileLightboxRemove) {
+        fileLightboxRemove.disabled = true;
+        fileLightboxRemove.addEventListener('click', (event) => {
+            event.preventDefault();
+            if (currentPreviewIndex !== null) {
+                removeFileFromPreview(currentPreviewIndex);
+            }
+        });
+    }
+
+    if (fileLightboxCopyName) {
+        if (!navigator.clipboard) {
+            fileLightboxCopyName.disabled = true;
+        }
+        fileLightboxCopyName.addEventListener('click', (event) => {
+            event.preventDefault();
+            copyCurrentPreviewFileName();
+        });
+    }
+
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape' && filePreviewModal && filePreviewModal.classList.contains('open')) {
+            event.preventDefault();
+            closeFilePreviewModal();
+        }
+    });
+
+    if (callButton) {
+        const callButtonArrow = callButton.querySelector('.call-button-split');
+        if (callButtonArrow) {
+            callButtonArrow.addEventListener('click', (event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                toggleCallDropdown(event, true);
+            });
+        }
     }
 
     document.getElementById('cancel-selection-btn').onclick = (event) => {
@@ -2033,6 +2098,9 @@ function cancelEditing() {
     document.getElementById('editing-banner').style.display = 'none';
     messageInput.value = '';
     autoResizeComposer();
+    if (messageField) {
+        messageField.classList.remove('is-editing');
+    }
     // Кнопка отправки скрыта в UI, но переключатели оставляем на случай будущего возврата
     const si = document.getElementById('send-icon'); if (si) si.style.display = 'inline-block';
     const ei = document.getElementById('edit-confirm-icon'); if (ei) ei.style.display = 'none';
@@ -2137,6 +2205,14 @@ function handleFileSelect(event) {
 }
 
 function removeFileFromPreview(index) {
+    if (currentPreviewIndex !== null) {
+        if (currentPreviewIndex === index) {
+            closeFilePreviewModal();
+        } else if (index < currentPreviewIndex) {
+            currentPreviewIndex = Math.max(0, currentPreviewIndex - 1);
+        }
+    }
+
     selectedFiles.splice(index, 1);
     displayFilePreview();
 }
@@ -2165,6 +2241,7 @@ function displayFilePreview() {
         previewArea.setAttribute('aria-hidden', 'true');
         container.innerHTML = '';
         if (composerField) composerField.classList.remove('has-attachments');
+        closeFilePreviewModal();
         return;
     }
 
@@ -2178,9 +2255,15 @@ function displayFilePreview() {
         preview.className = 'file-preview-item';
 
         const removeBtn = document.createElement('button');
+        removeBtn.type = 'button';
         removeBtn.className = 'file-preview-remove';
+        removeBtn.setAttribute('aria-label', 'Убрать файл из списка');
         removeBtn.innerHTML = '<svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#ui-xmark"></use></svg>';
-        removeBtn.onclick = () => removeFileFromPreview(index);
+        removeBtn.addEventListener('click', (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            removeFileFromPreview(index);
+        });
 
         if (file.type.startsWith('image/')) {
             const img = document.createElement('img');
@@ -2211,12 +2294,204 @@ function displayFilePreview() {
         }
 
         preview.appendChild(removeBtn);
+        preview.dataset.index = index;
+        preview.setAttribute('role', 'button');
+        preview.setAttribute('tabindex', '0');
+        const label = file.name ? `Открыть предпросмотр файла ${file.name}` : 'Открыть предпросмотр файла';
+        preview.setAttribute('aria-label', label);
+        preview.addEventListener('click', () => openFilePreviewModal(index));
+        preview.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                openFilePreviewModal(index);
+            }
+        });
         container.appendChild(preview);
     });
 
     if (previewArea) {
         previewArea.scrollTo({ left: previewArea.scrollWidth, behavior: 'smooth' });
     }
+}
+
+function openFilePreviewModal(index) {
+    if (!filePreviewModal || !fileLightboxPreview) return;
+    const file = selectedFiles[index];
+    if (!file) return;
+
+    if (currentPreviewObjectUrl) {
+        URL.revokeObjectURL(currentPreviewObjectUrl);
+        currentPreviewObjectUrl = null;
+    }
+
+    const objectUrl = URL.createObjectURL(file);
+    currentPreviewObjectUrl = objectUrl;
+    currentPreviewIndex = index;
+
+    fileLightboxPreview.innerHTML = '';
+
+    if (file.type && file.type.startsWith('image/')) {
+        const img = document.createElement('img');
+        img.src = objectUrl;
+        img.alt = file.name || 'Предпросмотр изображения';
+        img.loading = 'lazy';
+        fileLightboxPreview.appendChild(img);
+    } else if (file.type && file.type.startsWith('video/')) {
+        const video = document.createElement('video');
+        video.src = objectUrl;
+        video.controls = true;
+        video.loop = true;
+        video.preload = 'metadata';
+        video.playsInline = true;
+        fileLightboxPreview.appendChild(video);
+        window.requestAnimationFrame(() => {
+            try {
+                video.focus({ preventScroll: true });
+            } catch {}
+        });
+    } else {
+        const generic = document.createElement('div');
+        generic.className = 'file-lightbox-generic';
+        const { icon } = getFileIconDescriptor(file.name, file.type);
+        const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        svg.classList.add('ui-icon');
+        svg.setAttribute('viewBox', '0 0 24 24');
+        svg.setAttribute('aria-hidden', 'true');
+        const use = document.createElementNS('http://www.w3.org/2000/svg', 'use');
+        use.setAttribute('href', icon);
+        svg.appendChild(use);
+        const title = document.createElement('strong');
+        title.textContent = file.name || 'Файл';
+        const sizeText = document.createElement('span');
+        sizeText.textContent = formatFileSize(file.size) || '';
+        generic.appendChild(svg);
+        generic.appendChild(title);
+        generic.appendChild(sizeText);
+        fileLightboxPreview.appendChild(generic);
+    }
+
+    if (fileLightboxTitle) {
+        fileLightboxTitle.textContent = file.name || 'Выбранный файл';
+    }
+
+    if (fileLightboxDetails) {
+        const size = formatFileSize(file.size) || '—';
+        const type = file.type || 'Неизвестный формат';
+        const position = `Файл ${index + 1} из ${selectedFiles.length}`;
+        fileLightboxDetails.innerHTML = `
+            <span>Размер: ${size}</span>
+            <span>Тип: ${type}</span>
+            <span>${position}</span>
+        `;
+    }
+
+    if (fileLightboxDownload) {
+        fileLightboxDownload.href = objectUrl;
+        fileLightboxDownload.download = file.name || 'file';
+    }
+
+    if (fileLightboxOpen) {
+        fileLightboxOpen.href = objectUrl;
+    }
+
+    if (fileLightboxRemove) {
+        fileLightboxRemove.disabled = false;
+    }
+
+    if (fileLightboxCopyName) {
+        fileLightboxCopyName.disabled = !(file.name && navigator.clipboard);
+        fileLightboxCopyName.textContent = fileLightboxCopyDefaultLabel || 'Скопировать имя';
+    }
+
+    filePreviewModal.removeAttribute('hidden');
+    filePreviewModal.classList.add('open');
+    filePreviewModal.setAttribute('aria-hidden', 'false');
+
+    if (fileLightboxCloseBtn) {
+        window.requestAnimationFrame(() => {
+            try {
+                fileLightboxCloseBtn.focus({ preventScroll: true });
+            } catch {}
+        });
+    }
+}
+
+function closeFilePreviewModal() {
+    if (!filePreviewModal) return;
+
+    const wasOpen = filePreviewModal.classList.contains('open');
+    filePreviewModal.classList.remove('open');
+    filePreviewModal.setAttribute('aria-hidden', 'true');
+
+    if (wasOpen) {
+        setTimeout(() => {
+            if (!filePreviewModal.classList.contains('open')) {
+                filePreviewModal.setAttribute('hidden', '');
+            }
+        }, 200);
+    } else {
+        filePreviewModal.setAttribute('hidden', '');
+    }
+
+    if (fileLightboxPreview) {
+        const activeVideo = fileLightboxPreview.querySelector('video');
+        if (activeVideo) {
+            activeVideo.pause();
+        }
+        fileLightboxPreview.innerHTML = '';
+    }
+
+    if (fileLightboxDownload) {
+        fileLightboxDownload.href = '#';
+        fileLightboxDownload.removeAttribute('download');
+    }
+
+    if (fileLightboxOpen) {
+        fileLightboxOpen.href = '#';
+    }
+
+    if (fileLightboxTitle) {
+        fileLightboxTitle.textContent = '';
+    }
+
+    if (fileLightboxDetails) {
+        fileLightboxDetails.innerHTML = '';
+    }
+
+    if (fileLightboxRemove) {
+        fileLightboxRemove.disabled = true;
+    }
+
+    if (fileLightboxCopyName) {
+        fileLightboxCopyName.textContent = fileLightboxCopyDefaultLabel || 'Скопировать имя';
+        fileLightboxCopyName.disabled = !navigator.clipboard;
+    }
+
+    if (currentPreviewObjectUrl) {
+        URL.revokeObjectURL(currentPreviewObjectUrl);
+        currentPreviewObjectUrl = null;
+    }
+
+    currentPreviewIndex = null;
+}
+
+function copyCurrentPreviewFileName() {
+    if (!fileLightboxCopyName || currentPreviewIndex === null) return;
+    const file = selectedFiles[currentPreviewIndex];
+    if (!file || !file.name || !navigator.clipboard) return;
+
+    const originalText = fileLightboxCopyDefaultLabel || fileLightboxCopyName.textContent;
+    navigator.clipboard.writeText(file.name).then(() => {
+        fileLightboxCopyName.textContent = 'Скопировано!';
+        setTimeout(() => {
+            fileLightboxCopyName.textContent = originalText;
+        }, 2000);
+    }).catch(() => {
+        fileLightboxCopyName.textContent = 'Не удалось скопировать';
+        setTimeout(() => {
+            fileLightboxCopyName.textContent = originalText;
+        }, 2500);
+    });
 }
 
 async function sendMessage() {
@@ -2683,6 +2958,10 @@ function editMessage(messageId, currentContent) {
     const banner = document.getElementById('editing-banner');
     document.getElementById('editing-banner-text').textContent = contentToEdit;
     banner.style.display = 'flex';
+
+    if (messageField) {
+        messageField.classList.add('is-editing');
+    }
 
     // Обновляем поле ввода
     messageInput.value = contentToEdit;
