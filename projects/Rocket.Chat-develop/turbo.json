@@ -1,0 +1,56 @@
+{
+	"$schema": "https://turborepo.org/schema.json",
+	"tasks": {
+		"build-preview": {
+			"dependsOn": ["^build"],
+			"outputs": ["storybook-static/**", ".storybook/**", "dist/**"]
+		},
+		".:build-preview-move": {
+			"dependsOn": ["^build-preview"],
+			"cache": false
+		},
+		"build": {
+			"dependsOn": ["^build"],
+			"outputs": ["dist/**"]
+		},
+		"test-storybook": {
+			"dependsOn": ["build"],
+			"outputs": ["coverage/**"]
+		},
+		"testunit": {
+			"dependsOn": ["build"],
+			"outputs": ["coverage/**"]
+		},
+		"lint": {
+			"dependsOn": ["build"],
+			"outputs": []
+		},
+		"translation-check": {
+			"outputs": []
+		},
+		"typecheck": {
+			"dependsOn": ["^build"],
+			"outputs": []
+		},
+		"dev": {
+			"dependsOn": ["^dev"],
+			"cache": false
+		},
+		"dsv": {
+			"dependsOn": ["build"],
+			"cache": false
+		},
+		"ms": {
+			"dependsOn": ["^build"]
+		},
+		"@rocket.chat/meteor#build": {
+			"dependsOn": ["^build"],
+			"cache": false
+		},
+		"@rocket.chat/meteor#build:ci": {
+			"dependsOn": ["^build"],
+			"env": ["BABEL_ENV"],
+			"cache": false
+		}
+	}
+}
