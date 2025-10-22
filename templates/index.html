@@ -471,25 +471,27 @@
             align-items: center;
             gap: 2px;
         }
-        
-        .call-dropdown-btn {
-            background: var(--color-success);
-            color: white;
-            border: none;
-            border-left: 1px solid rgba(255, 255, 255, 0.2);
-            padding: 0 8px;
-            border-radius: 0 var(--radius-lg) var(--radius-lg) 0;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            display: flex;
+
+        .call-button-combined {
+            gap: 0;
+        }
+
+        .call-button-toggle {
+            display: inline-flex;
             align-items: center;
             justify-content: center;
+            width: 46px;
+            padding: 0;
             margin: 0;
-            height: 100%;
+            border: none;
+            background: rgba(0, 0, 0, 0.08);
+            border-left: 1px solid rgba(255, 255, 255, 0.22);
+            cursor: pointer;
+            transition: background 0.3s ease, transform 0.2s ease;
         }
-        
-        .call-dropdown-btn:hover {
-            background: rgba(52, 199, 89, 0.9);
+
+        .call-button-toggle:hover {
+            background: rgba(52, 199, 89, 0.18);
         }
         
         /* Меню вложений */
@@ -1353,20 +1355,20 @@
                     <h3 id="chat-with-name"></h3>
                     <div id="chat-header-actions">
                         <!-- Объединенная кнопка звонка со стрелкой -->
-                        <div class="call-button-wrapper">
-                            <button class="call-button-combined" id="call-button" type="button" onclick="handleCallButtonClick(event)" aria-haspopup="menu" aria-controls="call-dropdown-menu" aria-expanded="false">
-                                <span class="call-button-main">
+                        <div class="call-button-wrapper" id="call-button-wrapper">
+                            <div class="call-button-combined">
+                                <button class="call-button-main" id="call-button" type="button" onclick="handleCallButtonClick(event)" aria-haspopup="menu" aria-controls="call-dropdown-menu" aria-expanded="false">
                                     <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
                                         <use href="#ui-phone"></use>
                                     </svg>
                                     <span class="call-button-text">Позвонить</span>
-                                </span>
-                                <span class="call-button-split" aria-hidden="true">
+                                </button>
+                                <button class="call-button-toggle" id="call-button-toggle" type="button" onclick="toggleCallDropdown(event, true)" aria-label="Открыть меню звонка" aria-haspopup="menu" aria-controls="call-dropdown-menu" aria-expanded="false">
                                     <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
                                         <use href="#ui-chevron-down"></use>
                                     </svg>
-                                </span>
-                            </button>
+                                </button>
+                            </div>
                             <div class="call-dropdown-menu" id="call-dropdown-menu" role="menu" aria-hidden="true" aria-labelledby="call-button" hidden>
                                 <button type="button" class="call-dropdown-item" role="menuitem" onclick="startVideoCall()">
                                     <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
@@ -2539,7 +2541,7 @@
 
 
     <!-- Модальное окно совместных документов -->
-        <div id="documentsModal" class="modal-overlay" onclick="closeModal(event)">
+    <div id="documentsModal" class="modal-overlay" onclick="closeModal(event)">
         <div class="modal-content glass documents-modal">
             <div class="modal-header">
                 <h3>Общие документы</h3>
@@ -2572,6 +2574,24 @@
                     <button class="ghost-btn" onclick="shareDocument()">Скопировать текст</button>
                     <button class="primary-btn" onclick="sendDocumentToChat()">Отправить в чат</button>
                 </div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Предпросмотр файлов -->
+    <div id="filePreviewModal" class="modal-overlay" aria-hidden="true" onclick="handleFilePreviewOverlay(event)">
+        <div class="modal-content glass file-preview-modal" role="dialog" aria-modal="true" aria-labelledby="file-preview-title">
+            <button class="close-btn" type="button" onclick="handleFilePreviewClose(event)" aria-label="Закрыть предпросмотр">&times;</button>
+            <div class="modal-header">
+                <h3 class="modal-title" id="file-preview-title">Предпросмотр файла</h3>
+            </div>
+            <div class="file-preview-body" id="file-preview-body">
+                <div class="file-preview-canvas" id="file-preview-canvas" role="presentation"></div>
+                <p class="file-preview-note" id="file-preview-note" hidden></p>
+            </div>
+            <div class="modal-footer file-preview-footer">
+                <a id="file-preview-download" class="file-preview-download" href="#" target="_blank" rel="noopener">Скачать файл</a>
             </div>
         </div>
     </div>

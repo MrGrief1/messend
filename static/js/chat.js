@@ -13,6 +13,8 @@ const placeholderText = document.getElementById('placeholder-text');
 const chatWithName = document.getElementById('chat-with-name');
 const roomList = document.getElementById('room-list');
 const callButton = document.getElementById('call-button');
+const callButtonToggle = document.getElementById('call-button-toggle');
+const callButtonWrapper = document.getElementById('call-button-wrapper');
 const sendButton = document.getElementById('send-button');
 const messageField = document.getElementById('message-field');
 // Доп. элементы заголовка чата
@@ -36,6 +38,11 @@ const threadSearchClear = document.getElementById('thread-search-clear');
 const threadSearchEmptyState = document.getElementById('thread-search-empty');
 const chatViewContainer = document.getElementById('chat-view');
 const settingsViewContainer = document.getElementById('settings-view-inline');
+const filePreviewModal = document.getElementById('filePreviewModal');
+const filePreviewCanvas = document.getElementById('file-preview-canvas');
+const filePreviewTitle = document.getElementById('file-preview-title');
+const filePreviewNote = document.getElementById('file-preview-note');
+const filePreviewDownload = document.getElementById('file-preview-download');
 // Вызовы
 let localStream = null;
 let isMicEnabled = true;
@@ -66,16 +73,15 @@ let isDialModalOpen = false;
 let isCallModalOpen = false;
 
 let reactionTargetMessageId = null; // ID сообщения, на которое мы реагируем
+const FILE_TEXT_PREVIEW_LIMIT = 5000;
+let filePreviewKeyHandler = null;
 
 function handleCallButtonClick(event) {
-    const arrowZone = event.target.closest('.call-button-split');
-
-    if (arrowZone) {
-        toggleCallDropdown(event);
-        return;
+    if (event) {
+        event.preventDefault();
     }
 
-    setCallDropdownVisibility(false);
+    setCallDropdownVisibility(false, false, callButton);
     startCall();
 }
 
@@ -234,6 +240,46 @@ function getFileIconDescriptor(filename, mime) {
     };
 }
 
+const PREVIEWABLE_IMAGE_EXTENSIONS = ['png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp', 'svg', 'heic', 'heif'];
+const PREVIEWABLE_VIDEO_EXTENSIONS = ['mp4', 'webm', 'ogg', 'ogv', 'mov', 'm4v'];
+const PREVIEWABLE_AUDIO_EXTENSIONS = ['mp3', 'wav', 'ogg', 'oga', 'm4a', 'aac', 'flac', 'opus'];
+const PREVIEWABLE_TEXT_EXTENSIONS = ['txt', 'log', 'json', 'csv', 'tsv', 'md', 'markdown', 'html', 'htm', 'css', 'js', 'ts', 'jsx', 'tsx', 'py', 'java', 'c', 'cpp', 'h', 'hpp', 'cs', 'rs', 'go', 'rb', 'php', 'sh', 'bash', 'zsh', 'ps1', 'xml', 'yml', 'yaml', 'ini', 'cfg', 'conf'];
+
+function extractFileExtension(name = '') {
+    const normalized = name.toLowerCase();
+    const lastDot = normalized.lastIndexOf('.');
+    return lastDot >= 0 ? normalized.slice(lastDot + 1) : '';
+}
+
+function getFilePreviewType(file) {
+    if (!file) return 'unsupported';
+
+    const mime = (file.mime || '').toLowerCase();
+    const extension = extractFileExtension(file.name || file.url || '');
+
+    if (mime.startsWith('image/') || PREVIEWABLE_IMAGE_EXTENSIONS.includes(extension)) {
+        return 'image';
+    }
+
+    if (mime.startsWith('video/') || PREVIEWABLE_VIDEO_EXTENSIONS.includes(extension)) {
+        return 'video';
+    }
+
+    if (mime.startsWith('audio/') || PREVIEWABLE_AUDIO_EXTENSIONS.includes(extension)) {
+        return 'audio';
+    }
+
+    if (mime === 'application/pdf' || extension === 'pdf') {
+        return 'pdf';
+    }
+
+    if (mime.startsWith('text/') || mime.includes('json') || mime.includes('xml') || mime.includes('yaml') || mime.includes('csv') || PREVIEWABLE_TEXT_EXTENSIONS.includes(extension)) {
+        return 'text';
+    }
+
+    return 'unsupported';
+}
+
 const pollUserSelections = new Map();
 const pollSelectionPromises = new Map();
 const pollTipTimers = new Map();
@@ -272,7 +318,26 @@ if (callButton) {
             }
             toggleCallDropdown(event, true);
         } else if (event.key === 'Escape') {
-            setCallDropdownVisibility(false);
+            setCallDropdownVisibility(false, false, callButton);
+        }
+    });
+}
+
+if (callButtonToggle) {
+    callButtonToggle.addEventListener('keydown', (event) => {
+        if (event.key === 'ArrowDown') {
+            const menu = document.getElementById('call-dropdown-menu');
+            if (menu && menu.classList.contains('show')) {
+                const firstItem = menu.querySelector('.call-dropdown-item');
+                if (firstItem) {
+                    event.preventDefault();
+                    firstItem.focus();
+                }
+                return;
+            }
+            toggleCallDropdown(event, true);
+        } else if (event.key === 'Escape') {
+            setCallDropdownVisibility(false, false, callButtonToggle);
         }
     });
 }
@@ -2028,6 +2093,18 @@ function deleteSelectedMessages() {
     openDeleteModal(Array.from(selectedMessages).map(id => parseInt(id)));
 }
 
+function setCallButtonVisibility(isVisible) {
+    if (callButtonWrapper) {
+        callButtonWrapper.style.display = isVisible ? 'flex' : 'none';
+    }
+    if (callButton) {
+        callButton.style.display = isVisible ? '' : 'none';
+    }
+    if (callButtonToggle) {
+        callButtonToggle.style.display = isVisible ? '' : 'none';
+    }
+}
+
 function cancelEditing() {
     editingMessage = null;
     document.getElementById('editing-banner').style.display = 'none';
@@ -2048,17 +2125,17 @@ function setupRoomUI() {
     if (messageInput) messageInput.placeholder = "Введите сообщение...";
     
     if (currentRoomType === 'dm') {
-        if (callButton) callButton.style.display = 'inline-block';
+        setCallButtonVisibility(true);
         // Покажем баннер, если собеседник не в контактах
         const contactData = USER_CONTACTS.find(c => c.id == currentDMotherUserId);
         if (unknownBanner) unknownBanner.style.display = contactData ? 'none' : 'flex';
     } else if (currentRoomType === 'group' || currentRoomType === 'channel') {
-        if (callButton) callButton.style.display = 'inline-block';
+        setCallButtonVisibility(true);
         // Кнопка участников убрана - доступна через три точки
         if (roomSettingsBtn) roomSettingsBtn.style.display = 'inline-block';
         if (unknownBanner) unknownBanner.style.display = 'none';
     } else {
-        if (callButton) callButton.style.display = 'none';
+        setCallButtonVisibility(false);
         if (roomSettingsBtn) roomSettingsBtn.style.display = 'none';
         if (unknownBanner) unknownBanner.style.display = 'none';
         // Проверка для каналов: если тип 'channel' и роль не 'admin'
@@ -2565,17 +2642,26 @@ function displayMessage(data) {
             attachmentsContainer.className = 'message-attachments';
 
             fileItems.forEach(item => {
-                const attachmentLink = document.createElement('a');
-                attachmentLink.href = item.url;
-                attachmentLink.target = '_blank';
-                attachmentLink.rel = 'noopener noreferrer';
-                attachmentLink.className = 'message-attachment';
-                if (item.name) {
-                    attachmentLink.download = item.name;
+                const attachmentButton = document.createElement('button');
+                attachmentButton.type = 'button';
+                attachmentButton.className = 'message-attachment';
+                const fileName = item.name || item.url.split('/').pop();
+                const fileMime = item.mime_type || item.type || '';
+
+                if (fileName) {
+                    attachmentButton.setAttribute('data-file-name', fileName);
+                    attachmentButton.title = `Предпросмотр файла ${fileName}`;
+                }
+                attachmentButton.setAttribute('data-file-url', item.url);
+                if (fileMime) {
+                    attachmentButton.setAttribute('data-file-mime', fileMime);
+                }
+                if (item.size !== undefined && item.size !== null) {
+                    attachmentButton.setAttribute('data-file-size', item.size);
                 }
 
                 const iconWrapper = document.createElement('span');
-                const descriptor = getFileIconDescriptor(item.name, item.mime_type || item.type);
+                const descriptor = getFileIconDescriptor(item.name, fileMime);
                 iconWrapper.className = `message-attachment-icon ${descriptor.className}`;
                 iconWrapper.innerHTML = `
                     <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
@@ -2587,7 +2673,7 @@ function displayMessage(data) {
 
                 const nameEl = document.createElement('span');
                 nameEl.className = 'message-attachment-name';
-                nameEl.textContent = item.name || item.url.split('/').pop();
+                nameEl.textContent = fileName;
 
                 infoWrapper.appendChild(nameEl);
 
@@ -2598,9 +2684,18 @@ function displayMessage(data) {
                     infoWrapper.appendChild(sizeEl);
                 }
 
-                attachmentLink.appendChild(iconWrapper);
-                attachmentLink.appendChild(infoWrapper);
-                attachmentsContainer.appendChild(attachmentLink);
+                attachmentButton.appendChild(iconWrapper);
+                attachmentButton.appendChild(infoWrapper);
+                attachmentButton.addEventListener('click', () => {
+                    openFilePreview({
+                        url: item.url,
+                        name: fileName,
+                        mime: fileMime,
+                        size: item.size
+                    });
+                });
+
+                attachmentsContainer.appendChild(attachmentButton);
             });
 
             messageElement.appendChild(attachmentsContainer);
@@ -5466,6 +5561,209 @@ function closeModal(event) {
     } catch {}
 }
 
+function resetFilePreview() {
+    if (filePreviewCanvas) {
+        filePreviewCanvas.innerHTML = '';
+    }
+    if (filePreviewNote) {
+        filePreviewNote.textContent = '';
+        filePreviewNote.hidden = true;
+    }
+    if (filePreviewDownload) {
+        filePreviewDownload.href = '#';
+        filePreviewDownload.removeAttribute('download');
+        filePreviewDownload.textContent = 'Скачать файл';
+    }
+}
+
+function showFilePreviewNote(message) {
+    if (!filePreviewNote) return;
+    if (message) {
+        filePreviewNote.textContent = message;
+        filePreviewNote.hidden = false;
+    } else {
+        filePreviewNote.textContent = '';
+        filePreviewNote.hidden = true;
+    }
+}
+
+function openFilePreviewModal() {
+    if (!filePreviewModal) return;
+    openModal('filePreviewModal');
+    filePreviewModal.setAttribute('aria-hidden', 'false');
+    if (!filePreviewKeyHandler) {
+        filePreviewKeyHandler = (event) => {
+            if (event.key === 'Escape') {
+                closeFilePreviewModal();
+            }
+        };
+        document.addEventListener('keydown', filePreviewKeyHandler, true);
+    }
+}
+
+function onFilePreviewModalClosed() {
+    if (filePreviewModal) {
+        filePreviewModal.setAttribute('aria-hidden', 'true');
+    }
+    if (filePreviewKeyHandler) {
+        document.removeEventListener('keydown', filePreviewKeyHandler, true);
+        filePreviewKeyHandler = null;
+    }
+    resetFilePreview();
+}
+
+function closeFilePreviewModal() {
+    if (!filePreviewModal) return;
+    closeModal({ target: filePreviewModal, currentTarget: filePreviewModal });
+    onFilePreviewModalClosed();
+}
+
+function handleFilePreviewOverlay(event) {
+    if (!filePreviewModal) return;
+    if (event.target === filePreviewModal) {
+        closeModal(event);
+        onFilePreviewModalClosed();
+    }
+}
+
+function handleFilePreviewClose(event) {
+    closeModal(event);
+    onFilePreviewModalClosed();
+}
+
+function openFilePreview(file) {
+    if (!file || !file.url) return;
+
+    if (!filePreviewModal || !filePreviewCanvas || !filePreviewDownload) {
+        window.open(file.url, '_blank');
+        return;
+    }
+
+    resetFilePreview();
+    showFilePreviewNote('');
+
+    const fileName = file.name || file.url.split('/').pop() || 'Файл';
+    const fileMime = file.mime || '';
+
+    if (filePreviewTitle) {
+        filePreviewTitle.textContent = fileName;
+    }
+
+    if (filePreviewDownload) {
+        filePreviewDownload.href = file.url;
+        if (fileName) {
+            filePreviewDownload.setAttribute('download', fileName);
+        } else {
+            filePreviewDownload.removeAttribute('download');
+        }
+        if (file.size !== undefined && file.size !== null) {
+            filePreviewDownload.textContent = `Скачать (${formatFileSize(file.size)})`;
+        } else {
+            filePreviewDownload.textContent = 'Скачать файл';
+        }
+    }
+
+    openFilePreviewModal();
+
+    const previewType = getFilePreviewType({ name: fileName, mime: fileMime, url: file.url });
+
+    const renderPlaceholder = (title, subtitle) => {
+        const placeholder = document.createElement('div');
+        placeholder.className = 'file-preview-placeholder';
+        placeholder.innerHTML = `<strong>${title}</strong><span>${subtitle}</span>`;
+        filePreviewCanvas.appendChild(placeholder);
+    };
+
+    switch (previewType) {
+        case 'image': {
+            const img = document.createElement('img');
+            img.src = file.url;
+            img.alt = fileName;
+            img.loading = 'lazy';
+            img.addEventListener('error', () => {
+                img.remove();
+                showFilePreviewNote('Не удалось загрузить изображение. Скачайте файл, чтобы открыть его на устройстве.');
+                renderPlaceholder('Предпросмотр недоступен', 'Скачайте файл, чтобы открыть его на устройстве.');
+            });
+            filePreviewCanvas.appendChild(img);
+            break;
+        }
+        case 'video': {
+            const video = document.createElement('video');
+            video.controls = true;
+            video.playsInline = true;
+            video.preload = 'metadata';
+            video.src = file.url;
+            video.addEventListener('error', () => {
+                showFilePreviewNote('Не удалось загрузить видео. Скачайте файл, чтобы открыть его на устройстве.');
+            }, { once: true });
+            filePreviewCanvas.appendChild(video);
+            break;
+        }
+        case 'audio': {
+            const audio = document.createElement('audio');
+            audio.controls = true;
+            audio.preload = 'metadata';
+            audio.src = file.url;
+            audio.addEventListener('error', () => {
+                showFilePreviewNote('Не удалось воспроизвести аудио. Скачайте файл, чтобы прослушать его.');
+            }, { once: true });
+            filePreviewCanvas.appendChild(audio);
+            break;
+        }
+        case 'pdf': {
+            const frame = document.createElement('iframe');
+            frame.src = file.url;
+            frame.loading = 'lazy';
+            frame.title = fileName || 'PDF документ';
+            frame.className = 'file-preview-frame';
+            frame.addEventListener('error', () => {
+                showFilePreviewNote('Не удалось загрузить предпросмотр PDF. Скачайте файл, чтобы открыть его на устройстве.');
+                renderPlaceholder('Предпросмотр недоступен', 'Скачайте файл, чтобы открыть его на устройстве.');
+            }, { once: true });
+            filePreviewCanvas.appendChild(frame);
+            showFilePreviewNote('Если документ не отображается, скачайте файл и откройте его на устройстве.');
+            break;
+        }
+        case 'text': {
+            const pre = document.createElement('pre');
+            pre.className = 'file-preview-text';
+            pre.textContent = 'Загрузка…';
+            filePreviewCanvas.appendChild(pre);
+
+            fetch(file.url)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Failed to load text preview');
+                    }
+                    return response.text();
+                })
+                .then(text => {
+                    let displayText = text;
+                    let truncated = false;
+                    if (displayText.length > FILE_TEXT_PREVIEW_LIMIT) {
+                        displayText = `${displayText.slice(0, FILE_TEXT_PREVIEW_LIMIT)}\n…`;
+                        truncated = true;
+                    }
+                    pre.textContent = displayText || 'Файл пустой.';
+                    if (truncated) {
+                        showFilePreviewNote('Показаны первые 5000 символов. Скачайте файл, чтобы увидеть его полностью.');
+                    }
+                })
+                .catch(() => {
+                    pre.remove();
+                    showFilePreviewNote('Не удалось загрузить содержимое. Скачайте файл, чтобы открыть его на устройстве.');
+                    renderPlaceholder('Предпросмотр недоступен', 'Скачайте файл, чтобы открыть его на устройстве.');
+                });
+            break;
+        }
+        default:
+            showFilePreviewNote('Предпросмотр этого типа файлов не поддерживается. Скачайте файл, чтобы открыть его.');
+            renderPlaceholder('Предпросмотр недоступен', 'Скачайте файл, чтобы открыть его на устройстве.');
+            break;
+    }
+}
+
 // --- Неизвестные контакты: добавить/заблокировать ---
 async function addUnknownToContacts() {
     if (!currentDMotherUserId) return;
@@ -7887,8 +8185,7 @@ async function blockContactFromSettings() {
                 messageInput.placeholder = 'Вы заблокировали этого пользователя.';
                 
                 // Скрываем кнопку звонка
-                const callButton = document.getElementById('call-button');
-                if (callButton) callButton.style.display = 'none';
+                setCallButtonVisibility(false);
             }
             
             alert('Пользователь заблокирован.');
@@ -7930,8 +8227,7 @@ async function unblockContactFromSettings() {
                 messageInput.placeholder = 'Введите сообщение...';
                 
                 // Показываем кнопку звонка обратно
-                const callButton = document.getElementById('call-button');
-                if (callButton) callButton.style.display = 'flex';
+                setCallButtonVisibility(true);
             }
             
             alert('Пользователь разблокирован.');
@@ -7994,9 +8290,11 @@ let callTimerInterval = null; // Интервал для таймера
 let callDropdownCloseHandler = null;
 let callDropdownKeyHandler = null;
 
-function setCallDropdownVisibility(visible, focusFirstItem = false) {
+function setCallDropdownVisibility(visible, focusFirstItem = false, triggerButton = null) {
     const menu = document.getElementById('call-dropdown-menu');
-    const button = document.getElementById('call-button');
+    const mainButton = document.getElementById('call-button');
+    const toggleButton = document.getElementById('call-button-toggle');
+    const focusTarget = triggerButton || toggleButton || mainButton;
 
     if (!menu) {
         console.error('call-dropdown-menu не найдено!');
@@ -8009,8 +8307,11 @@ function setCallDropdownVisibility(visible, focusFirstItem = false) {
         menu.classList.remove('show');
         menu.hidden = true;
         menu.setAttribute('aria-hidden', 'true');
-        if (button) {
-            button.setAttribute('aria-expanded', 'false');
+        if (mainButton) {
+            mainButton.setAttribute('aria-expanded', 'false');
+        }
+        if (toggleButton) {
+            toggleButton.setAttribute('aria-expanded', 'false');
         }
         if (callDropdownCloseHandler) {
             document.removeEventListener('click', callDropdownCloseHandler, true);
@@ -8025,8 +8326,11 @@ function setCallDropdownVisibility(visible, focusFirstItem = false) {
 
     menu.hidden = false;
     menu.setAttribute('aria-hidden', 'false');
-    if (button) {
-        button.setAttribute('aria-expanded', 'true');
+    if (mainButton) {
+        mainButton.setAttribute('aria-expanded', 'true');
+    }
+    if (toggleButton) {
+        toggleButton.setAttribute('aria-expanded', 'true');
     }
 
     if (wasVisible) {
@@ -8040,7 +8344,7 @@ function setCallDropdownVisibility(visible, focusFirstItem = false) {
     }
     callDropdownCloseHandler = (event) => {
         if (!event.target.closest('.call-button-wrapper')) {
-            setCallDropdownVisibility(false);
+            setCallDropdownVisibility(false, false, focusTarget);
         }
     };
     setTimeout(() => {
@@ -8052,9 +8356,9 @@ function setCallDropdownVisibility(visible, focusFirstItem = false) {
     }
     callDropdownKeyHandler = (event) => {
         if (event.key === 'Escape') {
-            setCallDropdownVisibility(false);
-            if (button) {
-                button.focus();
+            setCallDropdownVisibility(false, false, focusTarget);
+            if (focusTarget) {
+                focusTarget.focus();
             }
         }
     };
@@ -8069,9 +8373,12 @@ function setCallDropdownVisibility(visible, focusFirstItem = false) {
 }
 
 function toggleCallDropdown(event, focusFirstItem = false) {
+    let triggerButton = null;
+
     if (event) {
         event.preventDefault();
         event.stopPropagation();
+        triggerButton = event.currentTarget || (event.target && event.target.closest('.call-button-toggle, #call-button'));
     }
 
     const menu = document.getElementById('call-dropdown-menu');
@@ -8081,7 +8388,7 @@ function toggleCallDropdown(event, focusFirstItem = false) {
     }
 
     const shouldOpen = !menu.classList.contains('show');
-    setCallDropdownVisibility(shouldOpen, focusFirstItem);
+    setCallDropdownVisibility(shouldOpen, focusFirstItem, triggerButton);
 }
 
 async function startVideoCall() {
