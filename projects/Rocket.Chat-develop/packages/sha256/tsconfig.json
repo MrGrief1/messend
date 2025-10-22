@@ -1,0 +1,12 @@
+{
+	"extends": "@rocket.chat/tsconfig/base.json",
+	"compilerOptions": {
+		"outDir": "dist",
+		"rootDir": "src",
+		"noImplicitAny": true,
+		"noUnusedLocals": true,
+		"noUnusedParameters": true,
+		"strictNullChecks": true,
+	},
+	"include": ["src"]
+}

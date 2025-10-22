@@ -1361,7 +1361,7 @@
                                     </svg>
                                     <span class="call-button-text">Позвонить</span>
                                 </span>
-                                <span class="call-button-split" aria-hidden="true">
+                                <span class="call-button-split" aria-hidden="true" title="Другие варианты звонка">
                                     <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
                                         <use href="#ui-chevron-down"></use>
                                     </svg>
@@ -1430,41 +1430,6 @@
                 </div>
             </div>
 
-                <!-- Editing Message Banner -->
-                <div id="editing-banner" class="message-banner" style="display: none;">
-                    <div class="banner-icon">
-                        <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
-                            <use href="#ui-doc-upload"></use>
-                        </svg>
-                    </div>
-                    <div class="banner-content">
-                        <div class="banner-title">Редактирование</div>
-                        <div id="editing-banner-text" class="banner-text"></div>
-                    </div>
-                    <button class="icon-btn" id="cancel-editing-btn">
-                        <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
-                            <use href="#ui-xmark"></use>
-                        </svg>
-                    </button>
-                </div>
-
-                <div id="poll-comment-banner" class="message-banner" style="display: none;">
-                    <div class="banner-icon comment-icon">
-                        <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
-                            <use href="#ui-chart"></use>
-                        </svg>
-                    </div>
-                    <div class="banner-content">
-                        <div class="banner-title">Комментарий к опросу</div>
-                        <div id="poll-comment-text" class="banner-text"></div>
-                    </div>
-                    <button class="icon-btn" id="cancel-poll-comment-btn" title="Отменить комментарий">
-                        <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
-                            <use href="#ui-xmark"></use>
-                        </svg>
-                    </button>
-                </div>
-
                 <div class="chat-input-area" id="chat-input-area" style="display: none;">
                     <input type="file" id="file-input" accept="*/*" style="display: none;" onchange="handleFileSelect(event)" multiple>
                     <input type="file" id="file-input-docs" accept="*/*" style="display: none;" onchange="handleFileSelect(event)" multiple>
@@ -1478,6 +1443,40 @@
                             </button>
 
                             <div class="composer-field" id="message-field">
+                                <div id="editing-banner" class="message-banner" style="display: none;">
+                                    <div class="banner-icon">
+                                        <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
+                                            <use href="#ui-doc-upload"></use>
+                                        </svg>
+                                    </div>
+                                    <div class="banner-content">
+                                        <div class="banner-title">Редактирование</div>
+                                        <div id="editing-banner-text" class="banner-text"></div>
+                                    </div>
+                                    <button class="icon-btn" id="cancel-editing-btn">
+                                        <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
+                                            <use href="#ui-xmark"></use>
+                                        </svg>
+                                    </button>
+                                </div>
+
+                                <div id="poll-comment-banner" class="message-banner" style="display: none;">
+                                    <div class="banner-icon comment-icon">
+                                        <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
+                                            <use href="#ui-chart"></use>
+                                        </svg>
+                                    </div>
+                                    <div class="banner-content">
+                                        <div class="banner-title">Комментарий к опросу</div>
+                                        <div id="poll-comment-text" class="banner-text"></div>
+                                    </div>
+                                    <button class="icon-btn" id="cancel-poll-comment-btn" title="Отменить комментарий">
+                                        <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
+                                            <use href="#ui-xmark"></use>
+                                        </svg>
+                                    </button>
+                                </div>
+
                                 <div id="file-preview-area" class="composer-attachments" aria-hidden="true">
                                     <div id="file-preview-container" class="composer-attachments-scroll"></div>
                                 </div>
@@ -2899,6 +2898,30 @@
         });
     </script>
     
+    <div id="media-preview-overlay" class="media-preview-overlay" aria-hidden="true">
+        <div class="media-preview-backdrop"></div>
+        <div class="media-preview-dialog" role="dialog" aria-modal="true" aria-labelledby="media-preview-name">
+            <button class="media-preview-close" id="media-preview-close" aria-label="Закрыть предпросмотр">
+                <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
+                    <use href="#ui-xmark"></use>
+                </svg>
+            </button>
+            <div class="media-preview-body">
+                <div id="media-preview-visual" class="media-preview-visual" role="presentation"></div>
+            </div>
+            <div class="media-preview-footer">
+                <div class="media-preview-meta">
+                    <span id="media-preview-name" class="media-preview-name"></span>
+                    <span id="media-preview-size" class="media-preview-size"></span>
+                </div>
+                <div class="media-preview-actions">
+                    <a id="media-preview-open" class="ghost-btn" target="_blank" rel="noopener">Открыть в новой вкладке</a>
+                    <a id="media-preview-download" class="ghost-btn primary" download>Скачать</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="{{ url_for('static', filename='js/chat.js') }}"></script>
     <script src="{{ url_for('static', filename='js/sfu.js') }}"></script>
 </body>

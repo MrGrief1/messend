@@ -36,6 +36,14 @@ const threadSearchClear = document.getElementById('thread-search-clear');
 const threadSearchEmptyState = document.getElementById('thread-search-empty');
 const chatViewContainer = document.getElementById('chat-view');
 const settingsViewContainer = document.getElementById('settings-view-inline');
+const mediaPreviewOverlay = document.getElementById('media-preview-overlay');
+const mediaPreviewVisual = document.getElementById('media-preview-visual');
+const mediaPreviewName = document.getElementById('media-preview-name');
+const mediaPreviewSize = document.getElementById('media-preview-size');
+const mediaPreviewDownload = document.getElementById('media-preview-download');
+const mediaPreviewOpen = document.getElementById('media-preview-open');
+const mediaPreviewClose = document.getElementById('media-preview-close');
+const callButtonSplit = document.querySelector('.call-button-split');
 // Вызовы
 let localStream = null;
 let isMicEnabled = true;
@@ -66,6 +74,8 @@ let isDialModalOpen = false;
 let isCallModalOpen = false;
 
 let reactionTargetMessageId = null; // ID сообщения, на которое мы реагируем
+let activePreviewCleanup = null;
+let activePreviewMediaElement = null;
 
 function handleCallButtonClick(event) {
     const arrowZone = event.target.closest('.call-button-split');
@@ -121,6 +131,35 @@ function createReactionSvgElement(emoji) {
 function getReactionLabel(emoji) {
     return reactionLabels[emoji] || '';
 }
+
+if (callButtonSplit) {
+    callButtonSplit.addEventListener('click', (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        toggleCallDropdown(event, true);
+    });
+}
+
+if (mediaPreviewClose) {
+    mediaPreviewClose.addEventListener('click', (event) => {
+        event.preventDefault();
+        closeMediaPreview();
+    });
+}
+
+if (mediaPreviewOverlay) {
+    mediaPreviewOverlay.addEventListener('click', (event) => {
+        if (event.target === mediaPreviewOverlay || event.target.classList.contains('media-preview-backdrop')) {
+            closeMediaPreview();
+        }
+    });
+}
+
+document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && mediaPreviewOverlay && mediaPreviewOverlay.classList.contains('show')) {
+        closeMediaPreview();
+    }
+});
 
 const FILE_ICON_TYPES = {
     pdf: 'pdf',
@@ -2155,6 +2194,183 @@ function formatFileSize(bytes) {
     return `${formatted} ${units[unitIndex]}`;
 }
 
+function resolvePreviewType(fileType, mimeType, filename = '') {
+    const normalized = (fileType || mimeType || '').toLowerCase();
+    if (normalized.startsWith('image/') || normalized === 'image') return 'image';
+    if (normalized.startsWith('video/') || normalized === 'video') return 'video';
+    if (normalized.startsWith('audio/') || normalized === 'audio') return 'audio';
+
+    const extension = filename.split('.').pop().toLowerCase();
+    if (['png', 'jpg', 'jpeg', 'gif', 'bmp', 'webp', 'heic', 'heif', 'svg'].includes(extension)) {
+        return 'image';
+    }
+    if (['mp4', 'mov', 'm4v', 'webm', 'mkv', 'avi'].includes(extension)) {
+        return 'video';
+    }
+    if (['mp3', 'wav', 'aac', 'ogg', 'flac', 'm4a'].includes(extension)) {
+        return 'audio';
+    }
+    return 'file';
+}
+
+function closeMediaPreview() {
+    if (!mediaPreviewOverlay) {
+        return;
+    }
+
+    mediaPreviewOverlay.classList.remove('show');
+    mediaPreviewOverlay.setAttribute('aria-hidden', 'true');
+
+    if (activePreviewMediaElement && typeof activePreviewMediaElement.pause === 'function') {
+        activePreviewMediaElement.pause();
+        try {
+            activePreviewMediaElement.currentTime = 0;
+        } catch (err) {
+            // ignore inability to reset time
+        }
+    }
+    activePreviewMediaElement = null;
+
+    if (activePreviewCleanup) {
+        try {
+            activePreviewCleanup();
+        } catch (err) {
+            console.warn('Не удалось освободить ресурс предпросмотра:', err);
+        }
+    }
+    activePreviewCleanup = null;
+
+    if (mediaPreviewVisual) {
+        mediaPreviewVisual.innerHTML = '';
+    }
+    if (mediaPreviewDownload) {
+        mediaPreviewDownload.removeAttribute('href');
+    }
+    if (mediaPreviewOpen) {
+        mediaPreviewOpen.removeAttribute('href');
+    }
+    if (mediaPreviewSize) {
+        mediaPreviewSize.textContent = '';
+        mediaPreviewSize.style.display = 'none';
+    }
+}
+
+function openMediaPreview({ blob = null, url = '', name = '', size = null, type = '', mime = '', downloadUrl = '', originalUrl = '' }) {
+    if (!mediaPreviewOverlay || !mediaPreviewVisual) {
+        return;
+    }
+
+    closeMediaPreview();
+
+    let filename = name || 'Файл';
+    if (!name && url) {
+        try {
+            filename = decodeURIComponent(url.split('/').pop() || 'Файл');
+        } catch (err) {
+            filename = url.split('/').pop() || 'Файл';
+        }
+    }
+    const resolvedType = resolvePreviewType(type, mime, filename);
+    let previewUrl = url;
+    let cleanup = null;
+
+    if (!previewUrl && blob) {
+        previewUrl = URL.createObjectURL(blob);
+        cleanup = () => URL.revokeObjectURL(previewUrl);
+    }
+
+    mediaPreviewVisual.innerHTML = '';
+    activePreviewMediaElement = null;
+
+    if (resolvedType === 'image' && previewUrl) {
+        const img = document.createElement('img');
+        img.src = previewUrl;
+        img.alt = filename;
+        mediaPreviewVisual.appendChild(img);
+        activePreviewMediaElement = img;
+    } else if (resolvedType === 'video' && previewUrl) {
+        const video = document.createElement('video');
+        video.src = previewUrl;
+        video.controls = true;
+        video.playsInline = true;
+        mediaPreviewVisual.appendChild(video);
+        activePreviewMediaElement = video;
+    } else if (resolvedType === 'audio' && previewUrl) {
+        const audio = document.createElement('audio');
+        audio.src = previewUrl;
+        audio.controls = true;
+        mediaPreviewVisual.appendChild(audio);
+        activePreviewMediaElement = audio;
+    } else {
+        const generic = document.createElement('div');
+        generic.className = 'media-preview-generic';
+        const descriptor = getFileIconDescriptor(filename, mime || type);
+        generic.innerHTML = `
+            <span class="file-preview-icon ${descriptor.className}">
+                <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
+                    <use href="${descriptor.icon}"></use>
+                </svg>
+            </span>
+            <strong>${filename}</strong>
+            ${size !== null && size !== undefined ? `<span>${formatFileSize(size)}</span>` : ''}`;
+        mediaPreviewVisual.appendChild(generic);
+    }
+
+    if (mediaPreviewName) {
+        mediaPreviewName.textContent = filename;
+    }
+    if (mediaPreviewSize) {
+        if (size !== null && size !== undefined) {
+            mediaPreviewSize.textContent = formatFileSize(size);
+            mediaPreviewSize.style.display = '';
+        } else {
+            mediaPreviewSize.textContent = '';
+            mediaPreviewSize.style.display = 'none';
+        }
+    }
+
+    if (mediaPreviewDownload) {
+        const downloadTarget = downloadUrl || previewUrl;
+        if (downloadTarget) {
+            mediaPreviewDownload.href = downloadTarget;
+            if (filename) {
+                mediaPreviewDownload.setAttribute('download', filename);
+            }
+            mediaPreviewDownload.style.display = '';
+        } else {
+            mediaPreviewDownload.style.display = 'none';
+        }
+    }
+
+    if (mediaPreviewOpen) {
+        const openTarget = originalUrl || url || previewUrl || downloadUrl;
+        if (openTarget) {
+            mediaPreviewOpen.href = openTarget;
+            mediaPreviewOpen.style.display = '';
+        } else {
+            mediaPreviewOpen.style.display = 'none';
+        }
+    }
+
+    mediaPreviewOverlay.classList.add('show');
+    mediaPreviewOverlay.setAttribute('aria-hidden', 'false');
+    activePreviewCleanup = cleanup;
+}
+
+function openComposerFilePreview(index) {
+    const file = selectedFiles[index];
+    if (!file) {
+        return;
+    }
+
+    openMediaPreview({
+        blob: file,
+        name: file.name,
+        size: file.size,
+        type: file.type
+    });
+}
+
 function displayFilePreview() {
     const previewArea = document.getElementById('file-preview-area');
     const container = document.getElementById('file-preview-container');
@@ -2176,11 +2392,20 @@ function displayFilePreview() {
     selectedFiles.forEach((file, index) => {
         const preview = document.createElement('div');
         preview.className = 'file-preview-item';
+        preview.dataset.fileIndex = index;
+        preview.tabIndex = 0;
+        preview.setAttribute('role', 'button');
+        const labelName = file.name || file.type || 'файл';
+        preview.setAttribute('aria-label', `Предпросмотр файла ${labelName}`);
 
         const removeBtn = document.createElement('button');
         removeBtn.className = 'file-preview-remove';
         removeBtn.innerHTML = '<svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#ui-xmark"></use></svg>';
-        removeBtn.onclick = () => removeFileFromPreview(index);
+        removeBtn.addEventListener('click', (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            removeFileFromPreview(index);
+        });
 
         if (file.type.startsWith('image/')) {
             const img = document.createElement('img');
@@ -2211,6 +2436,18 @@ function displayFilePreview() {
         }
 
         preview.appendChild(removeBtn);
+        preview.addEventListener('click', (event) => {
+            if (event.target.closest('.file-preview-remove')) {
+                return;
+            }
+            openComposerFilePreview(index);
+        });
+        preview.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                openComposerFilePreview(index);
+            }
+        });
         container.appendChild(preview);
     });
 
@@ -2546,13 +2783,45 @@ function displayMessage(data) {
                     const img = document.createElement('img');
                     img.src = item.url;
                     img.alt = 'Изображение';
-                    img.onclick = () => window.open(item.url, '_blank');
+                    img.loading = 'lazy';
+                    img.addEventListener('click', (event) => {
+                        event.preventDefault();
+                        openMediaPreview({
+                            url: item.url,
+                            name: item.name || item.url.split('/').pop(),
+                            size: item.size,
+                            type: item.mime_type || 'image',
+                            mime: item.mime_type || 'image',
+                            downloadUrl: item.url,
+                            originalUrl: item.url
+                        });
+                    });
                     gallery.appendChild(img);
                 } else if (item.type === 'video') {
                     const video = document.createElement('video');
                     video.src = item.url;
-                    video.controls = true;
                     video.preload = 'metadata';
+                    video.playsInline = true;
+                    video.muted = true;
+                    video.loop = true;
+                    video.addEventListener('mouseenter', () => {
+                        try { video.play(); } catch (err) { /* ignore */ }
+                    });
+                    video.addEventListener('mouseleave', () => {
+                        try { video.pause(); } catch (err) { /* ignore */ }
+                    });
+                    video.addEventListener('click', (event) => {
+                        event.preventDefault();
+                        openMediaPreview({
+                            url: item.url,
+                            name: item.name || item.url.split('/').pop(),
+                            size: item.size,
+                            type: item.mime_type || 'video',
+                            mime: item.mime_type || 'video',
+                            downloadUrl: item.url,
+                            originalUrl: item.url
+                        });
+                    });
                     gallery.appendChild(video);
                 }
             });
@@ -2600,6 +2869,18 @@ function displayMessage(data) {
 
                 attachmentLink.appendChild(iconWrapper);
                 attachmentLink.appendChild(infoWrapper);
+                attachmentLink.addEventListener('click', (event) => {
+                    event.preventDefault();
+                    openMediaPreview({
+                        url: item.url,
+                        name: item.name || item.url.split('/').pop(),
+                        size: item.size,
+                        type: item.type,
+                        mime: item.mime_type || item.type,
+                        downloadUrl: item.url,
+                        originalUrl: item.url
+                    });
+                });
                 attachmentsContainer.appendChild(attachmentLink);
             });
 
