@@ -2081,6 +2081,29 @@
         </div>
     </div>
 
+    <div id="filePreviewModal" class="modal-overlay" onclick="handleFilePreviewOverlayClick(event)">
+        <div class="modal-content glass file-preview-modal">
+            <div class="modal-header file-preview-header">
+                <div class="file-preview-title-group">
+                    <h3 class="file-preview-name" id="filePreviewName">Предпросмотр файла</h3>
+                    <div class="file-preview-meta">
+                        <span class="file-preview-size" id="filePreviewSize"></span>
+                        <span class="file-preview-type" id="filePreviewType"></span>
+                    </div>
+                </div>
+                <button class="close-btn" type="button" aria-label="Закрыть предпросмотр">&times;</button>
+            </div>
+            <div class="file-preview-body" id="filePreviewBody">
+                <div class="file-preview-placeholder">Выберите файл, чтобы увидеть предпросмотр.</div>
+            </div>
+            <div class="file-preview-actions">
+                <a id="filePreviewDownload" class="file-preview-action primary" download>Скачать</a>
+                <a id="filePreviewOpen" class="file-preview-action secondary" target="_blank" rel="noopener">Открыть в новой вкладке</a>
+            </div>
+            <div class="file-preview-note" id="filePreviewNote"></div>
+        </div>
+    </div>
+
     <div id="reaction-picker">
         <span class="reaction-option" data-emoji="👍" data-label="Нравится"></span>
         <span class="reaction-option" data-emoji="👎" data-label="Не нравится"></span>
