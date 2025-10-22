@@ -68,13 +68,13 @@ let isCallModalOpen = false;
 let reactionTargetMessageId = null; // ID сообщения, на которое мы реагируем
 
 const reactionIconTemplates = {
-    '👍': `<svg class="reaction-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 11v8a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-6a2 2 0 0 1 2-2h3Z"></path><path d="M7 11V6.5A3.5 3.5 0 0 1 10.5 3h0a1 1 0 0 1 .95.68L12.5 7H18a2 2 0 0 1 1.94 2.5l-1.33 5.02A2 2 0 0 1 16.68 16H11"></path></svg>`,
-    '👎': `<svg class="reaction-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 13V5a2 2 0 0 1 2-2h1a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2h-3Z"></path><path d="M17 13v4.5A3.5 3.5 0 0 1 13.5 21h0a1 1 0 0 1-.95-.68L11.5 17H6a2 2 0 0 1-1.94-2.5l1.33-5.02A2 2 0 0 1 7.32 8H13"></path></svg>`,
-    '❤️': `<svg class="reaction-svg" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"><path d="M12 20.5c-4.4-3.6-6.5-5.8-6.5-9A3.5 3.5 0 0 1 9 8a3.6 3.6 0 0 1 3 1.6A3.6 3.6 0 0 1 15 8a3.5 3.5 0 0 1 3.5 3.5c0 3.2-2.1 5.4-6.5 9Z"></path></svg>`,
-    '😂': `<svg class="reaction-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"></circle><path d="M8.2 10.4c.4-.7 1-.7 1.4 0"></path><path d="M14.4 10.4c.4-.7 1-.7 1.4 0"></path><path d="M7.5 13.5c1.4 1.4 3 2.1 4.5 2.1s3.1-.7 4.5-2.1"></path><path d="M6 13.6c-.8.1-1.4.6-1.4 1.3 0 .6.5 1.1 1.6.9"></path><path d="M18 13.6c.8.1 1.4.6 1.4 1.3 0 .6-.5 1.1-1.6.9"></path></svg>`,
-    '😮': `<svg class="reaction-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"></circle><circle cx="9" cy="10" r="1.1" fill="currentColor" stroke="none"></circle><circle cx="15" cy="10" r="1.1" fill="currentColor" stroke="none"></circle><circle cx="12" cy="15" r="2.2"></circle></svg>`,
-    '😢': `<svg class="reaction-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"></circle><path d="M8.2 10.4c.4-.7 1-.7 1.4 0"></path><path d="M14.4 10.4c.4-.7 1-.7 1.4 0"></path><path d="M8.5 15c1 .8 2.2 1.2 3.5 1.2s2.5-.4 3.5-1.2"></path><path d="M16.1 14.8c.8.7 1.4 1.7 1.4 2.6 0 .9-.6 1.6-1.4 1.6-.7 0-1.2-.5-1.2-1.1 0-.9 1.2-2.1 1.2-2.1Z" fill="currentColor" stroke="none"></path></svg>`,
-    '🔥': `<svg class="reaction-svg" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21c-3.5-1.5-5-3.8-5-6.2 0-2.4 1.7-4 3-5.4 1.2-1.3 2.2-2.6 2.2-4.4 1.6 1.1 4.1 3.4 4.1 6.1 0 1.1-.4 2.1-1 3 1.6.8 2.7 2.2 2.7 3.8 0 1.9-1.3 3.4-3.5 4.4Z"></path></svg>`
+    '👍': `<span class="reaction-icon-sprite icon-reaction-like" aria-hidden="true"></span>`,
+    '👎': `<span class="reaction-icon-sprite icon-reaction-dislike" aria-hidden="true"></span>`,
+    '❤️': `<span class="reaction-icon-sprite icon-reaction-heart" aria-hidden="true"></span>`,
+    '😂': `<span class="reaction-icon-sprite icon-reaction-laugh" aria-hidden="true"></span>`,
+    '😮': `<span class="reaction-icon-sprite icon-reaction-wow" aria-hidden="true"></span>`,
+    '😢': `<span class="reaction-icon-sprite icon-reaction-sad" aria-hidden="true"></span>`,
+    '🔥': `<span class="reaction-icon-sprite icon-reaction-fire" aria-hidden="true"></span>`
 };
 
 const reactionLabels = {
@@ -93,7 +93,7 @@ function getReactionIconTemplate(emoji) {
     return reactionIconTemplates[emoji] || null;
 }
 
-function createReactionSvgElement(emoji) {
+function createReactionIconElement(emoji) {
     const template = getReactionIconTemplate(emoji);
     if (!template) {
         return null;
@@ -1716,7 +1716,9 @@ function closeAllMenus(exceptId = null) {
             return;
         }
 
-        if (menu.classList.contains('call-dropdown-menu') || menu.classList.contains('device-menu')) {
+        if (menu.classList.contains('call-dropdown-menu')) {
+            closeCallDropdown(menu, callButton);
+        } else if (menu.classList.contains('device-menu')) {
             menu.classList.remove('show');
             menu.style.display = '';
         } else {
@@ -2035,30 +2037,49 @@ function displayFilePreview() {
         const removeBtn = document.createElement('button');
         removeBtn.className = 'file-preview-remove';
         removeBtn.innerHTML = '<svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#ui-xmark"></use></svg>';
+        removeBtn.type = 'button';
         removeBtn.onclick = () => removeFileFromPreview(index);
 
         if (file.type.startsWith('image/')) {
+            preview.classList.add('file-preview-visual');
             const img = document.createElement('img');
             img.src = URL.createObjectURL(file);
+            img.alt = file.name || 'Изображение';
             preview.appendChild(img);
         } else if (file.type.startsWith('video/')) {
+            preview.classList.add('file-preview-visual');
             const video = document.createElement('video');
             video.src = URL.createObjectURL(file);
             video.muted = true;
             video.loop = true;
             video.playsInline = true;
+            video.setAttribute('aria-label', file.name || 'Видео');
             video.addEventListener('mouseenter', () => video.play());
             video.addEventListener('mouseleave', () => video.pause());
             preview.appendChild(video);
         } else {
+            preview.classList.add('file-preview-document-card');
             const generic = document.createElement('div');
-            generic.className = 'file-preview-generic';
-            generic.innerHTML = `
-                <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
-                    <use href="#ui-document"></use>
-                </svg>
-                <strong>${file.name}</strong>
-                <span>${formatFileSize(file.size)}</span>`;
+            generic.className = 'file-preview-document';
+
+            const icon = document.createElement('span');
+            icon.className = 'mask-icon icon-file-generic';
+            icon.setAttribute('aria-hidden', 'true');
+
+            const meta = document.createElement('div');
+            meta.className = 'file-preview-meta';
+
+            const title = document.createElement('strong');
+            title.textContent = file.name || 'Файл';
+
+            const sizeLabel = document.createElement('span');
+            sizeLabel.textContent = formatFileSize(file.size || 0);
+
+            meta.appendChild(title);
+            meta.appendChild(sizeLabel);
+
+            generic.appendChild(icon);
+            generic.appendChild(meta);
             preview.appendChild(generic);
         }
 
@@ -2428,19 +2449,16 @@ function displayMessage(data) {
 
                 const iconWrapper = document.createElement('span');
                 iconWrapper.className = 'message-attachment-icon';
-                iconWrapper.innerHTML = `
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path>
-                        <polyline points="14 3 14 9 20 9"></polyline>
-                        <path d="M16 13H8"></path>
-                        <path d="M16 17H8"></path>
-                        <path d="M10 9H9"></path>
-                    </svg>`;
+
+                const icon = document.createElement('span');
+                icon.className = 'mask-icon icon-file-generic';
+                icon.setAttribute('aria-hidden', 'true');
+                iconWrapper.appendChild(icon);
 
                 const infoWrapper = document.createElement('span');
                 infoWrapper.className = 'message-attachment-info';
 
-                const nameEl = document.createElement('span');
+                const nameEl = document.createElement('strong');
                 nameEl.className = 'message-attachment-name';
                 nameEl.textContent = item.name || item.url.split('/').pop();
 
@@ -2625,7 +2643,7 @@ function initializeReactionPicker() {
 
         const label = option.dataset.label || getReactionLabel(emoji);
         option.innerHTML = '';
-        const icon = createReactionSvgElement(emoji);
+        const icon = createReactionIconElement(emoji);
         const wrapper = document.createElement('span');
         wrapper.className = 'reaction-icon';
         if (icon) {
@@ -2749,7 +2767,7 @@ function updateMessageReactionsUI(messageId, reactions) {
 
         const iconWrapper = document.createElement('span');
         iconWrapper.className = 'reaction-icon';
-        const icon = createReactionSvgElement(emoji);
+        const icon = createReactionIconElement(emoji);
         if (icon) {
             iconWrapper.appendChild(icon);
         } else {
@@ -7849,43 +7867,61 @@ let blockedUsers = new Set();
 let isAudioOnly = false; // Флаг: аудио-звонок (без видео) или видео-звонок
 let callStartTime = null; // Время начала звонка
 let callTimerInterval = null; // Интервал для таймера
+let callDropdownOutsideHandler = null;
+let callDropdownEscapeHandler = null;
 
-function toggleCallDropdown(event) {
-    event.stopPropagation();
+function closeCallDropdown(menu, button) {
+    if (!menu) return;
+    menu.classList.remove('show');
+    menu.setAttribute('aria-hidden', 'true');
+    if (button) {
+        button.setAttribute('aria-expanded', 'false');
+    }
+    if (callDropdownOutsideHandler) {
+        document.removeEventListener('pointerdown', callDropdownOutsideHandler, true);
+        callDropdownOutsideHandler = null;
+    }
+    if (callDropdownEscapeHandler) {
+        document.removeEventListener('keydown', callDropdownEscapeHandler, true);
+        callDropdownEscapeHandler = null;
+    }
+}
+
+function handleCallButtonClick(event) {
     event.preventDefault();
-    
+
+    const button = event.currentTarget || document.getElementById('call-button');
     const menu = document.getElementById('call-dropdown-menu');
-    if (!menu) {
+    if (!menu || !button) {
         console.error('call-dropdown-menu не найдено!');
         return;
     }
-    
-    const isVisible = menu.classList.contains('show');
-    console.log('toggleCallDropdown вызвана, isVisible:', isVisible);
-    
-    if (isVisible) {
-        // вместо мгновенного скрытия дадим возможность повторного открытия без конфликтов
-        menu.classList.remove('show');
-        // не выходим, чтобы переустановить обработчик внешнего клика корректно
-        menu.style.display = '';
+
+    const isExpanded = button.getAttribute('aria-expanded') === 'true';
+    if (isExpanded) {
+        closeCallDropdown(menu, button);
         return;
     }
 
     menu.classList.add('show');
-    menu.style.display = '';
-    
-    // Закрыть при клике вне меню
-    setTimeout(() => {
-        function closeDropdown(e) {
-            // если клик по самой кнопке-стрелке — игнорим (чтобы не закрывалось до toggle)
-            const inWrapper = e.target.closest('.call-button-wrapper');
-            if (!inWrapper) {
-                menu.classList.remove('show');
-                document.removeEventListener('click', closeDropdown);
-            }
+    menu.removeAttribute('aria-hidden');
+    button.setAttribute('aria-expanded', 'true');
+
+    callDropdownOutsideHandler = (outsideEvent) => {
+        if (!outsideEvent.target.closest('.call-button-wrapper')) {
+            closeCallDropdown(menu, button);
         }
-        document.addEventListener('click', closeDropdown, { capture: true, once: true });
-    }, 50);
+    };
+    callDropdownEscapeHandler = (keyEvent) => {
+        if (keyEvent.key === 'Escape') {
+            keyEvent.stopPropagation();
+            closeCallDropdown(menu, button);
+            button.focus({ preventScroll: true });
+        }
+    };
+
+    document.addEventListener('pointerdown', callDropdownOutsideHandler, true);
+    document.addEventListener('keydown', callDropdownEscapeHandler, true);
 }
 
 async function startVideoCall() {
@@ -7896,10 +7932,10 @@ async function startVideoCall() {
             return;
         }
     }
-    
+
     // Закрываем меню
-    document.getElementById('call-dropdown-menu').classList.remove('show');
-    
+    closeCallDropdown(document.getElementById('call-dropdown-menu'), callButton);
+
     isAudioOnly = false; // Видео звонок
     await openCall(); // Используем существующую функцию
 }
@@ -7912,10 +7948,10 @@ async function startAudioCall() {
             return;
         }
     }
-    
+
     // Закрываем меню
-    document.getElementById('call-dropdown-menu').classList.remove('show');
-    
+    closeCallDropdown(document.getElementById('call-dropdown-menu'), callButton);
+
     isAudioOnly = true; // Аудио звонок (без видео)
     await openCall(); // Используем существующую функцию
 }
