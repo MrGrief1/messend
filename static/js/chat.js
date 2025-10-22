@@ -15,6 +15,14 @@ const roomList = document.getElementById('room-list');
 const callButton = document.getElementById('call-button');
 const sendButton = document.getElementById('send-button');
 const messageField = document.getElementById('message-field');
+const filePreviewModal = document.getElementById('filePreviewModal');
+const filePreviewNameEl = document.getElementById('filePreviewName');
+const filePreviewSizeEl = document.getElementById('filePreviewSize');
+const filePreviewTypeEl = document.getElementById('filePreviewType');
+const filePreviewBodyEl = document.getElementById('filePreviewBody');
+const filePreviewDownloadEl = document.getElementById('filePreviewDownload');
+const filePreviewOpenEl = document.getElementById('filePreviewOpen');
+const filePreviewNoteEl = document.getElementById('filePreviewNote');
 // Доп. элементы заголовка чата
 const membersBtn = document.getElementById('room-members-btn');
 const roomSettingsBtn = document.getElementById('room-settings-btn');
@@ -68,10 +76,21 @@ let isCallModalOpen = false;
 let reactionTargetMessageId = null; // ID сообщения, на которое мы реагируем
 
 function handleCallButtonClick(event) {
-    const arrowZone = event.target.closest('.call-button-split');
+    if (!event) return;
+
+    const path = typeof event.composedPath === 'function' ? event.composedPath() : null;
+    let arrowZone = null;
+
+    if (path && Array.isArray(path)) {
+        arrowZone = path.find(el => el && el.classList && el.classList.contains('call-button-split')) || null;
+    }
+
+    if (!arrowZone && event.target && typeof event.target.closest === 'function') {
+        arrowZone = event.target.closest('.call-button-split');
+    }
 
     if (arrowZone) {
-        toggleCallDropdown(event);
+        toggleCallDropdown(event, true);
         return;
     }
 
@@ -100,6 +119,223 @@ const reactionLabels = {
 };
 
 const reactionTemplateCache = new Map();
+
+const PREVIEW_IMAGE_TYPES = new Set(['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg', 'avif', 'heic', 'heif']);
+const PREVIEW_VIDEO_TYPES = new Set(['mp4', 'webm', 'mov', 'm4v']);
+const PREVIEW_AUDIO_TYPES = new Set(['mp3', 'wav', 'ogg', 'm4a', 'aac', 'flac']);
+const PREVIEW_TEXT_TYPES = new Set(['txt', 'log', 'md', 'json', 'yaml', 'yml', 'csv', 'tsv', 'ini', 'cfg', 'conf', 'html', 'css', 'js']);
+const TEXT_PREVIEW_MAX_CHARS = 6000;
+const DEFAULT_FILE_PREVIEW_PLACEHOLDER = 'Выберите файл, чтобы увидеть предпросмотр.';
+
+function determineFilePreviewType(filename = '', mime = '') {
+    const rawExtension = (filename || '').split('.').pop();
+    const extension = rawExtension ? rawExtension.toLowerCase() : '';
+    const normalizedMime = (mime || '').toLowerCase();
+
+    if (normalizedMime.startsWith('image/') || PREVIEW_IMAGE_TYPES.has(extension)) return 'image';
+    if (normalizedMime.startsWith('video/') || PREVIEW_VIDEO_TYPES.has(extension)) return 'video';
+    if (normalizedMime.startsWith('audio/') || PREVIEW_AUDIO_TYPES.has(extension)) return 'audio';
+    if (normalizedMime.includes('pdf') || extension === 'pdf') return 'pdf';
+    if (normalizedMime.startsWith('text/') || PREVIEW_TEXT_TYPES.has(extension)) return 'text';
+    return 'none';
+}
+
+function getFilePreviewLabel(type) {
+    switch (type) {
+        case 'image':
+            return 'Изображение';
+        case 'video':
+            return 'Видео';
+        case 'audio':
+            return 'Аудио';
+        case 'pdf':
+            return 'PDF документ';
+        case 'text':
+            return 'Текстовый файл';
+        default:
+            return 'Файл';
+    }
+}
+
+function stopFilePreviewMedia() {
+    if (!filePreviewBodyEl) return;
+    filePreviewBodyEl.querySelectorAll('video, audio').forEach(media => {
+        try { media.pause(); } catch (_) {}
+        if ('currentTime' in media) {
+            try { media.currentTime = 0; } catch (_) {}
+        }
+        if (typeof media.removeAttribute === 'function') {
+            media.removeAttribute('src');
+        }
+        if (typeof media.load === 'function') {
+            try { media.load(); } catch (_) {}
+        }
+    });
+}
+
+function setFilePreviewPlaceholder(message) {
+    if (!filePreviewBodyEl) return;
+    filePreviewBodyEl.innerHTML = `<div class="file-preview-placeholder">${message}</div>`;
+}
+
+function resetFilePreviewModal() {
+    if (!filePreviewModal) return;
+    stopFilePreviewMedia();
+    if (filePreviewNameEl) filePreviewNameEl.textContent = 'Предпросмотр файла';
+    if (filePreviewSizeEl) filePreviewSizeEl.textContent = '';
+    if (filePreviewTypeEl) filePreviewTypeEl.textContent = '';
+    if (filePreviewNoteEl) filePreviewNoteEl.textContent = '';
+    setFilePreviewPlaceholder(DEFAULT_FILE_PREVIEW_PLACEHOLDER);
+}
+
+async function openFilePreview(event, fileMeta = {}) {
+    if (event) {
+        event.preventDefault();
+        event.stopPropagation();
+    }
+
+    if (!fileMeta || !fileMeta.url) {
+        return;
+    }
+
+    if (!filePreviewModal || !filePreviewBodyEl) {
+        window.open(fileMeta.url, '_blank');
+        return;
+    }
+
+    stopFilePreviewMedia();
+
+    const fileName = fileMeta.name || decodeURIComponent((fileMeta.url.split('/').pop() || 'Файл'));
+    const fileMime = fileMeta.mime || fileMeta.mime_type || fileMeta.type || '';
+    const previewType = determineFilePreviewType(fileName, fileMime);
+
+    const sizeText = (() => {
+        if (typeof fileMeta.size === 'number' && !Number.isNaN(fileMeta.size)) {
+            return formatFileSize(fileMeta.size);
+        }
+        if (typeof fileMeta.size === 'string' && fileMeta.size.trim() !== '') {
+            const numeric = Number(fileMeta.size);
+            if (!Number.isNaN(numeric)) {
+                return formatFileSize(numeric);
+            }
+            return fileMeta.size;
+        }
+        return '';
+    })();
+
+    if (filePreviewNameEl) filePreviewNameEl.textContent = fileName;
+    if (filePreviewSizeEl) filePreviewSizeEl.textContent = sizeText;
+    if (filePreviewTypeEl) filePreviewTypeEl.textContent = getFilePreviewLabel(previewType);
+    if (filePreviewNoteEl) filePreviewNoteEl.textContent = '';
+
+    if (filePreviewDownloadEl) {
+        filePreviewDownloadEl.href = fileMeta.url;
+        filePreviewDownloadEl.download = fileName;
+    }
+    if (filePreviewOpenEl) {
+        filePreviewOpenEl.href = fileMeta.url;
+    }
+
+    setFilePreviewPlaceholder('Загрузка предпросмотра...');
+    filePreviewModal.style.display = 'flex';
+
+    try {
+        if (previewType === 'image') {
+            const img = new Image();
+            img.src = fileMeta.url;
+            img.alt = fileName;
+            img.decoding = 'async';
+            await new Promise((resolve, reject) => {
+                img.onload = () => resolve();
+                img.onerror = () => reject(new Error('Не удалось загрузить изображение'));
+            });
+            filePreviewBodyEl.innerHTML = '';
+            filePreviewBodyEl.appendChild(img);
+        } else if (previewType === 'video') {
+            const video = document.createElement('video');
+            video.src = fileMeta.url;
+            video.controls = true;
+            video.preload = 'metadata';
+            filePreviewBodyEl.innerHTML = '';
+            filePreviewBodyEl.appendChild(video);
+        } else if (previewType === 'audio') {
+            const audio = document.createElement('audio');
+            audio.src = fileMeta.url;
+            audio.controls = true;
+            filePreviewBodyEl.innerHTML = '';
+            filePreviewBodyEl.appendChild(audio);
+        } else if (previewType === 'pdf') {
+            const iframe = document.createElement('iframe');
+            iframe.src = fileMeta.url;
+            iframe.title = `PDF: ${fileName}`;
+            iframe.loading = 'lazy';
+            filePreviewBodyEl.innerHTML = '';
+            filePreviewBodyEl.appendChild(iframe);
+        } else if (previewType === 'text') {
+            const response = await fetch(fileMeta.url);
+            if (!response.ok) {
+                throw new Error('Не удалось загрузить файл');
+            }
+            let text = await response.text();
+            let truncated = false;
+            if (text.length > TEXT_PREVIEW_MAX_CHARS) {
+                text = text.slice(0, TEXT_PREVIEW_MAX_CHARS) + '\n…';
+                truncated = true;
+            }
+            const pre = document.createElement('pre');
+            pre.className = 'file-preview-text';
+            pre.textContent = text;
+            filePreviewBodyEl.innerHTML = '';
+            filePreviewBodyEl.appendChild(pre);
+            if (truncated && filePreviewNoteEl) {
+                filePreviewNoteEl.textContent = 'Предпросмотр обрезан. Скачайте файл, чтобы увидеть его полностью.';
+            }
+        } else {
+            filePreviewBodyEl.innerHTML = '';
+            setFilePreviewPlaceholder('Предпросмотр недоступен для этого файла. Нажмите «Скачать», чтобы открыть его.');
+            if (filePreviewNoteEl) {
+                filePreviewNoteEl.textContent = 'Скачайте файл, чтобы посмотреть его содержимое.';
+            }
+        }
+    } catch (error) {
+        console.error('Ошибка предпросмотра файла:', error);
+        setFilePreviewPlaceholder('Не удалось загрузить предпросмотр. Вы можете скачать файл.');
+        if (filePreviewNoteEl) {
+            filePreviewNoteEl.textContent = 'Если предпросмотр не загружается, попробуйте скачать файл.';
+        }
+    }
+}
+
+function handleFilePreviewOverlayClick(event) {
+    if (!filePreviewModal) {
+        closeModal(event);
+        return;
+    }
+
+    const isOverlayClick = event && event.target === event.currentTarget;
+    const isCloseButton = event && event.target && event.target.classList && event.target.classList.contains('close-btn');
+
+    if (!isOverlayClick && !isCloseButton) {
+        return;
+    }
+
+    resetFilePreviewModal();
+    closeModal(event);
+}
+
+function hideFilePreviewModal() {
+    if (!filePreviewModal) return;
+    resetFilePreviewModal();
+    closeModal({ target: filePreviewModal, forceClose: true });
+}
+
+if (filePreviewModal) {
+    document.addEventListener('keydown', event => {
+        if (event.key === 'Escape' && filePreviewModal.style.display === 'flex') {
+            hideFilePreviewModal();
+        }
+    });
+}
 
 function getReactionIconTemplate(emoji) {
     return reactionIconTemplates[emoji] || null;
@@ -2567,12 +2803,26 @@ function displayMessage(data) {
             fileItems.forEach(item => {
                 const attachmentLink = document.createElement('a');
                 attachmentLink.href = item.url;
-                attachmentLink.target = '_blank';
-                attachmentLink.rel = 'noopener noreferrer';
                 attachmentLink.className = 'message-attachment';
                 if (item.name) {
                     attachmentLink.download = item.name;
                 }
+
+                attachmentLink.addEventListener('click', evt => {
+                    evt.stopPropagation();
+                    if (selectionMode) {
+                        evt.preventDefault();
+                        toggleMessageSelection(data.id);
+                        return;
+                    }
+
+                    openFilePreview(evt, {
+                        url: item.url,
+                        name: item.name || item.url.split('/').pop(),
+                        size: item.size,
+                        mime: item.mime_type || item.type || ''
+                    });
+                });
 
                 const iconWrapper = document.createElement('span');
                 const descriptor = getFileIconDescriptor(item.name, item.mime_type || item.type);
