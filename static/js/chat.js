@@ -516,6 +516,7 @@ document.addEventListener('DOMContentLoaded', (event) => {
     socket = io({ transports: ['polling'], upgrade: false });
 
     initializeReactionPicker();
+    initializeWhiteboardUI();
 
     socket.on('connect', () => console.log('WebSocket подключен!'));
 
@@ -884,37 +885,16 @@ document.addEventListener('DOMContentLoaded', (event) => {
     
     // ========== Socket обработчики для совместных функций ==========
     
-    // Доска для рисования
-    socket.on('whiteboard_draw', (data) => {
-        if (!data) return;
-        if (data.room_id && String(data.room_id) !== String(currentRoomId)) {
-            return;
-        }
+    // Совместная доска Excalidraw
+    socket.on('whiteboard_session', (data = {}) => {
+        if (!data.room_id || !data.board_url) return;
+        const roomKey = String(data.room_id);
+        const session = normalizeWhiteboardSession(data);
+        whiteboardSessions.set(roomKey, session);
 
-        const segment = {
-            fromX: data.fromX,
-            fromY: data.fromY,
-            toX: data.toX,
-            toY: data.toY,
-            color: data.color,
-            size: data.size
-        };
-
-        const targetRoomId = data.room_id ?? currentRoomId;
-        recordWhiteboardSegment(segment, targetRoomId);
-        if (whiteboardCanvas && whiteboardCtx && String(targetRoomId) === String(currentRoomId)) {
-            drawWhiteboardSegment(segment);
+        if (String(currentRoomId) === roomKey) {
+            updateWhiteboardInvite(session);
         }
-    });
-
-    socket.on('whiteboard_clear', (data = {}) => {
-        if (whiteboardCtx && whiteboardCanvas) {
-            whiteboardCtx.clearRect(0, 0, whiteboardCanvas.width, whiteboardCanvas.height);
-        }
-        if (whiteboardOverlayCtx && whiteboardOverlay) {
-            whiteboardOverlayCtx.clearRect(0, 0, whiteboardOverlay.width, whiteboardOverlay.height);
-        }
-        clearWhiteboardHistory(data.room_id ?? currentRoomId);
     });
     
     // Совместные документы
@@ -6440,9 +6420,16 @@ function selectRoom(element) {
     // F. Сбрасываем счетчик непрочитанных
     markRoomAsRead(roomId);
 
+    const currentSession = whiteboardSessions.get(String(currentRoomId));
     const whiteboardModal = document.getElementById('whiteboardModal');
-    if (whiteboardCanvas && whiteboardModal && getComputedStyle(whiteboardModal).display !== 'none') {
-        replayWhiteboardHistory(currentRoomId);
+    if (whiteboardModal && getComputedStyle(whiteboardModal).display !== 'none') {
+        setWhiteboardSessionUI(currentSession || null);
+    }
+
+    if (currentSession && (!currentSession.createdBy || Number(currentSession.createdBy) !== Number(CURRENT_USER_ID))) {
+        updateWhiteboardInvite(currentSession);
+    } else {
+        dismissWhiteboardInvite();
     }
 
     // НОВОЕ: На мобильных переключаемся на экран чата (Telegram-стиль)
@@ -6658,401 +6645,280 @@ function applyVideoEffect(effectType) {
     console.log('Эффект применен:', effectType);
 }
 
-// ========== ДОСКА ДЛЯ РИСОВАНИЯ ==========
+// ========== ДОСКА EXCALIDRAW ==========
 
-﻿let whiteboardCanvas = null;
-let whiteboardCtx = null;
-let whiteboardOverlay = null;
-let whiteboardOverlayCtx = null;
-let whiteboardIsDrawing = false;
-let whiteboardTool = 'pen';
-let whiteboardColor = '#007aff';
-let whiteboardSize = 3;
-let whiteboardStartX = 0;
-let whiteboardStartY = 0;
-let whiteboardLastX = 0;
-let whiteboardLastY = 0;
-const whiteboardHistoryByRoom = new Map();
-const MAX_WHITEBOARD_HISTORY = 4000;
+const whiteboardSessions = new Map();
+let whiteboardFrameEl = null;
+let whiteboardShareInputEl = null;
+let whiteboardShareBarEl = null;
+let whiteboardEmptyStateEl = null;
+let whiteboardInviteToastEl = null;
+let whiteboardToastTitleEl = null;
+let whiteboardToastDescriptionEl = null;
+let whiteboardSubtitleEl = null;
+let whiteboardDefaultSubtitle = '';
+let pendingWhiteboardInvite = null;
+let activeWhiteboardSession = null;
 
-function clampWhiteboardValue(value) {
-    const num = Number(value);
-    if (!Number.isFinite(num)) return 0;
-    if (num < 0) return 0;
-    if (num > 1) return 1;
-    return num;
-}
-
-function getWhiteboardHistory(roomId = currentRoomId) {
-    if (!roomId) return [];
-    const key = String(roomId);
-    let history = whiteboardHistoryByRoom.get(key);
-    if (!history) {
-        history = [];
-        whiteboardHistoryByRoom.set(key, history);
+function initializeWhiteboardUI() {
+    ensureWhiteboardElements();
+    if (whiteboardShareBarEl) {
+        whiteboardShareBarEl.style.display = 'none';
     }
-    return history;
-}
-
-function recordWhiteboardSegment(segment, roomId = currentRoomId) {
-    if (!segment || !roomId) return;
-    const normalized = {
-        fromX: clampWhiteboardValue(segment.fromX),
-        fromY: clampWhiteboardValue(segment.fromY),
-        toX: clampWhiteboardValue(segment.toX),
-        toY: clampWhiteboardValue(segment.toY),
-        color: typeof segment.color === 'string' ? segment.color : whiteboardColor,
-        size: Number(segment.size) || whiteboardSize
-    };
-    const history = getWhiteboardHistory(roomId);
-    history.push(normalized);
-    if (history.length > MAX_WHITEBOARD_HISTORY) {
-        history.splice(0, history.length - MAX_WHITEBOARD_HISTORY);
+    if (whiteboardEmptyStateEl) {
+        whiteboardEmptyStateEl.style.display = '';
     }
 }
 
-function clearWhiteboardHistory(roomId = currentRoomId) {
-    if (!roomId) return;
-    const history = getWhiteboardHistory(roomId);
-    history.length = 0;
-}
-
-function drawWhiteboardSegment(segment) {
-    if (!whiteboardCanvas || !whiteboardCtx || !segment) return;
-    const width = whiteboardCanvas.width;
-    const height = whiteboardCanvas.height;
-    if (!width || !height) return;
-
-    const fromX = clampWhiteboardValue(segment.fromX) * width;
-    const fromY = clampWhiteboardValue(segment.fromY) * height;
-    const toX = clampWhiteboardValue(segment.toX) * width;
-    const toY = clampWhiteboardValue(segment.toY) * height;
-    const color = typeof segment.color === 'string' ? segment.color : whiteboardColor;
-    const size = Number(segment.size) || whiteboardSize;
-
-    drawLine(fromX, fromY, toX, toY, color, size);
-}
-
-function replayWhiteboardHistory(roomId = currentRoomId) {
-    if (!whiteboardCanvas || !whiteboardCtx) return;
-    const width = whiteboardCanvas.width;
-    const height = whiteboardCanvas.height;
-    if (!width || !height) return;
-
-    whiteboardCtx.clearRect(0, 0, width, height);
-    if (whiteboardOverlayCtx && whiteboardOverlay) {
-        whiteboardOverlayCtx.clearRect(0, 0, whiteboardOverlay.width, whiteboardOverlay.height);
-    }
-
-    const history = getWhiteboardHistory(roomId);
-    history.forEach(drawWhiteboardSegment);
-}
-
-function openWhiteboard() {
-    openModal('whiteboardModal');
-
-    if (!whiteboardCanvas) {
-        whiteboardCanvas = document.getElementById('whiteboardCanvas');
-        whiteboardOverlay = document.getElementById('whiteboardOverlay');
-        whiteboardCtx = whiteboardCanvas.getContext('2d');
-        whiteboardOverlayCtx = whiteboardOverlay.getContext('2d');
-
-        resizeWhiteboardCanvas();
-        window.addEventListener('resize', resizeWhiteboardCanvas);
-
-        whiteboardCanvas.addEventListener('mousedown', startWhiteboardStroke);
-        whiteboardCanvas.addEventListener('mousemove', drawWhiteboardStroke);
-        whiteboardCanvas.addEventListener('mouseup', endWhiteboardStroke);
-        whiteboardCanvas.addEventListener('mouseleave', endWhiteboardStroke);
-
-        whiteboardCanvas.addEventListener('touchstart', (e) => {
-            startWhiteboardStroke(e);
-        }, { passive: false });
-        whiteboardCanvas.addEventListener('touchmove', (e) => {
-            drawWhiteboardStroke(e);
-        }, { passive: false });
-        whiteboardCanvas.addEventListener('touchend', endWhiteboardStroke);
-    }
-
-    resetWhiteboardToolbar();
-    replayWhiteboardHistory();
-}
-
-function resizeWhiteboardCanvas() {
-    if (!whiteboardCanvas) return;
-    const { width, height } = whiteboardCanvas.getBoundingClientRect();
-    whiteboardCanvas.width = width;
-    whiteboardCanvas.height = height;
-    if (whiteboardOverlay) {
-        whiteboardOverlay.width = width;
-        whiteboardOverlay.height = height;
-    }
-    replayWhiteboardHistory();
-}
-
-function resetWhiteboardToolbar() {
-    const palette = document.getElementById('whiteboardPalette');
-    if (palette) {
-        palette.querySelectorAll('.color-swatch').forEach(swatch => {
-            const color = swatch.style.getPropertyValue('--swatch');
-            swatch.classList.toggle('active', color && color.trim().toLowerCase() === whiteboardColor.toLowerCase());
-        });
-        const colorInput = document.getElementById('brushColor');
-        if (colorInput && colorInput.value.toLowerCase() !== whiteboardColor.toLowerCase()) {
-            colorInput.value = whiteboardColor;
+function ensureWhiteboardElements() {
+    if (!whiteboardFrameEl) whiteboardFrameEl = document.getElementById('whiteboardFrame');
+    if (!whiteboardShareInputEl) whiteboardShareInputEl = document.getElementById('whiteboardShareInput');
+    if (!whiteboardShareBarEl) whiteboardShareBarEl = document.getElementById('whiteboardShareBar');
+    if (!whiteboardEmptyStateEl) whiteboardEmptyStateEl = document.getElementById('whiteboardEmptyState');
+    if (!whiteboardInviteToastEl) whiteboardInviteToastEl = document.getElementById('whiteboardInviteToast');
+    if (!whiteboardToastTitleEl) whiteboardToastTitleEl = document.getElementById('whiteboardToastTitle');
+    if (!whiteboardToastDescriptionEl) whiteboardToastDescriptionEl = document.getElementById('whiteboardToastDescription');
+    if (!whiteboardSubtitleEl) {
+        whiteboardSubtitleEl = document.getElementById('whiteboardSubtitle');
+        if (whiteboardSubtitleEl) {
+            whiteboardDefaultSubtitle = whiteboardSubtitleEl.textContent;
         }
     }
-    const toolbar = document.getElementById('whiteboardToolbar');
-    if (toolbar) {
-        toolbar.querySelectorAll('.tool-btn').forEach(btn => btn.classList.remove('active'));
+}
+
+function buildExcalidrawEmbedUrl(boardUrl) {
+    try {
+        const url = new URL(boardUrl);
+        url.searchParams.set('embed', '1');
+        url.searchParams.set('collab', '1');
+        url.searchParams.set('theme', 'dark');
+        return url.toString();
+    } catch (error) {
+        console.warn('Не удалось подготовить ссылку встраивания Excalidraw:', error);
+        return boardUrl;
     }
-    const activeBtn = document.querySelector(`.whiteboard-toolbar .tool-btn[data-tool="${whiteboardTool}"]`);
-    if (activeBtn) activeBtn.classList.add('active');
-
-    const sizeInput = document.getElementById('brushSize');
-    if (sizeInput) sizeInput.value = whiteboardSize;
-    const sizeValue = document.getElementById('whiteboardSizeValue');
-    if (sizeValue) sizeValue.textContent = `${whiteboardSize} px`;
 }
 
-function setWhiteboardTool(tool, button) {
-    whiteboardTool = tool;
-    const toolbar = document.getElementById('whiteboardToolbar');
-    if (toolbar) {
-        toolbar.querySelectorAll('.tool-btn').forEach(btn => btn.classList.remove('active'));
-    }
-    if (button) button.classList.add('active');
-}
-
-function setWhiteboardColor(color) {
-    whiteboardColor = color;
-    const palette = document.getElementById('whiteboardPalette');
-    if (palette) {
-        palette.querySelectorAll('.color-swatch').forEach(swatch => swatch.classList.remove('active'));
-        const matching = Array.from(palette.querySelectorAll('.color-swatch')).find(swatch => swatch.style.getPropertyValue('--swatch') === color);
-        if (matching) matching.classList.add('active');
-    }
-    const colorInput = document.getElementById('brushColor');
-    if (colorInput) colorInput.value = color;
-}
-
-function setWhiteboardSize(value) {
-    whiteboardSize = Math.max(1, Math.min(30, parseInt(value, 10) || whiteboardSize));
-    const sizeValue = document.getElementById('whiteboardSizeValue');
-    if (sizeValue) sizeValue.textContent = `${whiteboardSize} px`;
-}
-
-function getWhiteboardCoordinates(event) {
-    const rect = whiteboardCanvas.getBoundingClientRect();
-    let clientX;
-    let clientY;
-    if (event.touches && event.touches[0]) {
-        clientX = event.touches[0].clientX;
-        clientY = event.touches[0].clientY;
+function generateExcalidrawToken(length) {
+    const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_';
+    const characters = [];
+    if (window.crypto && window.crypto.getRandomValues) {
+        const buffer = new Uint32Array(length);
+        window.crypto.getRandomValues(buffer);
+        for (let i = 0; i < length; i += 1) {
+            characters.push(alphabet[buffer[i] % alphabet.length]);
+        }
     } else {
-        clientX = event.clientX;
-        clientY = event.clientY;
+        for (let i = 0; i < length; i += 1) {
+            const index = Math.floor(Math.random() * alphabet.length);
+            characters.push(alphabet[index]);
+        }
     }
-    const x = clientX - rect.left;
-    const y = clientY - rect.top;
-    return { x, y };
+    return characters.join('');
 }
 
-function startWhiteboardStroke(event) {
-    event.preventDefault();
-    if (!whiteboardCanvas) return;
-    whiteboardIsDrawing = true;
-    const { x, y } = getWhiteboardCoordinates(event);
-    whiteboardStartX = x;
-    whiteboardStartY = y;
-    whiteboardLastX = x;
-    whiteboardLastY = y;
-    if (whiteboardOverlayCtx) {
-        whiteboardOverlayCtx.clearRect(0, 0, whiteboardOverlay.width, whiteboardOverlay.height);
-    }
-}
-
-function drawWhiteboardStroke(event) {
-    if (!whiteboardIsDrawing) return;
-    event.preventDefault();
-    const { x, y } = getWhiteboardCoordinates(event);
-
-    if (whiteboardTool === 'pen' || whiteboardTool === 'highlighter' || whiteboardTool === 'eraser') {
-        drawContinuousStroke(x, y);
-    } else {
-        drawPreviewShape(x, y);
-    }
-}
-
-function endWhiteboardStroke(event) {
-    if (!whiteboardIsDrawing) return;
-    whiteboardIsDrawing = false;
-    const coords = event ? getWhiteboardCoordinates(event) : { x: whiteboardLastX, y: whiteboardLastY };
-    const endX = coords.x;
-    const endY = coords.y;
-
-    if (whiteboardTool === 'line') {
-        drawShapeLine(whiteboardStartX, whiteboardStartY, endX, endY);
-    } else if (whiteboardTool === 'rectangle') {
-        drawShapeRectangle(whiteboardStartX, whiteboardStartY, endX, endY);
-    } else if (whiteboardTool === 'circle') {
-        drawShapeCircle(whiteboardStartX, whiteboardStartY, endX, endY);
-    }
-
-    if (whiteboardOverlayCtx) {
-        whiteboardOverlayCtx.clearRect(0, 0, whiteboardOverlay.width, whiteboardOverlay.height);
-    }
-}
-
-function drawContinuousStroke(x, y) {
-    const baseColor = whiteboardTool === 'highlighter' ? applyAlphaToColor(whiteboardColor, 0.35) : whiteboardColor;
-    const color = whiteboardTool === 'eraser' ? '__eraser__' : baseColor;
-    const size = whiteboardTool === 'highlighter' ? whiteboardSize * 1.5 : whiteboardSize;
-    drawLine(whiteboardLastX, whiteboardLastY, x, y, color, size);
-
-    if (currentRoomId && socket) {
-        emitWhiteboardSegment(whiteboardLastX, whiteboardLastY, x, y, color, size);
-    }
-
-    whiteboardLastX = x;
-    whiteboardLastY = y;
-}
-
-function drawPreviewShape(x, y) {
-    if (!whiteboardOverlayCtx) return;
-    whiteboardOverlayCtx.clearRect(0, 0, whiteboardOverlay.width, whiteboardOverlay.height);
-    whiteboardOverlayCtx.strokeStyle = whiteboardColor;
-    whiteboardOverlayCtx.lineWidth = whiteboardSize;
-    whiteboardOverlayCtx.lineCap = 'round';
-    whiteboardOverlayCtx.globalAlpha = 0.6;
-    whiteboardOverlayCtx.beginPath();
-
-    if (whiteboardTool === 'line') {
-        whiteboardOverlayCtx.moveTo(whiteboardStartX, whiteboardStartY);
-        whiteboardOverlayCtx.lineTo(x, y);
-        whiteboardOverlayCtx.stroke();
-    } else if (whiteboardTool === 'rectangle') {
-        whiteboardOverlayCtx.strokeRect(Math.min(whiteboardStartX, x), Math.min(whiteboardStartY, y), Math.abs(x - whiteboardStartX), Math.abs(y - whiteboardStartY));
-    } else if (whiteboardTool === 'circle') {
-        const radius = Math.sqrt(Math.pow(x - whiteboardStartX, 2) + Math.pow(y - whiteboardStartY, 2));
-        whiteboardOverlayCtx.arc(whiteboardStartX, whiteboardStartY, radius, 0, Math.PI * 2);
-        whiteboardOverlayCtx.stroke();
-    }
-
-    whiteboardOverlayCtx.globalAlpha = 1;
-}
-
-function drawShapeLine(fromX, fromY, toX, toY) {
-    drawLine(fromX, fromY, toX, toY, whiteboardColor, whiteboardSize);
-    if (currentRoomId && socket) {
-        emitWhiteboardSegment(fromX, fromY, toX, toY, whiteboardColor, whiteboardSize);
-    }
-}
-
-function drawShapeRectangle(startX, startY, endX, endY) {
-    const x1 = Math.min(startX, endX);
-    const y1 = Math.min(startY, endY);
-    const x2 = Math.max(startX, endX);
-    const y2 = Math.max(startY, endY);
-    drawShapeLine(x1, y1, x2, y1);
-    drawShapeLine(x2, y1, x2, y2);
-    drawShapeLine(x2, y2, x1, y2);
-    drawShapeLine(x1, y2, x1, y1);
-}
-
-function drawShapeCircle(startX, startY, endX, endY) {
-    const radius = Math.sqrt(Math.pow(endX - startX, 2) + Math.pow(endY - startY, 2));
-    const segments = 64;
-    let prevX = startX + radius;
-    let prevY = startY;
-    for (let i = 1; i <= segments; i++) {
-        const angle = (i / segments) * Math.PI * 2;
-        const nextX = startX + radius * Math.cos(angle);
-        const nextY = startY + radius * Math.sin(angle);
-        drawShapeLine(prevX, prevY, nextX, nextY);
-        prevX = nextX;
-        prevY = nextY;
-    }
-}
-
-function emitWhiteboardSegment(fromX, fromY, toX, toY, color, size) {
-    if (!whiteboardCanvas) return;
-    const width = whiteboardCanvas.width;
-    const height = whiteboardCanvas.height;
-    if (!width || !height) return;
-
-    const normalized = {
-        fromX: fromX / width,
-        fromY: fromY / height,
-        toX: toX / width,
-        toY: toY / height,
-        color: color,
-        size: size
-    };
-
-    recordWhiteboardSegment(normalized);
-    socket.emit('whiteboard_draw', {
-        room_id: currentRoomId,
-        ...normalized
+function createWhiteboardSession(roomId) {
+    const boardRoomId = generateExcalidrawToken(20);
+    const boardRoomKey = generateExcalidrawToken(22);
+    const boardUrl = `https://excalidraw.com/#room=${boardRoomId},${boardRoomKey}`;
+    return normalizeWhiteboardSession({
+        room_id: roomId,
+        board_url: boardUrl,
+        embed_url: buildExcalidrawEmbedUrl(boardUrl),
+        created_by: CURRENT_USER_ID,
+        created_by_name: 'Вы',
+        created_at: Date.now()
     });
 }
 
-function applyAlphaToColor(color, alpha) {
-    if (!color) return `rgba(0,0,0,${alpha})`;
-    if (color.startsWith('rgba')) {
-        return color.replace(/rgba\(([^,]+),([^,]+),([^,]+),([^\)]+)\)/, (_, r, g, b) => `rgba(${r.trim()},${g.trim()},${b.trim()},${alpha})`);
-    }
-    if (color.startsWith('rgb')) {
-        return color.replace(/rgb\(([^,]+),([^,]+),([^\)]+)\)/, (_, r, g, b) => `rgba(${r.trim()},${g.trim()},${b.trim()},${alpha})`);
-    }
-    const hex = color.replace('#', '');
-    const bigint = parseInt(hex, 16);
-    const r = (bigint >> 16) & 255;
-    const g = (bigint >> 8) & 255;
-    const b = bigint & 255;
-    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+function normalizeWhiteboardSession(data) {
+    const boardUrl = String(data.board_url || '');
+    return {
+        roomId: String(data.room_id),
+        boardUrl,
+        embedUrl: data.embed_url ? String(data.embed_url) : buildExcalidrawEmbedUrl(boardUrl),
+        createdBy: data.created_by ?? null,
+        createdByName: data.created_by_name || data.creator_name || 'Участник',
+        createdAt: data.created_at ? Number(data.created_at) : Date.now()
+    };
 }
 
-function drawLine(fromX, fromY, toX, toY, color, size) {
-    if (!whiteboardCtx) return;
-    whiteboardCtx.save();
-    if (color === '__eraser__') {
-        whiteboardCtx.globalCompositeOperation = 'destination-out';
-        whiteboardCtx.strokeStyle = 'rgba(0,0,0,1)';
-    } else {
-        whiteboardCtx.globalCompositeOperation = 'source-over';
-        whiteboardCtx.strokeStyle = color;
-        if (color && color.startsWith('rgba')) {
-            const parts = color.split(',');
-            const alphaPart = parts[3];
-            if (alphaPart) {
-                const alpha = parseFloat(alphaPart.replace(')', '').trim());
-                if (!Number.isNaN(alpha)) whiteboardCtx.globalAlpha = alpha;
-            }
+function setWhiteboardSessionUI(session) {
+    ensureWhiteboardElements();
+    if (!whiteboardFrameEl || !whiteboardShareInputEl || !whiteboardShareBarEl) return;
+
+    activeWhiteboardSession = session || null;
+
+    if (session) {
+        if (whiteboardSubtitleEl) {
+            const author = session.createdBy && Number(session.createdBy) === Number(CURRENT_USER_ID)
+                ? 'Создано вами'
+                : `Создал ${session.createdByName || 'участник'}`;
+            whiteboardSubtitleEl.textContent = `${author}. Все изменения синхронизируются через Excalidraw.`;
         }
+        whiteboardFrameEl.src = session.embedUrl;
+        whiteboardFrameEl.dataset.boardUrl = session.boardUrl;
+        whiteboardShareInputEl.value = session.boardUrl;
+        whiteboardShareBarEl.style.display = 'flex';
+        if (whiteboardEmptyStateEl) {
+            whiteboardEmptyStateEl.style.display = 'none';
+        }
+        whiteboardFrameEl.parentElement?.classList.add('has-session');
+    } else {
+        if (whiteboardSubtitleEl) {
+            whiteboardSubtitleEl.textContent = whiteboardDefaultSubtitle;
+        }
+        whiteboardFrameEl.removeAttribute('src');
+        whiteboardFrameEl.dataset.boardUrl = '';
+        whiteboardShareInputEl.value = '';
+        whiteboardShareBarEl.style.display = 'none';
+        if (whiteboardEmptyStateEl) {
+            whiteboardEmptyStateEl.style.display = '';
+        }
+        whiteboardFrameEl.parentElement?.classList.remove('has-session');
     }
-    whiteboardCtx.lineWidth = size;
-    whiteboardCtx.lineCap = 'round';
-    whiteboardCtx.beginPath();
-    whiteboardCtx.moveTo(fromX, fromY);
-    whiteboardCtx.lineTo(toX, toY);
-    whiteboardCtx.stroke();
-    whiteboardCtx.globalAlpha = 1;
-    whiteboardCtx.restore();
 }
 
-function clearWhiteboard() {
-    if (whiteboardCtx && whiteboardCanvas) {
-        whiteboardCtx.clearRect(0, 0, whiteboardCanvas.width, whiteboardCanvas.height);
+function announceWhiteboardSession(session) {
+    if (!socket || !currentRoomId || !session) return;
+    socket.emit('system_message', {
+        room_id: parseInt(currentRoomId, 10),
+        content: `Открыта новая доска Excalidraw: ${session.boardUrl}`,
+        type: 'system'
+    });
+}
+
+function broadcastWhiteboardSession(session) {
+    if (!socket || !currentRoomId || !session) return;
+    socket.emit('whiteboard_session', {
+        room_id: parseInt(currentRoomId, 10),
+        board_url: session.boardUrl,
+        embed_url: session.embedUrl,
+        created_by: session.createdBy,
+        created_by_name: session.createdByName,
+        created_at: session.createdAt
+    });
+}
+
+function updateWhiteboardInvite(session) {
+    ensureWhiteboardElements();
+    pendingWhiteboardInvite = session;
+
+    if (!whiteboardInviteToastEl || !session) {
+        dismissWhiteboardInvite();
+        return;
     }
-    if (whiteboardOverlayCtx && whiteboardOverlay) {
-        whiteboardOverlayCtx.clearRect(0, 0, whiteboardOverlay.width, whiteboardOverlay.height);
+
+    const isSelf = session.createdBy && Number(session.createdBy) === Number(CURRENT_USER_ID);
+    if (isSelf) {
+        setWhiteboardSessionUI(session);
+        dismissWhiteboardInvite();
+        return;
     }
-    clearWhiteboardHistory(currentRoomId);
-    if (currentRoomId && socket) {
-        socket.emit('whiteboard_clear', {
-            room_id: currentRoomId
+
+    if (whiteboardToastTitleEl) {
+        whiteboardToastTitleEl.textContent = 'Совместная доска открыта';
+    }
+    if (whiteboardToastDescriptionEl) {
+        whiteboardToastDescriptionEl.textContent = `${session.createdByName || 'Участник'} приглашает вас рисовать вместе.`;
+    }
+    whiteboardInviteToastEl.classList.add('show');
+}
+
+function dismissWhiteboardInvite() {
+    ensureWhiteboardElements();
+    pendingWhiteboardInvite = null;
+    if (whiteboardInviteToastEl) {
+        whiteboardInviteToastEl.classList.remove('show');
+    }
+}
+
+function acceptWhiteboardInvite() {
+    if (!pendingWhiteboardInvite) return;
+    openWhiteboard(pendingWhiteboardInvite);
+    dismissWhiteboardInvite();
+}
+
+function openWhiteboard(session) {
+    ensureWhiteboardElements();
+    if (!currentRoomId) {
+        alert('Выберите чат, чтобы открыть совместную доску.');
+        return;
+    }
+
+    let targetSession = session || whiteboardSessions.get(String(currentRoomId));
+    if (!targetSession) {
+        targetSession = createWhiteboardSession(String(currentRoomId));
+        whiteboardSessions.set(String(currentRoomId), targetSession);
+        setWhiteboardSessionUI(targetSession);
+        announceWhiteboardSession(targetSession);
+        broadcastWhiteboardSession(targetSession);
+    } else {
+        setWhiteboardSessionUI(targetSession);
+    }
+
+    openModal('whiteboardModal');
+    dismissWhiteboardInvite();
+}
+
+function copyWhiteboardLink() {
+    ensureWhiteboardElements();
+    if (!whiteboardShareInputEl || !whiteboardShareInputEl.value) return;
+    const text = whiteboardShareInputEl.value;
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(() => {
+            showInlineBanner('Ссылка на доску скопирована.');
+        }).catch(() => {
+            fallbackCopyWhiteboardLink(text);
         });
+    } else {
+        fallbackCopyWhiteboardLink(text);
+    }
+}
+
+function fallbackCopyWhiteboardLink(text) {
+    try {
+        const tempInput = document.createElement('textarea');
+        tempInput.value = text;
+        tempInput.setAttribute('readonly', 'readonly');
+        tempInput.style.position = 'absolute';
+        tempInput.style.left = '-9999px';
+        document.body.appendChild(tempInput);
+        tempInput.select();
+        document.execCommand('copy');
+        document.body.removeChild(tempInput);
+        showInlineBanner('Ссылка на доску скопирована.');
+    } catch (error) {
+        alert('Не удалось скопировать ссылку. Скопируйте её вручную.');
+    }
+}
+
+function showInlineBanner(message) {
+    try {
+        const banner = document.getElementById('poll-comment-banner');
+        const bannerText = document.getElementById('poll-comment-text');
+        if (banner && bannerText) {
+            bannerText.textContent = message;
+            banner.classList.add('visible');
+            setTimeout(() => banner.classList.remove('visible'), 2200);
+        }
+    } catch (error) {
+        console.warn('Не удалось показать уведомление о копировании ссылки:', error);
+    }
+}
+
+function openWhiteboardInNewTab() {
+    if (!activeWhiteboardSession) {
+        alert('Сначала создайте или откройте доску, чтобы перейти в новую вкладку.');
+        return;
+    }
+    window.open(activeWhiteboardSession.boardUrl, '_blank', 'noopener');
+}
+
+function closeWhiteboardModal() {
+    const modal = document.getElementById('whiteboardModal');
+    if (modal) {
+        closeModal({ target: modal, forceClose: true });
     }
 }
 

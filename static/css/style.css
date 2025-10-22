@@ -5220,137 +5220,292 @@ html {
     align-items: center;
     gap: 12px;
 }
+.whiteboard-overlay {
+    padding: 0;
+    align-items: stretch;
+}
+
 .whiteboard-modal {
-    max-width: 1100px;
-    width: 95%;
-    max-height: 95%;
-    height: 780px;
+    width: 100%;
+    max-width: none;
+    height: 100%;
+    max-height: none;
+    margin: 0;
+    border-radius: 0;
+    box-shadow: none;
+    padding: clamp(16px, 4vw, 36px);
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: 20px;
+    background: color-mix(in srgb, var(--surface-elevated) 88%, rgba(10, 16, 28, 0.92));
+    overflow: hidden;
 }
 
-.whiteboard-toolbar {
+.whiteboard-modal-header {
     display: flex;
-    flex-wrap: wrap;
     align-items: center;
-    gap: 10px;
-    background: rgba(255, 255, 255, 0.04);
-    padding: 10px 14px;
-    border-radius: var(--radius-md);
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 16px;
+    position: relative;
+    z-index: 2;
 }
 
-.whiteboard-toolbar .tool-btn {
+.whiteboard-modal-title {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 260px;
+}
+
+.whiteboard-modal-title h3 {
+    margin: 0;
+    font-size: 1.4rem;
+}
+
+.whiteboard-subtitle {
+    margin: 4px 0 0;
+    font-size: 0.92rem;
+    color: var(--text-color-muted);
+}
+
+.whiteboard-modal-title .ui-icon {
     width: 40px;
     height: 40px;
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    background: rgba(255, 255, 255, 0.06);
-    border-radius: var(--radius-sm);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: inherit;
-    cursor: pointer;
-    transition: background var(--transition-fast), transform var(--transition-fast), border var(--transition-fast), color var(--transition-fast);
-}
-
-.whiteboard-toolbar .tool-btn:hover {
-    background: rgba(255, 255, 255, 0.12);
-    transform: translateY(-1px);
-}
-
-.whiteboard-toolbar .tool-btn.active {
-    background: rgba(0, 122, 255, 0.2);
-    border-color: rgba(0, 122, 255, 0.6);
+    padding: 10px;
+    border-radius: var(--radius-full);
+    background: color-mix(in srgb, var(--surface-muted) 45%, transparent);
     color: var(--color-primary);
 }
 
-.whiteboard-divider {
-    width: 1px;
-    height: 32px;
-    background: rgba(255, 255, 255, 0.12);
-}
-
-.whiteboard-palette {
+.whiteboard-modal-actions {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 12px;
 }
 
-.color-swatch {
-    width: 28px;
-    height: 28px;
-    border-radius: 50%;
-    border: 2px solid rgba(255, 255, 255, 0.2);
-    background: var(--swatch);
-    cursor: pointer;
-    transition: transform var(--transition-fast), border var(--transition-fast);
-}
-
-.color-swatch:hover {
-    transform: translateY(-1px);
-}
-
-.color-swatch.active {
-    border-color: #ffffff;
-    box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.45);
-}
-
-.color-swatch[style*='#ffffff'] {
-    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.1);
-}
-
-.color-picker input[type="color"] {
-    width: 32px;
-    height: 32px;
-    border: none;
-    border-radius: 10px;
-    cursor: pointer;
-    padding: 0;
-    background: transparent;
-}
-
-.whiteboard-slider {
+.whiteboard-share-bar {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
-    gap: 8px;
-    min-width: 160px;
-}
-
-.whiteboard-slider input[type="range"] {
-    width: 120px;
-    accent-color: var(--color-primary);
-}
-
-.whiteboard-slider span {
-    font-size: 12px;
-    opacity: 0.7;
-}
-
-.whiteboard-stage {
-    position: relative;
-    flex: 1 1 auto;
-    width: 100%;
-    background: #ffffff;
+    justify-content: space-between;
+    gap: 18px;
+    padding: 18px 22px;
     border-radius: var(--radius-lg);
-    overflow: hidden;
-    box-shadow: 0 22px 44px rgba(0, 0, 0, 0.22);
+    border: 1px solid color-mix(in srgb, var(--surface-muted) 35%, transparent);
+    background: color-mix(in srgb, var(--surface-muted) 45%, transparent);
 }
 
-#whiteboardCanvas,
-#whiteboardOverlay {
+.whiteboard-share-text {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 200px;
+}
+
+.whiteboard-share-text span {
+    font-weight: 600;
+    font-size: 0.95rem;
+}
+
+.whiteboard-share-text small {
+    color: var(--text-color-muted);
+    font-size: 0.8rem;
+}
+
+.whiteboard-share-controls {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex: 1;
+    min-width: 220px;
+}
+
+#whiteboardShareInput {
+    flex: 1;
+    min-width: 180px;
+    background: color-mix(in srgb, var(--surface-elevated) 80%, transparent);
+    border: 1px solid var(--input-border);
+    border-radius: var(--radius-md);
+    padding: 10px 14px;
+    color: inherit;
+    font-size: 0.95rem;
+    letter-spacing: 0.01em;
+}
+
+#whiteboardShareInput:focus {
+    outline: 2px solid color-mix(in srgb, var(--color-primary) 55%, transparent);
+    outline-offset: 2px;
+}
+
+.whiteboard-frame-wrapper {
+    flex: 1 1 auto;
+    position: relative;
+    border-radius: var(--radius-xl);
+    overflow: hidden;
+    background: linear-gradient(135deg, rgba(15, 23, 42, 0.9), rgba(30, 41, 59, 0.88));
+    box-shadow: 0 30px 60px rgba(0, 0, 0, 0.35);
+    transition: box-shadow var(--transition-normal);
+}
+
+.whiteboard-frame-wrapper.has-session {
+    box-shadow: 0 40px 80px rgba(0, 0, 0, 0.45);
+}
+
+#whiteboardFrame {
     position: absolute;
     inset: 0;
     width: 100%;
     height: 100%;
+    border: none;
+    display: none;
+    background: #0f172a;
 }
 
-#whiteboardCanvas {
-    cursor: crosshair;
+.whiteboard-frame-wrapper.has-session #whiteboardFrame {
+    display: block;
 }
 
-#whiteboardOverlay {
+.whiteboard-empty {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    text-align: center;
+    padding: 24px;
+    color: var(--text-color-muted);
+}
+
+.whiteboard-empty h4 {
+    margin: 0;
+    font-size: 1.2rem;
+    color: var(--text-color);
+}
+
+.whiteboard-empty p {
+    margin: 0;
+    max-width: 340px;
+    line-height: 1.5;
+}
+
+.whiteboard-empty-illustration {
+    width: 180px;
+    height: auto;
+    margin-bottom: 6px;
+    filter: drop-shadow(0 12px 24px rgba(0, 0, 0, 0.25));
+}
+
+.whiteboard-empty-illustration rect {
+    fill: color-mix(in srgb, var(--surface-elevated) 80%, transparent);
+}
+
+.whiteboard-empty-illustration path,
+.whiteboard-empty-illustration circle:first-of-type {
+    stroke: var(--color-primary);
+    fill: var(--color-primary);
+}
+
+.whiteboard-empty-illustration circle:last-of-type {
+    fill: var(--color-info);
+}
+
+.whiteboard-toast {
+    position: fixed;
+    bottom: 28px;
+    right: 28px;
+    z-index: 1200;
+    background: color-mix(in srgb, var(--surface-elevated) 96%, rgba(10, 16, 28, 0.92));
+    border-radius: var(--radius-xl);
+    border: 1px solid color-mix(in srgb, var(--surface-muted) 45%, transparent);
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
+    transform: translateY(20px);
+    opacity: 0;
     pointer-events: none;
+    transition: transform var(--transition-normal), opacity var(--transition-normal);
+}
+
+.whiteboard-toast.show {
+    transform: translateY(0);
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.whiteboard-toast-body {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 16px 20px;
+}
+
+.whiteboard-toast-icon .ui-icon {
+    width: 40px;
+    height: 40px;
+    padding: 10px;
+    border-radius: var(--radius-full);
+    background: color-mix(in srgb, var(--surface-muted) 42%, transparent);
+    color: var(--color-primary);
+}
+
+.whiteboard-toast-text {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 200px;
+}
+
+.whiteboard-toast-text strong {
+    font-size: 1rem;
+    color: var(--text-color);
+}
+
+.whiteboard-toast-text span {
+    font-size: 0.85rem;
+    color: var(--text-color-muted);
+}
+
+.whiteboard-toast-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+@media (max-width: 900px) {
+    .whiteboard-modal {
+        padding: 18px;
+        border-radius: 0;
+    }
+
+    .whiteboard-share-bar {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .whiteboard-share-controls {
+        width: 100%;
+    }
+
+    #whiteboardShareInput {
+        width: 100%;
+    }
+
+    .whiteboard-toast {
+        left: 16px;
+        right: 16px;
+        bottom: 16px;
+    }
+
+    .whiteboard-toast-body {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 12px;
+    }
+
+    .whiteboard-toast-actions {
+        justify-content: flex-end;
+    }
 }
 
 .documents-modal {
