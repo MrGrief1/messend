@@ -1430,24 +1430,6 @@
                 </div>
             </div>
 
-                <!-- Editing Message Banner -->
-                <div id="editing-banner" class="message-banner" style="display: none;">
-                    <div class="banner-icon">
-                        <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
-                            <use href="#ui-doc-upload"></use>
-                        </svg>
-                    </div>
-                    <div class="banner-content">
-                        <div class="banner-title">Редактирование</div>
-                        <div id="editing-banner-text" class="banner-text"></div>
-                    </div>
-                    <button class="icon-btn" id="cancel-editing-btn">
-                        <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
-                            <use href="#ui-xmark"></use>
-                        </svg>
-                    </button>
-                </div>
-
                 <div id="poll-comment-banner" class="message-banner" style="display: none;">
                     <div class="banner-icon comment-icon">
                         <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
@@ -1478,6 +1460,22 @@
                             </button>
 
                             <div class="composer-field" id="message-field">
+                                <div id="editing-banner" class="composer-state-strip" style="display: none;">
+                                    <div class="composer-state-icon" aria-hidden="true">
+                                        <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
+                                            <use href="#ui-doc-upload"></use>
+                                        </svg>
+                                    </div>
+                                    <div class="composer-state-content">
+                                        <div class="composer-state-title">Редактирование</div>
+                                        <div id="editing-banner-text" class="composer-state-text"></div>
+                                    </div>
+                                    <button class="composer-state-close" id="cancel-editing-btn" type="button" aria-label="Отменить редактирование">
+                                        <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
+                                            <use href="#ui-xmark"></use>
+                                        </svg>
+                                    </button>
+                                </div>
                                 <div id="file-preview-area" class="composer-attachments" aria-hidden="true">
                                     <div id="file-preview-container" class="composer-attachments-scroll"></div>
                                 </div>
@@ -2898,7 +2896,29 @@
             }
         });
     </script>
-    
+
+    <div id="file-viewer-overlay" class="file-viewer-overlay" hidden aria-hidden="true">
+        <div class="file-viewer-backdrop"></div>
+        <div class="file-viewer-container" role="dialog" aria-modal="true" aria-labelledby="file-viewer-name">
+            <button id="file-viewer-close" class="file-viewer-close" type="button" aria-label="Закрыть предпросмотр">
+                <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
+                    <use href="#ui-xmark"></use>
+                </svg>
+            </button>
+            <div id="file-viewer-preview" class="file-viewer-preview" role="presentation"></div>
+            <div class="file-viewer-meta">
+                <div class="file-viewer-info">
+                    <div id="file-viewer-name" class="file-viewer-name"></div>
+                    <div id="file-viewer-size" class="file-viewer-size"></div>
+                </div>
+                <div class="file-viewer-actions">
+                    <a id="file-viewer-download" class="file-viewer-action primary" href="#" download>Скачать</a>
+                    <a id="file-viewer-open" class="file-viewer-action" href="#" target="_blank" rel="noopener noreferrer">Открыть в новой вкладке</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="{{ url_for('static', filename='js/chat.js') }}"></script>
     <script src="{{ url_for('static', filename='js/sfu.js') }}"></script>
 </body>

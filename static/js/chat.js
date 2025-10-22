@@ -15,6 +15,13 @@ const roomList = document.getElementById('room-list');
 const callButton = document.getElementById('call-button');
 const sendButton = document.getElementById('send-button');
 const messageField = document.getElementById('message-field');
+const fileViewerOverlay = document.getElementById('file-viewer-overlay');
+const fileViewerPreview = document.getElementById('file-viewer-preview');
+const fileViewerName = document.getElementById('file-viewer-name');
+const fileViewerSize = document.getElementById('file-viewer-size');
+const fileViewerDownload = document.getElementById('file-viewer-download');
+const fileViewerOpen = document.getElementById('file-viewer-open');
+const fileViewerCloseBtn = document.getElementById('file-viewer-close');
 // Доп. элементы заголовка чата
 const membersBtn = document.getElementById('room-members-btn');
 const roomSettingsBtn = document.getElementById('room-settings-btn');
@@ -36,6 +43,26 @@ const threadSearchClear = document.getElementById('thread-search-clear');
 const threadSearchEmptyState = document.getElementById('thread-search-empty');
 const chatViewContainer = document.getElementById('chat-view');
 const settingsViewContainer = document.getElementById('settings-view-inline');
+
+if (fileViewerCloseBtn) {
+    fileViewerCloseBtn.addEventListener('click', () => closeFilePreview());
+}
+
+if (fileViewerOverlay) {
+    fileViewerOverlay.addEventListener('click', (event) => {
+        if (event.target === fileViewerOverlay || event.target.classList.contains('file-viewer-backdrop')) {
+            closeFilePreview();
+        }
+    });
+}
+
+document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && fileViewerOverlay && fileViewerOverlay.classList.contains('active')) {
+        event.preventDefault();
+        event.stopPropagation();
+        closeFilePreview();
+    }
+});
 // Вызовы
 let localStream = null;
 let isMicEnabled = true;
@@ -66,6 +93,7 @@ let isDialModalOpen = false;
 let isCallModalOpen = false;
 
 let reactionTargetMessageId = null; // ID сообщения, на которое мы реагируем
+let activeFilePreviewCleanup = null;
 
 function handleCallButtonClick(event) {
     const arrowZone = event.target.closest('.call-button-split');
@@ -2219,6 +2247,212 @@ function displayFilePreview() {
     }
 }
 
+function deriveFileExtension(filename = '') {
+    const safeName = filename || '';
+    const lastDot = safeName.lastIndexOf('.');
+    if (lastDot === -1) return '';
+    return safeName.slice(lastDot + 1).toLowerCase();
+}
+
+function resolvePreviewType(name, mimeType = '') {
+    const extension = deriveFileExtension(name);
+    const normalizedMime = (mimeType || '').toLowerCase();
+
+    const imageExt = ['png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp', 'svg', 'avif', 'heic', 'heif'];
+    const videoExt = ['mp4', 'mov', 'webm', 'mkv', 'avi', 'm4v'];
+    const audioExt = ['mp3', 'wav', 'ogg', 'm4a', 'aac', 'flac'];
+
+    if (normalizedMime.startsWith('image/') || imageExt.includes(extension)) {
+        return 'image';
+    }
+    if (normalizedMime.startsWith('video/') || videoExt.includes(extension)) {
+        return 'video';
+    }
+    if (normalizedMime.startsWith('audio/') || audioExt.includes(extension)) {
+        return 'audio';
+    }
+    if (normalizedMime === 'application/pdf' || extension === 'pdf') {
+        return 'pdf';
+    }
+    return 'generic';
+}
+
+function inferFileName(name, url) {
+    if (name && name.trim()) {
+        return name.trim();
+    }
+    if (!url) return 'Файл';
+    try {
+        const withoutQuery = url.split('?')[0];
+        const decoded = decodeURIComponent(withoutQuery);
+        const segments = decoded.split('/');
+        const candidate = segments.pop() || segments.pop();
+        return candidate || 'Файл';
+    } catch (error) {
+        return 'Файл';
+    }
+}
+
+function openFilePreview(file) {
+    if (!file || !file.url) {
+        return;
+    }
+
+    if (!fileViewerOverlay || !fileViewerPreview || !fileViewerName) {
+        window.open(file.url, '_blank');
+        return;
+    }
+
+    if (activeFilePreviewCleanup) {
+        try {
+            activeFilePreviewCleanup();
+        } catch (cleanupError) {
+            console.warn('Ошибка очистки предпросмотра файла:', cleanupError);
+        }
+        activeFilePreviewCleanup = null;
+    }
+
+    fileViewerPreview.innerHTML = '';
+
+    const resolvedName = inferFileName(file.name, file.url);
+    const mimeType = file.mimeType || file.mime_type || '';
+    const previewType = resolvePreviewType(resolvedName, mimeType);
+    let cleanupFn = null;
+
+    if (previewType === 'image') {
+        const img = document.createElement('img');
+        img.src = file.url;
+        img.alt = resolvedName;
+        img.loading = 'lazy';
+        fileViewerPreview.appendChild(img);
+    } else if (previewType === 'video') {
+        const video = document.createElement('video');
+        video.src = file.url;
+        video.controls = true;
+        video.autoplay = true;
+        video.playsInline = true;
+        fileViewerPreview.appendChild(video);
+        cleanupFn = () => {
+            video.pause();
+        };
+    } else if (previewType === 'audio') {
+        const audio = document.createElement('audio');
+        audio.src = file.url;
+        audio.controls = true;
+        audio.autoplay = true;
+        fileViewerPreview.appendChild(audio);
+        cleanupFn = () => {
+            audio.pause();
+        };
+    } else if (previewType === 'pdf') {
+        const frame = document.createElement('iframe');
+        frame.src = file.url;
+        frame.title = resolvedName;
+        frame.loading = 'lazy';
+        frame.referrerPolicy = 'no-referrer';
+        fileViewerPreview.appendChild(frame);
+    } else {
+        const fallback = document.createElement('div');
+        fallback.className = 'file-viewer-generic';
+        fallback.innerHTML = `
+            <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
+                <use href="#ui-document"></use>
+            </svg>
+            <strong>${resolvedName}</strong>
+            <span>Предпросмотр недоступен. Используйте кнопки ниже, чтобы открыть или скачать файл.</span>`;
+        fileViewerPreview.appendChild(fallback);
+    }
+
+    activeFilePreviewCleanup = cleanupFn;
+
+    fileViewerName.textContent = resolvedName;
+    if (fileViewerSize) {
+        if (file.size) {
+            fileViewerSize.textContent = formatFileSize(file.size);
+            fileViewerSize.style.display = 'block';
+        } else {
+            fileViewerSize.textContent = '';
+            fileViewerSize.style.display = 'none';
+        }
+    }
+
+    if (fileViewerDownload) {
+        fileViewerDownload.href = file.url;
+        if (resolvedName) {
+            fileViewerDownload.download = resolvedName;
+        } else {
+            fileViewerDownload.removeAttribute('download');
+        }
+    }
+
+    if (fileViewerOpen) {
+        fileViewerOpen.href = file.url;
+    }
+
+    fileViewerOverlay.classList.add('active');
+    fileViewerOverlay.removeAttribute('hidden');
+    fileViewerOverlay.setAttribute('aria-hidden', 'false');
+    if (document.body) {
+        document.body.classList.add('file-viewer-open');
+    }
+
+    if (fileViewerCloseBtn) {
+        requestAnimationFrame(() => {
+            fileViewerCloseBtn.focus({ preventScroll: true });
+        });
+    }
+}
+
+function closeFilePreview() {
+    if (!fileViewerOverlay) {
+        return;
+    }
+
+    if (activeFilePreviewCleanup) {
+        try {
+            activeFilePreviewCleanup();
+        } catch (cleanupError) {
+            console.warn('Ошибка завершения предпросмотра:', cleanupError);
+        }
+        activeFilePreviewCleanup = null;
+    }
+
+    if (fileViewerPreview) {
+        const mediaEl = fileViewerPreview.querySelector('video, audio');
+        if (mediaEl) {
+            mediaEl.pause();
+        }
+        fileViewerPreview.innerHTML = '';
+    }
+
+    if (fileViewerSize) {
+        fileViewerSize.textContent = '';
+        fileViewerSize.style.display = 'none';
+    }
+
+    if (fileViewerName) {
+        fileViewerName.textContent = '';
+    }
+
+    if (fileViewerDownload) {
+        fileViewerDownload.href = '#';
+        fileViewerDownload.removeAttribute('download');
+    }
+
+    if (fileViewerOpen) {
+        fileViewerOpen.href = '#';
+    }
+
+    fileViewerOverlay.classList.remove('active');
+    fileViewerOverlay.setAttribute('aria-hidden', 'true');
+    if (!fileViewerOverlay.hasAttribute('hidden')) {
+        fileViewerOverlay.setAttribute('hidden', '');
+    }
+    if (document.body) {
+        document.body.classList.remove('file-viewer-open');
+    }
+}
+
 async function sendMessage() {
     const content = messageInput.value.trim();
 
@@ -2545,14 +2779,39 @@ function displayMessage(data) {
                 if (item.type === 'image') {
                     const img = document.createElement('img');
                     img.src = item.url;
-                    img.alt = 'Изображение';
-                    img.onclick = () => window.open(item.url, '_blank');
+                    img.alt = item.name || 'Изображение';
+                    img.loading = 'lazy';
+                    img.addEventListener('click', (event) => {
+                        event.preventDefault();
+                        openFilePreview({
+                            url: item.url,
+                            name: item.name,
+                            mimeType: item.mime_type || item.type,
+                            size: item.size
+                        });
+                    });
                     gallery.appendChild(img);
                 } else if (item.type === 'video') {
                     const video = document.createElement('video');
                     video.src = item.url;
-                    video.controls = true;
+                    video.muted = true;
+                    video.loop = true;
+                    video.controls = false;
+                    video.playsInline = true;
                     video.preload = 'metadata';
+                    video.addEventListener('mouseenter', () => {
+                        video.play().catch(() => {});
+                    });
+                    video.addEventListener('mouseleave', () => video.pause());
+                    video.addEventListener('click', (event) => {
+                        event.preventDefault();
+                        openFilePreview({
+                            url: item.url,
+                            name: item.name,
+                            mimeType: item.mime_type || item.type,
+                            size: item.size
+                        });
+                    });
                     gallery.appendChild(video);
                 }
             });
@@ -2600,6 +2859,15 @@ function displayMessage(data) {
 
                 attachmentLink.appendChild(iconWrapper);
                 attachmentLink.appendChild(infoWrapper);
+                attachmentLink.addEventListener('click', (event) => {
+                    event.preventDefault();
+                    openFilePreview({
+                        url: item.url,
+                        name: item.name,
+                        mimeType: item.mime_type || item.type,
+                        size: item.size
+                    });
+                });
                 attachmentsContainer.appendChild(attachmentLink);
             });
 
