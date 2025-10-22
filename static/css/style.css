@@ -5221,136 +5221,160 @@ html {
     gap: 12px;
 }
 .whiteboard-modal {
-    max-width: 1100px;
-    width: 95%;
-    max-height: 95%;
-    height: 780px;
+    width: min(1200px, 96vw);
+    height: min(92vh, 920px);
     display: flex;
     flex-direction: column;
     gap: 16px;
 }
 
-.whiteboard-toolbar {
+.whiteboard-header {
     display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 20px;
     flex-wrap: wrap;
+}
+
+.whiteboard-header-text {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    max-width: 520px;
+}
+
+.whiteboard-description {
+    font-size: 14px;
+    opacity: 0.72;
+    transition: color var(--transition-fast), opacity var(--transition-fast);
+}
+
+.whiteboard-description.success {
+    color: var(--color-success);
+    opacity: 1;
+}
+
+.whiteboard-description.error {
+    color: var(--color-danger);
+    opacity: 1;
+}
+
+.whiteboard-header-actions {
+    display: flex;
     align-items: center;
     gap: 10px;
-    background: rgba(255, 255, 255, 0.04);
+    flex-wrap: wrap;
+}
+
+.whiteboard-share {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 14px;
+    background: rgba(255, 255, 255, 0.05);
     padding: 10px 14px;
     border-radius: var(--radius-md);
+    border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-.whiteboard-toolbar .tool-btn {
-    width: 40px;
-    height: 40px;
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    background: rgba(255, 255, 255, 0.06);
-    border-radius: var(--radius-sm);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: inherit;
-    cursor: pointer;
-    transition: background var(--transition-fast), transform var(--transition-fast), border var(--transition-fast), color var(--transition-fast);
+.whiteboard-share span {
+    opacity: 0.75;
 }
 
-.whiteboard-toolbar .tool-btn:hover {
-    background: rgba(255, 255, 255, 0.12);
-    transform: translateY(-1px);
-}
-
-.whiteboard-toolbar .tool-btn.active {
-    background: rgba(0, 122, 255, 0.2);
-    border-color: rgba(0, 122, 255, 0.6);
+.whiteboard-share a {
     color: var(--color-primary);
+    font-weight: 500;
+    text-decoration: none;
+    word-break: break-word;
 }
 
-.whiteboard-divider {
-    width: 1px;
-    height: 32px;
-    background: rgba(255, 255, 255, 0.12);
+.whiteboard-share a:hover {
+    text-decoration: underline;
 }
 
-.whiteboard-palette {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.color-swatch {
-    width: 28px;
-    height: 28px;
-    border-radius: 50%;
-    border: 2px solid rgba(255, 255, 255, 0.2);
-    background: var(--swatch);
-    cursor: pointer;
-    transition: transform var(--transition-fast), border var(--transition-fast);
-}
-
-.color-swatch:hover {
-    transform: translateY(-1px);
-}
-
-.color-swatch.active {
-    border-color: #ffffff;
-    box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.45);
-}
-
-.color-swatch[style*='#ffffff'] {
-    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.1);
-}
-
-.color-picker input[type="color"] {
-    width: 32px;
-    height: 32px;
-    border: none;
-    border-radius: 10px;
-    cursor: pointer;
-    padding: 0;
-    background: transparent;
-}
-
-.whiteboard-slider {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    min-width: 160px;
-}
-
-.whiteboard-slider input[type="range"] {
-    width: 120px;
-    accent-color: var(--color-primary);
-}
-
-.whiteboard-slider span {
-    font-size: 12px;
-    opacity: 0.7;
-}
-
-.whiteboard-stage {
+.whiteboard-frame-wrapper {
     position: relative;
     flex: 1 1 auto;
     width: 100%;
-    background: #ffffff;
+    background: #0f172a;
     border-radius: var(--radius-lg);
     overflow: hidden;
     box-shadow: 0 22px 44px rgba(0, 0, 0, 0.22);
 }
 
-#whiteboardCanvas,
-#whiteboardOverlay {
-    position: absolute;
-    inset: 0;
+.whiteboard-frame-wrapper iframe {
     width: 100%;
     height: 100%;
+    border: none;
+    background: transparent;
 }
 
-#whiteboardCanvas {
-    cursor: crosshair;
+.whiteboard-loading {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    color: #ffffff;
+    font-size: 14px;
+    letter-spacing: 0.3px;
+    background: rgba(10, 14, 25, 0.82);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    transition: opacity var(--transition-fast);
 }
 
-#whiteboardOverlay {
+.whiteboard-loading.hidden {
+    opacity: 0;
     pointer-events: none;
+}
+
+.whiteboard-spinner {
+    width: 42px;
+    height: 42px;
+    border: 3px solid rgba(255, 255, 255, 0.25);
+    border-top-color: var(--color-primary);
+    border-radius: 50%;
+    animation: whiteboard-spin 1s linear infinite;
+}
+
+@keyframes whiteboard-spin {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+@media (max-width: 768px) {
+    .whiteboard-modal {
+        width: 100%;
+        height: calc(100vh - 40px);
+    }
+
+    .whiteboard-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+    }
+
+    .whiteboard-header-actions {
+        width: 100%;
+        justify-content: flex-start;
+    }
+
+    .whiteboard-share {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 6px;
+    }
+
+    .whiteboard-frame-wrapper {
+        border-radius: var(--radius-md);
+    }
 }
 
 .documents-modal {

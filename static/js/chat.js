@@ -884,330 +884,7 @@ document.addEventListener('DOMContentLoaded', (event) => {
     
     // ========== Socket обработчики для совместных функций ==========
     
-    // Доска для рисования
-    socket.on('whiteboard_draw', (data) => {
-        if (!data) return;
-        if (data.room_id && String(data.room_id) !== String(currentRoomId)) {
-            return;
-        }
-
-        const segment = {
-            fromX: data.fromX,
-            fromY: data.fromY,
-            toX: data.toX,
-            toY: data.toY,
-            color: data.color,
-            size: data.size
-        };
-
-        const targetRoomId = data.room_id ?? currentRoomId;
-        recordWhiteboardSegment(segment, targetRoomId);
-        if (whiteboardCanvas && whiteboardCtx && String(targetRoomId) === String(currentRoomId)) {
-            drawWhiteboardSegment(segment);
-        }
-    });
-
-    socket.on('whiteboard_clear', (data = {}) => {
-        if (whiteboardCtx && whiteboardCanvas) {
-            whiteboardCtx.clearRect(0, 0, whiteboardCanvas.width, whiteboardCanvas.height);
-        }
-        if (whiteboardOverlayCtx && whiteboardOverlay) {
-            whiteboardOverlayCtx.clearRect(0, 0, whiteboardOverlay.width, whiteboardOverlay.height);
-        }
-        clearWhiteboardHistory(data.room_id ?? currentRoomId);
-    });
-    
-    // Совместные документы
-    socket.on('document_update', (data) => {
-        if (!data.content) return;
-        
-        documentContent = data.content;
-        const editor = document.getElementById('documentEditor');
-        
-        // Обновляем только если документ открыт и пользователь не редактирует
-        if (editor && document.activeElement !== editor) {
-            const scrollPos = editor.scrollTop;
-            editor.innerHTML = data.content;
-            editor.scrollTop = scrollPos;
-        }
-    });
-    
-    // Презентации
-    socket.on('presentation_slide_change', (data) => {
-        currentSlideIndex = data.slide_index;
-        renderSlides();
-    });
-    
-    // Инициализация счетчиков чатов
-    updateChatCounts();
-    
-    // Добавляем обработчик правого клика для чатов
-    document.addEventListener('contextmenu', (e) => {
-        const roomItem = e.target.closest('.room-item');
-        if (roomItem) {
-            e.preventDefault();
-            showRoomContextMenu(e, roomItem);
-        }
-    });
-});
-
-// --- Функции Чата (selectRoom обновлен) ---
-
-let editingMessage = null;
-let selectionMode = false;
-let currentTab = 'chats'; // 'chats' или 'archive'
-
-// ========== Функции для вкладок Чаты/Архив ==========
-
-function switchToTab(tab) {
-    currentTab = tab;
-
-    const chatsTab = document.getElementById('chats-tab');
-    const archiveTab = document.getElementById('archive-tab');
-    const roomList = document.getElementById('room-list');
-    const archiveList = document.getElementById('archive-list');
-    const sidebarContent = document.querySelector('.sidebar-content');
-
-    if (!roomList || !archiveList) {
-        return;
-    }
-
-    if (tab === 'chats') {
-        // Показываем обычные чаты
-        chatsTab.classList.add('active');
-        archiveTab.classList.remove('active');
-        chatsTab.style.background = 'var(--color-primary)';
-        chatsTab.style.color = 'white';
-        archiveTab.style.background = 'var(--input-bg)';
-        archiveTab.style.color = 'var(--text-color)';
-        roomList.style.display = 'block';
-        archiveList.style.display = 'none';
-        if (sidebarContent) sidebarContent.classList.remove('showing-archive');
-    } else {
-        // Показываем архив
-        chatsTab.classList.remove('active');
-        archiveTab.classList.add('active');
-        chatsTab.style.background = 'var(--input-bg)';
-        chatsTab.style.color = 'var(--text-color)';
-        archiveTab.style.background = 'var(--color-primary)';
-        archiveTab.style.color = 'white';
-        roomList.style.display = 'none';
-        archiveList.style.display = 'block';
-        if (sidebarContent) sidebarContent.classList.add('showing-archive');
-    }
-
-    updateChatCounts();
-}
-
-function updateChatCounts() {
-    const activeCount = document.querySelectorAll('#room-list .room-item').length;
-    const archivedCount = document.querySelectorAll('#archive-list .room-item').length;
-
-    const activeCountEl = document.getElementById('active-chats-count');
-    const archivedCountEl = document.getElementById('archived-chats-count');
-
-    if (activeCountEl) activeCountEl.textContent = activeCount > 0 ? `(${activeCount})` : '';
-    if (archivedCountEl) archivedCountEl.textContent = archivedCount > 0 ? `(${archivedCount})` : '';
-}
-
-document.addEventListener('DOMContentLoaded', () => {
-    switchToTab(currentTab);
-});
-
-// Архивирование чата
-async function archiveChat(roomId) {
-    if (!roomId) return;
-    
-    try {
-        const response = await fetch('/api/archive_chat', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({room_id: roomId})
-        });
-        
-        const data = await response.json();
-        
-        if (data.success) {
-            // Перемещаем элемент из основного списка в архив
-            const roomItem = document.querySelector(`#room-list .room-item[data-room-id="${roomId}"]`);
-            if (roomItem) {
-                roomItem.classList.add('archived');
-                document.getElementById('archive-list').appendChild(roomItem);
-                
-                // Удаляем empty state если был
-                const emptyState = document.getElementById('empty-state-archive');
-                if (emptyState) emptyState.remove();
-            }
-            
-            updateChatCounts();
-            console.log('✅ Чат архивирован');
-        } else {
-            alert('Ошибка: ' + data.message);
-        }
-    } catch (error) {
-        console.error('Ошибка архивирования:', error);
-        alert('Не удалось архивировать чат');
-    }
-}
-
-// Разархивирование чата
-async function unarchiveChat(roomId) {
-    if (!roomId) return;
-    
-    try {
-        const response = await fetch('/api/unarchive_chat', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({room_id: roomId})
-        });
-        
-        const data = await response.json();
-        
-        if (data.success) {
-            // Перемещаем элемент из архива в основной список
-            const roomItem = document.querySelector(`#archive-list .room-item[data-room-id="${roomId}"]`);
-            if (roomItem) {
-                roomItem.classList.remove('archived');
-                document.getElementById('room-list').appendChild(roomItem);
-                
-                // Удаляем empty state если был
-                const emptyState = document.getElementById('empty-state-rooms');
-                if (emptyState) emptyState.remove();
-            }
-            
-            updateChatCounts();
-            console.log('✅ Чат разархивирован');
-        } else {
-            alert('Ошибка: ' + data.message);
-        }
-    } catch (error) {
-        console.error('Ошибка разархивирования:', error);
-        alert('Не удалось разархивировать чат');
-    }
-}
-
-// ========== Функции для нового UI ввода ==========
-
-// Меню вложений
-function toggleAttachMenu(event) {
-    event.stopPropagation();
-    event.preventDefault();
-    
-    const menu = document.getElementById('attach-menu');
-    if (!menu) {
-        console.error('attach-menu не найдено!');
-        return;
-    }
-    
-    const isVisible = menu.style.display === 'block';
-    console.log('toggleAttachMenu вызвана, isVisible:', isVisible);
-    
-    if (isVisible) {
-        menu.style.display = 'none';
-        return;
-    }
-    
-    // Закрываем все другие меню кроме attach-menu
-    closeAllMenus('attach-menu');
-    
-    menu.style.display = 'block';
-    console.log('Меню вложений открыто');
-    
-    // Закрываем при клике вне меню, игнорируя клики внутри модалок, чтобы не ломать стрелки/хоткеи
-    setTimeout(() => {
-        document.addEventListener('click', function closeMenu(e) {
-            if (e.target.closest('.modal-overlay')) return;
-            if (!e.target.closest('.attach-menu') && !e.target.closest('[onclick*="toggleAttachMenu"]')) {
-                menu.style.display = 'none';
-                document.removeEventListener('click', closeMenu);
-            }
-        });
-    }, 100);
-}
-
-function openMediaPicker() {
-    const menu = document.getElementById('attach-menu');
-    if (menu) menu.style.display = 'none';
-    
-    const fileInput = document.getElementById('file-input');
-    if (fileInput) {
-        fileInput.click();
-        console.log('Открыт выбор медиафайлов');
-    }
-}
-
-function openDocPicker() {
-    const menu = document.getElementById('attach-menu');
-    if (menu) menu.style.display = 'none';
-    
-    const fileInput = document.getElementById('file-input-docs');
-    if (fileInput) {
-        fileInput.click();
-        console.log('Открыт выбор документов');
-    }
-}
-
-function createPoll() {
-    const menu = document.getElementById('attach-menu');
-    if (menu) menu.style.display = 'none';
-
-    closePollBuilder();
-
-    const modal = document.createElement('div');
-    modal.className = 'modal-overlay';
-    modal.id = 'pollBuilderModal';
-    modal.innerHTML = `
-        <div class="modal-content glass poll-builder">
-            <div class="modal-header">
-                <div class="modal-title">
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M9 11l3 3L22 4" stroke-linecap="round" stroke-linejoin="round"></path>
-                        <path d="M12 20H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h14" stroke-linecap="round" stroke-linejoin="round"></path>
-                    </svg>
-                    <h3>Создать голосование</h3>
-                </div>
-                <button type="button" class="close-btn" onclick="closePollBuilder()">&times;</button>
-            </div>
-            <div class="modal-body poll-builder-body">
-                <label class="poll-label" for="pollQuestion">Вопрос</label>
-                <input type="text" id="pollQuestion" class="poll-input" placeholder="Например: когда встречаемся?" maxlength="200">
-
-                <div class="poll-options-editor">
-                    <div class="poll-options-header">
-                        <span>Варианты ответов</span>
-                        <button type="button" class="ghost-btn" onclick="addPollOption()">+ Добавить вариант</button>
-                    </div>
-                    <div id="pollOptionsList" class="poll-options-list"></div>
-                </div>
-
-                <div class="poll-settings">
-                    <label class="poll-toggle">
-                        <input type="checkbox" id="pollMultiple">
-                        <span>Разрешить несколько ответов</span>
-                    </label>
-                    <label class="poll-toggle">
-                        <input type="checkbox" id="pollAnonymous">
-                        <span>Сделать голосование анонимным</span>
-                    </label>
-                </div>
-
-                <div class="poll-preview-block">
-                    <div class="poll-preview-title">Предпросмотр</div>
-                    <div id="pollPreview" class="poll-preview"></div>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="primary-btn" onclick="submitPoll()">Опубликовать</button>
-                <button type="button" class="secondary-btn" onclick="closePollBuilder()">Отмена</button>
-            </div>
-        </div>
-    `;
-
-    modal.addEventListener('click', (event) => {
-        if (event.target === modal) {
-            closePollBuilder();
-        }
-    });
+    // Доска для рисования перенесена на Excalidraw, синхронизация осуществляется через общий линк
 
     document.body.appendChild(modal);
     requestAnimationFrame(() => {
@@ -6440,11 +6117,6 @@ function selectRoom(element) {
     // F. Сбрасываем счетчик непрочитанных
     markRoomAsRead(roomId);
 
-    const whiteboardModal = document.getElementById('whiteboardModal');
-    if (whiteboardCanvas && whiteboardModal && getComputedStyle(whiteboardModal).display !== 'none') {
-        replayWhiteboardHistory(currentRoomId);
-    }
-
     // НОВОЕ: На мобильных переключаемся на экран чата (Telegram-стиль)
     if (window.innerWidth <= 768) {
         const sidebar = document.querySelector('.sidebar');
@@ -6660,400 +6332,151 @@ function applyVideoEffect(effectType) {
 
 // ========== ДОСКА ДЛЯ РИСОВАНИЯ ==========
 
-﻿let whiteboardCanvas = null;
-let whiteboardCtx = null;
-let whiteboardOverlay = null;
-let whiteboardOverlayCtx = null;
-let whiteboardIsDrawing = false;
-let whiteboardTool = 'pen';
-let whiteboardColor = '#007aff';
-let whiteboardSize = 3;
-let whiteboardStartX = 0;
-let whiteboardStartY = 0;
-let whiteboardLastX = 0;
-let whiteboardLastY = 0;
-const whiteboardHistoryByRoom = new Map();
-const MAX_WHITEBOARD_HISTORY = 4000;
+const whiteboardRoomsByChat = new Map();
+let whiteboardMessageTimer = null;
+const WHITEBOARD_DESCRIPTION_DEFAULT = 'Создайте общую комнату Excalidraw и поделитесь ссылкой, чтобы участники могли присоединиться.';
+const WHITEBOARD_BASE_URL = 'https://excalidraw.com/';
 
-function clampWhiteboardValue(value) {
-    const num = Number(value);
-    if (!Number.isFinite(num)) return 0;
-    if (num < 0) return 0;
-    if (num > 1) return 1;
-    return num;
+function getWhiteboardKey() {
+    return currentRoomId ? String(currentRoomId) : 'global';
 }
 
-function getWhiteboardHistory(roomId = currentRoomId) {
-    if (!roomId) return [];
-    const key = String(roomId);
-    let history = whiteboardHistoryByRoom.get(key);
-    if (!history) {
-        history = [];
-        whiteboardHistoryByRoom.set(key, history);
+function generateRandomBase64Url(byteLength) {
+    const buffer = new Uint8Array(byteLength);
+    const cryptoObj = window.crypto || window.msCrypto;
+    if (cryptoObj && cryptoObj.getRandomValues) {
+        cryptoObj.getRandomValues(buffer);
+    } else {
+        for (let i = 0; i < byteLength; i++) {
+            buffer[i] = Math.floor(Math.random() * 256);
+        }
     }
-    return history;
+    let binary = '';
+    buffer.forEach((value) => {
+        binary += String.fromCharCode(value);
+    });
+    return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
 }
 
-function recordWhiteboardSegment(segment, roomId = currentRoomId) {
-    if (!segment || !roomId) return;
-    const normalized = {
-        fromX: clampWhiteboardValue(segment.fromX),
-        fromY: clampWhiteboardValue(segment.fromY),
-        toX: clampWhiteboardValue(segment.toX),
-        toY: clampWhiteboardValue(segment.toY),
-        color: typeof segment.color === 'string' ? segment.color : whiteboardColor,
-        size: Number(segment.size) || whiteboardSize
-    };
-    const history = getWhiteboardHistory(roomId);
-    history.push(normalized);
-    if (history.length > MAX_WHITEBOARD_HISTORY) {
-        history.splice(0, history.length - MAX_WHITEBOARD_HISTORY);
+function generateWhiteboardRoomData() {
+    const roomId = generateRandomBase64Url(8);
+    const roomKey = generateRandomBase64Url(16);
+    const url = `${WHITEBOARD_BASE_URL}#room=${roomId},${roomKey}`;
+    return { roomId, roomKey, url };
+}
+
+function getWhiteboardRoom(forceNew = false) {
+    const key = getWhiteboardKey();
+    if (forceNew || !whiteboardRoomsByChat.has(key)) {
+        whiteboardRoomsByChat.set(key, generateWhiteboardRoomData());
     }
+    return whiteboardRoomsByChat.get(key);
 }
 
-function clearWhiteboardHistory(roomId = currentRoomId) {
-    if (!roomId) return;
-    const history = getWhiteboardHistory(roomId);
-    history.length = 0;
+function setWhiteboardLoading(isLoading) {
+    const overlay = document.getElementById('whiteboardLoading');
+    if (!overlay) return;
+    overlay.classList.toggle('hidden', !isLoading);
 }
 
-function drawWhiteboardSegment(segment) {
-    if (!whiteboardCanvas || !whiteboardCtx || !segment) return;
-    const width = whiteboardCanvas.width;
-    const height = whiteboardCanvas.height;
-    if (!width || !height) return;
-
-    const fromX = clampWhiteboardValue(segment.fromX) * width;
-    const fromY = clampWhiteboardValue(segment.fromY) * height;
-    const toX = clampWhiteboardValue(segment.toX) * width;
-    const toY = clampWhiteboardValue(segment.toY) * height;
-    const color = typeof segment.color === 'string' ? segment.color : whiteboardColor;
-    const size = Number(segment.size) || whiteboardSize;
-
-    drawLine(fromX, fromY, toX, toY, color, size);
-}
-
-function replayWhiteboardHistory(roomId = currentRoomId) {
-    if (!whiteboardCanvas || !whiteboardCtx) return;
-    const width = whiteboardCanvas.width;
-    const height = whiteboardCanvas.height;
-    if (!width || !height) return;
-
-    whiteboardCtx.clearRect(0, 0, width, height);
-    if (whiteboardOverlayCtx && whiteboardOverlay) {
-        whiteboardOverlayCtx.clearRect(0, 0, whiteboardOverlay.width, whiteboardOverlay.height);
+function updateWhiteboardLinkUI(room) {
+    const linkEl = document.getElementById('whiteboardShareLink');
+    if (linkEl) {
+        linkEl.textContent = room.url;
+        linkEl.href = room.url;
     }
 
-    const history = getWhiteboardHistory(roomId);
-    history.forEach(drawWhiteboardSegment);
+    const frame = document.getElementById('whiteboardFrame');
+    if (!frame) return;
+
+    frame.dataset.roomKey = getWhiteboardKey();
+    const currentUrl = frame.dataset.currentUrl;
+    if (currentUrl !== room.url) {
+        frame.dataset.currentUrl = room.url;
+        setWhiteboardLoading(true);
+        frame.src = room.url;
+    } else if (!frame.src) {
+        frame.src = room.url;
+    } else {
+        setWhiteboardLoading(false);
+    }
+}
+
+function showWhiteboardMessage(text, type = 'info', timeout = 3500) {
+    const description = document.getElementById('whiteboardDescription');
+    if (!description) return;
+
+    description.textContent = text;
+    description.classList.remove('success', 'error');
+    if (type === 'success') description.classList.add('success');
+    if (type === 'error') description.classList.add('error');
+
+    if (whiteboardMessageTimer) {
+        clearTimeout(whiteboardMessageTimer);
+        whiteboardMessageTimer = null;
+    }
+
+    if (timeout > 0) {
+        whiteboardMessageTimer = setTimeout(() => {
+            description.textContent = WHITEBOARD_DESCRIPTION_DEFAULT;
+            description.classList.remove('success', 'error');
+        }, timeout);
+    }
+}
+
+function bindWhiteboardFrame() {
+    const frame = document.getElementById('whiteboardFrame');
+    if (!frame) return null;
+    if (frame.dataset.bound === 'true') return frame;
+
+    frame.dataset.bound = 'true';
+    frame.addEventListener('load', () => {
+        setWhiteboardLoading(false);
+    });
+    return frame;
 }
 
 function openWhiteboard() {
     openModal('whiteboardModal');
-
-    if (!whiteboardCanvas) {
-        whiteboardCanvas = document.getElementById('whiteboardCanvas');
-        whiteboardOverlay = document.getElementById('whiteboardOverlay');
-        whiteboardCtx = whiteboardCanvas.getContext('2d');
-        whiteboardOverlayCtx = whiteboardOverlay.getContext('2d');
-
-        resizeWhiteboardCanvas();
-        window.addEventListener('resize', resizeWhiteboardCanvas);
-
-        whiteboardCanvas.addEventListener('mousedown', startWhiteboardStroke);
-        whiteboardCanvas.addEventListener('mousemove', drawWhiteboardStroke);
-        whiteboardCanvas.addEventListener('mouseup', endWhiteboardStroke);
-        whiteboardCanvas.addEventListener('mouseleave', endWhiteboardStroke);
-
-        whiteboardCanvas.addEventListener('touchstart', (e) => {
-            startWhiteboardStroke(e);
-        }, { passive: false });
-        whiteboardCanvas.addEventListener('touchmove', (e) => {
-            drawWhiteboardStroke(e);
-        }, { passive: false });
-        whiteboardCanvas.addEventListener('touchend', endWhiteboardStroke);
-    }
-
-    resetWhiteboardToolbar();
-    replayWhiteboardHistory();
+    bindWhiteboardFrame();
+    const room = getWhiteboardRoom(false);
+    updateWhiteboardLinkUI(room);
+    showWhiteboardMessage(WHITEBOARD_DESCRIPTION_DEFAULT, 'info', 0);
 }
 
-function resizeWhiteboardCanvas() {
-    if (!whiteboardCanvas) return;
-    const { width, height } = whiteboardCanvas.getBoundingClientRect();
-    whiteboardCanvas.width = width;
-    whiteboardCanvas.height = height;
-    if (whiteboardOverlay) {
-        whiteboardOverlay.width = width;
-        whiteboardOverlay.height = height;
-    }
-    replayWhiteboardHistory();
+function createNewWhiteboardRoom() {
+    bindWhiteboardFrame();
+    const room = getWhiteboardRoom(true);
+    updateWhiteboardLinkUI(room);
+    showWhiteboardMessage('Создана новая доска. Поделитесь ссылкой с участниками.', 'success');
 }
 
-function resetWhiteboardToolbar() {
-    const palette = document.getElementById('whiteboardPalette');
-    if (palette) {
-        palette.querySelectorAll('.color-swatch').forEach(swatch => {
-            const color = swatch.style.getPropertyValue('--swatch');
-            swatch.classList.toggle('active', color && color.trim().toLowerCase() === whiteboardColor.toLowerCase());
-        });
-        const colorInput = document.getElementById('brushColor');
-        if (colorInput && colorInput.value.toLowerCase() !== whiteboardColor.toLowerCase()) {
-            colorInput.value = whiteboardColor;
+async function copyWhiteboardLink() {
+    const room = getWhiteboardRoom(false);
+    try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            await navigator.clipboard.writeText(room.url);
+        } else {
+            const temp = document.createElement('input');
+            temp.value = room.url;
+            temp.setAttribute('readonly', 'true');
+            temp.style.position = 'absolute';
+            temp.style.opacity = '0';
+            document.body.appendChild(temp);
+            temp.select();
+            document.execCommand('copy');
+            temp.remove();
         }
-    }
-    const toolbar = document.getElementById('whiteboardToolbar');
-    if (toolbar) {
-        toolbar.querySelectorAll('.tool-btn').forEach(btn => btn.classList.remove('active'));
-    }
-    const activeBtn = document.querySelector(`.whiteboard-toolbar .tool-btn[data-tool="${whiteboardTool}"]`);
-    if (activeBtn) activeBtn.classList.add('active');
-
-    const sizeInput = document.getElementById('brushSize');
-    if (sizeInput) sizeInput.value = whiteboardSize;
-    const sizeValue = document.getElementById('whiteboardSizeValue');
-    if (sizeValue) sizeValue.textContent = `${whiteboardSize} px`;
-}
-
-function setWhiteboardTool(tool, button) {
-    whiteboardTool = tool;
-    const toolbar = document.getElementById('whiteboardToolbar');
-    if (toolbar) {
-        toolbar.querySelectorAll('.tool-btn').forEach(btn => btn.classList.remove('active'));
-    }
-    if (button) button.classList.add('active');
-}
-
-function setWhiteboardColor(color) {
-    whiteboardColor = color;
-    const palette = document.getElementById('whiteboardPalette');
-    if (palette) {
-        palette.querySelectorAll('.color-swatch').forEach(swatch => swatch.classList.remove('active'));
-        const matching = Array.from(palette.querySelectorAll('.color-swatch')).find(swatch => swatch.style.getPropertyValue('--swatch') === color);
-        if (matching) matching.classList.add('active');
-    }
-    const colorInput = document.getElementById('brushColor');
-    if (colorInput) colorInput.value = color;
-}
-
-function setWhiteboardSize(value) {
-    whiteboardSize = Math.max(1, Math.min(30, parseInt(value, 10) || whiteboardSize));
-    const sizeValue = document.getElementById('whiteboardSizeValue');
-    if (sizeValue) sizeValue.textContent = `${whiteboardSize} px`;
-}
-
-function getWhiteboardCoordinates(event) {
-    const rect = whiteboardCanvas.getBoundingClientRect();
-    let clientX;
-    let clientY;
-    if (event.touches && event.touches[0]) {
-        clientX = event.touches[0].clientX;
-        clientY = event.touches[0].clientY;
-    } else {
-        clientX = event.clientX;
-        clientY = event.clientY;
-    }
-    const x = clientX - rect.left;
-    const y = clientY - rect.top;
-    return { x, y };
-}
-
-function startWhiteboardStroke(event) {
-    event.preventDefault();
-    if (!whiteboardCanvas) return;
-    whiteboardIsDrawing = true;
-    const { x, y } = getWhiteboardCoordinates(event);
-    whiteboardStartX = x;
-    whiteboardStartY = y;
-    whiteboardLastX = x;
-    whiteboardLastY = y;
-    if (whiteboardOverlayCtx) {
-        whiteboardOverlayCtx.clearRect(0, 0, whiteboardOverlay.width, whiteboardOverlay.height);
+        showWhiteboardMessage('Ссылка скопирована. Отправьте её участникам.', 'success');
+    } catch (error) {
+        console.error('Не удалось скопировать ссылку на доску', error);
+        showWhiteboardMessage('Не удалось скопировать ссылку. Скопируйте её вручную.', 'error');
     }
 }
 
-function drawWhiteboardStroke(event) {
-    if (!whiteboardIsDrawing) return;
-    event.preventDefault();
-    const { x, y } = getWhiteboardCoordinates(event);
-
-    if (whiteboardTool === 'pen' || whiteboardTool === 'highlighter' || whiteboardTool === 'eraser') {
-        drawContinuousStroke(x, y);
-    } else {
-        drawPreviewShape(x, y);
-    }
-}
-
-function endWhiteboardStroke(event) {
-    if (!whiteboardIsDrawing) return;
-    whiteboardIsDrawing = false;
-    const coords = event ? getWhiteboardCoordinates(event) : { x: whiteboardLastX, y: whiteboardLastY };
-    const endX = coords.x;
-    const endY = coords.y;
-
-    if (whiteboardTool === 'line') {
-        drawShapeLine(whiteboardStartX, whiteboardStartY, endX, endY);
-    } else if (whiteboardTool === 'rectangle') {
-        drawShapeRectangle(whiteboardStartX, whiteboardStartY, endX, endY);
-    } else if (whiteboardTool === 'circle') {
-        drawShapeCircle(whiteboardStartX, whiteboardStartY, endX, endY);
-    }
-
-    if (whiteboardOverlayCtx) {
-        whiteboardOverlayCtx.clearRect(0, 0, whiteboardOverlay.width, whiteboardOverlay.height);
-    }
-}
-
-function drawContinuousStroke(x, y) {
-    const baseColor = whiteboardTool === 'highlighter' ? applyAlphaToColor(whiteboardColor, 0.35) : whiteboardColor;
-    const color = whiteboardTool === 'eraser' ? '__eraser__' : baseColor;
-    const size = whiteboardTool === 'highlighter' ? whiteboardSize * 1.5 : whiteboardSize;
-    drawLine(whiteboardLastX, whiteboardLastY, x, y, color, size);
-
-    if (currentRoomId && socket) {
-        emitWhiteboardSegment(whiteboardLastX, whiteboardLastY, x, y, color, size);
-    }
-
-    whiteboardLastX = x;
-    whiteboardLastY = y;
-}
-
-function drawPreviewShape(x, y) {
-    if (!whiteboardOverlayCtx) return;
-    whiteboardOverlayCtx.clearRect(0, 0, whiteboardOverlay.width, whiteboardOverlay.height);
-    whiteboardOverlayCtx.strokeStyle = whiteboardColor;
-    whiteboardOverlayCtx.lineWidth = whiteboardSize;
-    whiteboardOverlayCtx.lineCap = 'round';
-    whiteboardOverlayCtx.globalAlpha = 0.6;
-    whiteboardOverlayCtx.beginPath();
-
-    if (whiteboardTool === 'line') {
-        whiteboardOverlayCtx.moveTo(whiteboardStartX, whiteboardStartY);
-        whiteboardOverlayCtx.lineTo(x, y);
-        whiteboardOverlayCtx.stroke();
-    } else if (whiteboardTool === 'rectangle') {
-        whiteboardOverlayCtx.strokeRect(Math.min(whiteboardStartX, x), Math.min(whiteboardStartY, y), Math.abs(x - whiteboardStartX), Math.abs(y - whiteboardStartY));
-    } else if (whiteboardTool === 'circle') {
-        const radius = Math.sqrt(Math.pow(x - whiteboardStartX, 2) + Math.pow(y - whiteboardStartY, 2));
-        whiteboardOverlayCtx.arc(whiteboardStartX, whiteboardStartY, radius, 0, Math.PI * 2);
-        whiteboardOverlayCtx.stroke();
-    }
-
-    whiteboardOverlayCtx.globalAlpha = 1;
-}
-
-function drawShapeLine(fromX, fromY, toX, toY) {
-    drawLine(fromX, fromY, toX, toY, whiteboardColor, whiteboardSize);
-    if (currentRoomId && socket) {
-        emitWhiteboardSegment(fromX, fromY, toX, toY, whiteboardColor, whiteboardSize);
-    }
-}
-
-function drawShapeRectangle(startX, startY, endX, endY) {
-    const x1 = Math.min(startX, endX);
-    const y1 = Math.min(startY, endY);
-    const x2 = Math.max(startX, endX);
-    const y2 = Math.max(startY, endY);
-    drawShapeLine(x1, y1, x2, y1);
-    drawShapeLine(x2, y1, x2, y2);
-    drawShapeLine(x2, y2, x1, y2);
-    drawShapeLine(x1, y2, x1, y1);
-}
-
-function drawShapeCircle(startX, startY, endX, endY) {
-    const radius = Math.sqrt(Math.pow(endX - startX, 2) + Math.pow(endY - startY, 2));
-    const segments = 64;
-    let prevX = startX + radius;
-    let prevY = startY;
-    for (let i = 1; i <= segments; i++) {
-        const angle = (i / segments) * Math.PI * 2;
-        const nextX = startX + radius * Math.cos(angle);
-        const nextY = startY + radius * Math.sin(angle);
-        drawShapeLine(prevX, prevY, nextX, nextY);
-        prevX = nextX;
-        prevY = nextY;
-    }
-}
-
-function emitWhiteboardSegment(fromX, fromY, toX, toY, color, size) {
-    if (!whiteboardCanvas) return;
-    const width = whiteboardCanvas.width;
-    const height = whiteboardCanvas.height;
-    if (!width || !height) return;
-
-    const normalized = {
-        fromX: fromX / width,
-        fromY: fromY / height,
-        toX: toX / width,
-        toY: toY / height,
-        color: color,
-        size: size
-    };
-
-    recordWhiteboardSegment(normalized);
-    socket.emit('whiteboard_draw', {
-        room_id: currentRoomId,
-        ...normalized
-    });
-}
-
-function applyAlphaToColor(color, alpha) {
-    if (!color) return `rgba(0,0,0,${alpha})`;
-    if (color.startsWith('rgba')) {
-        return color.replace(/rgba\(([^,]+),([^,]+),([^,]+),([^\)]+)\)/, (_, r, g, b) => `rgba(${r.trim()},${g.trim()},${b.trim()},${alpha})`);
-    }
-    if (color.startsWith('rgb')) {
-        return color.replace(/rgb\(([^,]+),([^,]+),([^\)]+)\)/, (_, r, g, b) => `rgba(${r.trim()},${g.trim()},${b.trim()},${alpha})`);
-    }
-    const hex = color.replace('#', '');
-    const bigint = parseInt(hex, 16);
-    const r = (bigint >> 16) & 255;
-    const g = (bigint >> 8) & 255;
-    const b = bigint & 255;
-    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-}
-
-function drawLine(fromX, fromY, toX, toY, color, size) {
-    if (!whiteboardCtx) return;
-    whiteboardCtx.save();
-    if (color === '__eraser__') {
-        whiteboardCtx.globalCompositeOperation = 'destination-out';
-        whiteboardCtx.strokeStyle = 'rgba(0,0,0,1)';
-    } else {
-        whiteboardCtx.globalCompositeOperation = 'source-over';
-        whiteboardCtx.strokeStyle = color;
-        if (color && color.startsWith('rgba')) {
-            const parts = color.split(',');
-            const alphaPart = parts[3];
-            if (alphaPart) {
-                const alpha = parseFloat(alphaPart.replace(')', '').trim());
-                if (!Number.isNaN(alpha)) whiteboardCtx.globalAlpha = alpha;
-            }
-        }
-    }
-    whiteboardCtx.lineWidth = size;
-    whiteboardCtx.lineCap = 'round';
-    whiteboardCtx.beginPath();
-    whiteboardCtx.moveTo(fromX, fromY);
-    whiteboardCtx.lineTo(toX, toY);
-    whiteboardCtx.stroke();
-    whiteboardCtx.globalAlpha = 1;
-    whiteboardCtx.restore();
-}
-
-function clearWhiteboard() {
-    if (whiteboardCtx && whiteboardCanvas) {
-        whiteboardCtx.clearRect(0, 0, whiteboardCanvas.width, whiteboardCanvas.height);
-    }
-    if (whiteboardOverlayCtx && whiteboardOverlay) {
-        whiteboardOverlayCtx.clearRect(0, 0, whiteboardOverlay.width, whiteboardOverlay.height);
-    }
-    clearWhiteboardHistory(currentRoomId);
-    if (currentRoomId && socket) {
-        socket.emit('whiteboard_clear', {
-            room_id: currentRoomId
-        });
-    }
+function openWhiteboardInNewTab() {
+    const room = getWhiteboardRoom(false);
+    window.open(room.url, '_blank', 'noopener');
 }
 
 // ========== СОВМЕСТНЫЕ ДОКУМЕНТЫ ==========
