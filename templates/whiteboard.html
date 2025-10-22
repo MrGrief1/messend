@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Общая доска — {{ room_name }}</title>
+    <link rel="stylesheet" href="https://unpkg.com/@excalidraw/excalidraw@0.17.6/dist/excalidraw.min.css">
+    <style>
+        :root {
+            color-scheme: dark;
+            font-family: "Inter", "Manrope", "Segoe UI", sans-serif;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            background: radial-gradient(circle at top, rgba(59, 130, 246, 0.08), transparent 55%),
+                        radial-gradient(circle at 20% 80%, rgba(14, 165, 233, 0.08), transparent 50%),
+                        #050b18;
+            color: #e5edff;
+        }
+
+        body[data-theme="light"] {
+            color-scheme: light;
+            background: linear-gradient(180deg, #f3f5ff 0%, #ffffff 100%);
+            color: #0f172a;
+        }
+
+        .whiteboard-app {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        .whiteboard-header {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px 18px;
+            padding: clamp(16px, 2vw, 24px) clamp(18px, 3vw, 32px);
+            background: rgba(7, 14, 24, 0.82);
+            backdrop-filter: blur(18px);
+            border-bottom: 1px solid rgba(148, 163, 184, 0.18);
+        }
+
+        body[data-theme="light"] .whiteboard-header {
+            background: rgba(255, 255, 255, 0.85);
+            border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+            color: #0f172a;
+        }
+
+        .whiteboard-room {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            min-width: 0;
+        }
+
+        .whiteboard-title {
+            margin: 0;
+            font-size: clamp(18px, 2.6vw, 26px);
+            font-weight: 600;
+            letter-spacing: -0.01em;
+            color: inherit;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .whiteboard-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            color: #9ba7c4;
+        }
+
+        .whiteboard-status::before {
+            content: "";
+            width: 9px;
+            height: 9px;
+            border-radius: 50%;
+            background: #fbbf24;
+        }
+
+        .whiteboard-status--online::before {
+            background: #34d399;
+        }
+
+        .whiteboard-status--reconnecting::before {
+            background: #f97316;
+            animation: whiteboard-pulse 1.6s infinite;
+        }
+
+        .whiteboard-status--offline::before {
+            background: #ef4444;
+        }
+
+        @keyframes whiteboard-pulse {
+            0% { transform: scale(1); opacity: 0.85; }
+            50% { transform: scale(1.4); opacity: 0.5; }
+            100% { transform: scale(1); opacity: 0.85; }
+        }
+
+        .whiteboard-actions {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+
+        .whiteboard-hint {
+            font-size: 13px;
+            color: #9ba7c4;
+        }
+
+        .whiteboard-button {
+            appearance: none;
+            border: none;
+            border-radius: 12px;
+            padding: 10px 16px;
+            font-size: 14px;
+            font-weight: 600;
+            background: rgba(88, 130, 255, 0.18);
+            color: #e5edff;
+            cursor: pointer;
+            transition: transform 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .whiteboard-button:hover {
+            transform: translateY(-1px);
+            background: rgba(88, 130, 255, 0.28);
+            box-shadow: 0 12px 32px rgba(59, 130, 246, 0.25);
+        }
+
+        .whiteboard-button:active {
+            transform: translateY(0);
+            box-shadow: none;
+        }
+
+        .whiteboard-button.danger {
+            background: rgba(239, 68, 68, 0.18);
+            color: #fecaca;
+        }
+
+        .whiteboard-button.danger:hover {
+            background: rgba(239, 68, 68, 0.28);
+            box-shadow: 0 12px 32px rgba(239, 68, 68, 0.18);
+        }
+
+        .whiteboard-button.ghost {
+            background: transparent;
+            border: 1px solid rgba(148, 163, 184, 0.28);
+            color: inherit;
+        }
+
+        .whiteboard-button.ghost:hover {
+            background: rgba(148, 163, 184, 0.12);
+            box-shadow: none;
+        }
+
+        body[data-theme="light"] .whiteboard-button {
+            background: rgba(59, 130, 246, 0.16);
+            color: #1e293b;
+        }
+
+        body[data-theme="light"] .whiteboard-button:hover {
+            background: rgba(59, 130, 246, 0.26);
+            color: #0f172a;
+        }
+
+        body[data-theme="light"] .whiteboard-button.danger {
+            background: rgba(239, 68, 68, 0.15);
+            color: #991b1b;
+        }
+
+        body[data-theme="light"] .whiteboard-button.danger:hover {
+            background: rgba(239, 68, 68, 0.22);
+        }
+
+        body[data-theme="light"] .whiteboard-button.ghost {
+            border-color: rgba(15, 23, 42, 0.12);
+            color: #0f172a;
+        }
+
+        .whiteboard-stage {
+            flex: 1;
+            min-height: 0;
+            display: flex;
+            padding: 0 clamp(8px, 2vw, 24px) clamp(12px, 2vw, 24px);
+        }
+
+        .whiteboard-excalidraw-container {
+            flex: 1;
+            min-height: 0;
+            height: calc(100vh - 148px);
+            max-height: 100%;
+        }
+
+        .whiteboard-excalidraw-container .excalidraw {
+            height: 100%;
+        }
+
+        .whiteboard-fallback {
+            padding: 32px;
+            text-align: center;
+            color: #94a3b8;
+        }
+
+        @media (max-width: 1024px) {
+            .whiteboard-stage {
+                padding: 0 16px 16px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .whiteboard-header {
+                align-items: flex-start;
+            }
+
+            .whiteboard-actions {
+                justify-content: flex-start;
+            }
+
+            .whiteboard-excalidraw-container {
+                height: calc(100vh - 200px);
+            }
+        }
+    </style>
+</head>
+<body data-theme="{{ theme }}">
+    <div id="whiteboard-root"></div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/@excalidraw/excalidraw@0.17.6/dist/excalidraw.production.min.js"></script>
+    <script>
+        window.__WHITEBOARD_CONFIG__ = {
+            roomId: {{ room_id }},
+            roomName: {{ room_name|tojson }},
+            initialScene: {{ initial_scene|tojson }},
+            initialSceneVersion: {{ initial_scene_version|tojson }},
+            lastUpdatedBy: {{ last_updated_by|tojson }},
+            theme: {{ theme|tojson }},
+            returnUrl: {{ return_url|tojson }}
+        };
+    </script>
+    <script src="{{ url_for('static', filename='js/whiteboard_excalidraw.js') }}"></script>
+</body>
+</html>

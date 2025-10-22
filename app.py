@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, jsonify, redirect, url_for, session
+from flask import Flask, render_template, request, jsonify, redirect, url_for, session, abort
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_socketio import SocketIO, emit, join_room, leave_room
@@ -339,6 +339,7 @@ class PollVote(db.Model):
 
 # --- Вспомогательные функции ---
 ONLINE_USERS = set()
+WHITEBOARD_STATE = {}
 SID_TO_USER = {}
 def notify_user_about_new_room(user, room):
     room_data = room.to_dict(user)
@@ -459,7 +460,7 @@ def index():
         if user and user.is_verified:
             user_contacts_data = user.get_contacts_data()
             participant_entries = user.rooms.options(db.joinedload(RoomParticipant.room)).all()
-            
+
             # Разделяем на обычные и архивированные чаты
             active_rooms = []
             archived_rooms = []
@@ -469,11 +470,56 @@ def index():
                     archived_rooms.append(room_dict)
                 else:
                     active_rooms.append(room_dict)
-            
+
             sfu_url = os.environ.get('SFU_URL')
-            return render_template('index.html', user=user, contacts=user_contacts_data, 
+            return render_template('index.html', user=user, contacts=user_contacts_data,
                                  rooms=active_rooms, archived_rooms=archived_rooms, sfu_url=sfu_url)
     return redirect(url_for('auth'))
+
+
+@app.route('/whiteboard')
+def whiteboard_view():
+    if 'user_id' not in session:
+        return redirect(url_for('auth'))
+
+    room_id = request.args.get('room_id', type=int)
+    if not room_id:
+        abort(400)
+
+    participant = RoomParticipant.query.filter_by(user_id=session['user_id'], room_id=room_id).first()
+    if not participant:
+        abort(403)
+
+    room = participant.room or db.session.get(Room, room_id)
+    if not room:
+        abort(404)
+
+    current_user = db.session.get(User, session['user_id'])
+    try:
+        room_display_name, *_ = room.get_room_data_for_user(current_user)
+    except Exception:
+        room_display_name = room.name or f"Комната {room_id}"
+
+    state_payload = WHITEBOARD_STATE.get(str(room_id))
+    if isinstance(state_payload, dict):
+        initial_scene = state_payload.get('scene')
+        initial_version = state_payload.get('version')
+        updated_by = state_payload.get('updated_by')
+    else:
+        initial_scene = state_payload
+        initial_version = None
+        updated_by = None
+
+    return render_template(
+        'whiteboard.html',
+        room_id=room_id,
+        room_name=room_display_name,
+        initial_scene=initial_scene,
+        initial_scene_version=initial_version,
+        last_updated_by=updated_by,
+        theme=(current_user.theme if current_user else 'dark'),
+        return_url=url_for('index')
+    )
 # ... (Auth, Logout, Confirm, Register, Login API)
 @app.route('/auth')
 def auth():
@@ -1880,14 +1926,42 @@ def handle_system_message(data):
 def handle_whiteboard_draw(data):
     """Синхронизация рисования на доске между участниками"""
     if 'user_id' not in session: return
-    
+
     room_id = data.get('room_id')
     if not room_id: return
-    
+
     # Проверяем доступ к комнате
     if not RoomParticipant.query.filter_by(user_id=session['user_id'], room_id=room_id).first():
         return
-    
+
+    scene_payload = data.get('scene')
+    if scene_payload is not None:
+        version = data.get('version')
+        if not isinstance(version, int):
+            try:
+                parsed_scene = json.loads(scene_payload)
+                version = int(parsed_scene.get('version', 0))
+            except Exception:
+                version = 0
+        WHITEBOARD_STATE[str(room_id)] = {
+            'scene': scene_payload,
+            'version': version,
+            'updated_at': time.time(),
+            'updated_by': session['user_id']
+        }
+        emit(
+            'whiteboard_draw',
+            {
+                'room_id': room_id,
+                'scene': scene_payload,
+                'version': version,
+                'updated_by': session['user_id']
+            },
+            room=str(room_id),
+            include_self=False
+        )
+        return
+
     # Отправляем всем участникам кроме отправителя
     emit('whiteboard_draw', data, room=str(room_id), include_self=False)
 
@@ -1903,6 +1977,7 @@ def handle_whiteboard_clear(data):
     if not RoomParticipant.query.filter_by(user_id=session['user_id'], room_id=room_id).first():
         return
     
+    WHITEBOARD_STATE.pop(str(room_id), None)
     # Отправляем всем участникам кроме отправителя
     emit('whiteboard_clear', {'room_id': room_id}, room=str(room_id), include_self=False)
 
