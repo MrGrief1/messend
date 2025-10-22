@@ -1430,46 +1430,51 @@
                 </div>
             </div>
 
-                <!-- Editing Message Banner -->
-                <div id="editing-banner" class="message-banner" style="display: none;">
-                    <div class="banner-icon">
-                        <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
-                            <use href="#ui-doc-upload"></use>
-                        </svg>
-                    </div>
-                    <div class="banner-content">
-                        <div class="banner-title">Редактирование</div>
-                        <div id="editing-banner-text" class="banner-text"></div>
-                    </div>
-                    <button class="icon-btn" id="cancel-editing-btn">
-                        <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
-                            <use href="#ui-xmark"></use>
-                        </svg>
-                    </button>
-                </div>
-
-                <div id="poll-comment-banner" class="message-banner" style="display: none;">
-                    <div class="banner-icon comment-icon">
-                        <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
-                            <use href="#ui-chart"></use>
-                        </svg>
-                    </div>
-                    <div class="banner-content">
-                        <div class="banner-title">Комментарий к опросу</div>
-                        <div id="poll-comment-text" class="banner-text"></div>
-                    </div>
-                    <button class="icon-btn" id="cancel-poll-comment-btn" title="Отменить комментарий">
-                        <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
-                            <use href="#ui-xmark"></use>
-                        </svg>
-                    </button>
-                </div>
-
                 <div class="chat-input-area" id="chat-input-area" style="display: none;">
                     <input type="file" id="file-input" accept="*/*" style="display: none;" onchange="handleFileSelect(event)" multiple>
                     <input type="file" id="file-input-docs" accept="*/*" style="display: none;" onchange="handleFileSelect(event)" multiple>
 
                     <div class="chat-composer-floating" role="group" aria-label="Поле ввода сообщения">
+                        <div class="composer-status-area" aria-live="polite">
+                            <div id="file-preview-area" class="composer-attachments" aria-hidden="true">
+                                <div id="file-preview-container" class="composer-attachments-scroll"></div>
+                            </div>
+
+                            <div id="editing-banner" class="composer-banner" style="display: none;">
+                                <div class="composer-banner-icon">
+                                    <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
+                                        <use href="#ui-doc-upload"></use>
+                                    </svg>
+                                </div>
+                                <div class="composer-banner-content">
+                                    <div class="composer-banner-title">Редактирование</div>
+                                    <div id="editing-banner-text" class="composer-banner-text"></div>
+                                </div>
+                                <button class="composer-banner-close" id="cancel-editing-btn" type="button" aria-label="Отменить редактирование">
+                                    <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
+                                        <use href="#ui-xmark"></use>
+                                    </svg>
+                                </button>
+                            </div>
+
+                            <div id="poll-comment-banner" class="composer-banner" style="display: none;">
+                                <div class="composer-banner-icon comment-icon">
+                                    <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
+                                        <use href="#ui-chart"></use>
+                                    </svg>
+                                </div>
+                                <div class="composer-banner-content">
+                                    <div class="composer-banner-title">Комментарий к опросу</div>
+                                    <div id="poll-comment-text" class="composer-banner-text"></div>
+                                </div>
+                                <button class="composer-banner-close" id="cancel-poll-comment-btn" type="button" title="Отменить комментарий">
+                                    <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
+                                        <use href="#ui-xmark"></use>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+
                         <div class="composer-main">
                             <button class="icon-btn composer-icon" onclick="toggleStickerPicker(event)" title="Стикеры" aria-label="Открыть стикеры">
                                 <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
@@ -1478,9 +1483,6 @@
                             </button>
 
                             <div class="composer-field" id="message-field">
-                                <div id="file-preview-area" class="composer-attachments" aria-hidden="true">
-                                    <div id="file-preview-container" class="composer-attachments-scroll"></div>
-                                </div>
                                 <textarea id="message-input" placeholder="Введите сообщение..." autocomplete="off" rows="1" onkeydown="handleKeyPress(event)"></textarea>
                             </div>
 
@@ -2899,6 +2901,42 @@
         });
     </script>
     
+    <div id="attachment-viewer" class="attachment-viewer" hidden aria-hidden="true">
+        <div class="attachment-viewer-backdrop" data-close-viewer></div>
+        <div class="attachment-viewer-dialog" role="dialog" aria-modal="true" aria-labelledby="attachment-viewer-filename">
+            <header class="attachment-viewer-header">
+                <div class="attachment-viewer-title">
+                    <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
+                        <use href="#ui-document"></use>
+                    </svg>
+                    <span id="attachment-viewer-filename"></span>
+                </div>
+                <button type="button" class="attachment-viewer-close" id="attachment-viewer-close" aria-label="Закрыть предпросмотр">
+                    <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
+                        <use href="#ui-xmark"></use>
+                    </svg>
+                </button>
+            </header>
+            <div class="attachment-viewer-body">
+                <div class="attachment-viewer-content" id="attachment-viewer-content"></div>
+            </div>
+            <footer class="attachment-viewer-footer">
+                <a id="attachment-download-btn" class="attachment-action primary" download>
+                    <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
+                        <use href="#ui-doc-upload"></use>
+                    </svg>
+                    <span>Скачать</span>
+                </a>
+                <a id="attachment-open-btn" class="attachment-action" target="_blank" rel="noopener">
+                    <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
+                        <use href="#ui-share"></use>
+                    </svg>
+                    <span>Открыть</span>
+                </a>
+            </footer>
+        </div>
+    </div>
+
     <script src="{{ url_for('static', filename='js/chat.js') }}"></script>
     <script src="{{ url_for('static', filename='js/sfu.js') }}"></script>
 </body>

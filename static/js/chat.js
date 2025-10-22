@@ -15,6 +15,12 @@ const roomList = document.getElementById('room-list');
 const callButton = document.getElementById('call-button');
 const sendButton = document.getElementById('send-button');
 const messageField = document.getElementById('message-field');
+const attachmentViewer = document.getElementById('attachment-viewer');
+const attachmentViewerContent = document.getElementById('attachment-viewer-content');
+const attachmentViewerFilename = document.getElementById('attachment-viewer-filename');
+const attachmentViewerCloseBtn = document.getElementById('attachment-viewer-close');
+const attachmentDownloadBtn = document.getElementById('attachment-download-btn');
+const attachmentOpenBtn = document.getElementById('attachment-open-btn');
 // Доп. элементы заголовка чата
 const membersBtn = document.getElementById('room-members-btn');
 const roomSettingsBtn = document.getElementById('room-settings-btn');
@@ -78,6 +84,135 @@ function handleCallButtonClick(event) {
     setCallDropdownVisibility(false);
     startCall();
 }
+
+let attachmentViewerCleanup = null;
+
+function closeAttachmentViewer() {
+    if (!attachmentViewer) {
+        return;
+    }
+
+    if (typeof attachmentViewerCleanup === 'function') {
+        try {
+            attachmentViewerCleanup();
+        } catch (err) {
+            console.warn('Не удалось освободить ресурс предпросмотра файла:', err);
+        }
+        attachmentViewerCleanup = null;
+    }
+
+    if (attachmentViewerContent) {
+        attachmentViewerContent.innerHTML = '';
+    }
+
+    attachmentViewer.hidden = true;
+    attachmentViewer.setAttribute('aria-hidden', 'true');
+    document.body.classList.remove('attachment-viewer-open');
+}
+
+function openAttachmentViewer({ url, name = 'Файл', mime = '', size = null, cleanup = null } = {}) {
+    if (!attachmentViewer || !attachmentViewerContent || !url) {
+        return;
+    }
+
+    if (typeof attachmentViewerCleanup === 'function') {
+        try {
+            attachmentViewerCleanup();
+        } catch (err) {
+            console.warn('Не удалось очистить предыдущий предпросмотр файла:', err);
+        }
+    }
+    attachmentViewerCleanup = typeof cleanup === 'function' ? cleanup : null;
+
+    attachmentViewerContent.innerHTML = '';
+
+    const displayName = name || 'Файл';
+    if (attachmentViewerFilename) {
+        attachmentViewerFilename.textContent = displayName;
+    }
+
+    if (attachmentDownloadBtn) {
+        attachmentDownloadBtn.href = url;
+        if (displayName) {
+            attachmentDownloadBtn.setAttribute('download', displayName);
+        } else {
+            attachmentDownloadBtn.removeAttribute('download');
+        }
+    }
+
+    if (attachmentOpenBtn) {
+        attachmentOpenBtn.href = url;
+    }
+
+    const normalizedMime = (mime || '').toLowerCase();
+
+    if (normalizedMime.startsWith('image/')) {
+        const img = document.createElement('img');
+        img.src = url;
+        img.alt = displayName;
+        img.loading = 'lazy';
+        attachmentViewerContent.appendChild(img);
+    } else if (normalizedMime.startsWith('video/')) {
+        const video = document.createElement('video');
+        video.src = url;
+        video.controls = true;
+        video.playsInline = true;
+        video.preload = 'metadata';
+        attachmentViewerContent.appendChild(video);
+    } else if (normalizedMime.startsWith('audio/')) {
+        const audio = document.createElement('audio');
+        audio.src = url;
+        audio.controls = true;
+        attachmentViewerContent.appendChild(audio);
+    } else {
+        const generic = document.createElement('div');
+        generic.className = 'attachment-viewer-generic';
+
+        const descriptor = getFileIconDescriptor(displayName, normalizedMime);
+        const iconWrapper = document.createElement('span');
+        iconWrapper.className = `viewer-icon ${descriptor.className}`;
+        iconWrapper.innerHTML = `
+            <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
+                <use href="${descriptor.icon}"></use>
+            </svg>`;
+
+        const title = document.createElement('strong');
+        title.textContent = displayName;
+
+        generic.appendChild(iconWrapper);
+        generic.appendChild(title);
+
+        if (typeof size === 'number' && !Number.isNaN(size)) {
+            const sizeLabel = document.createElement('span');
+            sizeLabel.textContent = formatFileSize(size);
+            generic.appendChild(sizeLabel);
+        }
+
+        attachmentViewerContent.appendChild(generic);
+    }
+
+    attachmentViewer.hidden = false;
+    attachmentViewer.setAttribute('aria-hidden', 'false');
+    document.body.classList.add('attachment-viewer-open');
+}
+
+if (attachmentViewerCloseBtn) {
+    attachmentViewerCloseBtn.addEventListener('click', closeAttachmentViewer);
+}
+
+if (attachmentViewer) {
+    attachmentViewer.addEventListener('click', (event) => {
+        if (event.target && event.target.hasAttribute('data-close-viewer')) {
+            closeAttachmentViewer();
+        }
+    });
+}
+
+document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && attachmentViewer && !attachmentViewer.hidden) {
+        closeAttachmentViewer();
+    }
+});
 
 const reactionIconTemplates = {
     '👍': `<svg class="reaction-svg" viewBox="0 0 24 24" aria-hidden="true"><use href="#ui-reaction-like"></use></svg>`,
@@ -2128,6 +2263,18 @@ async function loadChatHistory(roomId) {
 }
 
 let selectedFiles = [];
+let previewObjectUrls = [];
+
+function clearPreviewObjectUrls() {
+    previewObjectUrls.forEach(url => {
+        try {
+            URL.revokeObjectURL(url);
+        } catch (err) {
+            console.warn('Не удалось освободить превью файла:', err);
+        }
+    });
+    previewObjectUrls = [];
+}
 
 function handleFileSelect(event) {
     const files = Array.from(event.target.files);
@@ -2160,16 +2307,25 @@ function displayFilePreview() {
     const container = document.getElementById('file-preview-container');
     const composerField = messageField;
 
+    if (!previewArea || !container) {
+        return;
+    }
+
     if (selectedFiles.length === 0) {
+        clearPreviewObjectUrls();
         previewArea.classList.remove('visible');
         previewArea.setAttribute('aria-hidden', 'true');
         container.innerHTML = '';
         if (composerField) composerField.classList.remove('has-attachments');
+        if (attachmentViewer && !attachmentViewer.hidden && typeof attachmentViewerCleanup === 'function') {
+            closeAttachmentViewer();
+        }
         return;
     }
 
     previewArea.classList.add('visible');
     previewArea.removeAttribute('aria-hidden');
+    clearPreviewObjectUrls();
     container.innerHTML = '';
     if (composerField) composerField.classList.add('has-attachments');
 
@@ -2180,43 +2336,64 @@ function displayFilePreview() {
         const removeBtn = document.createElement('button');
         removeBtn.className = 'file-preview-remove';
         removeBtn.innerHTML = '<svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#ui-xmark"></use></svg>';
-        removeBtn.onclick = () => removeFileFromPreview(index);
+        removeBtn.addEventListener('click', (event) => {
+            event.stopPropagation();
+            removeFileFromPreview(index);
+        });
 
-        if (file.type.startsWith('image/')) {
+        const previewUrl = URL.createObjectURL(file);
+        previewObjectUrls.push(previewUrl);
+        const mimeType = file.type || '';
+
+        if (mimeType.startsWith('image/')) {
             const img = document.createElement('img');
-            img.src = URL.createObjectURL(file);
+            img.src = previewUrl;
+            img.alt = file.name || `Файл ${index + 1}`;
             preview.appendChild(img);
-        } else if (file.type.startsWith('video/')) {
+        } else if (mimeType.startsWith('video/')) {
             const video = document.createElement('video');
-            video.src = URL.createObjectURL(file);
+            video.src = previewUrl;
             video.muted = true;
             video.loop = true;
+            video.autoplay = true;
             video.playsInline = true;
-            video.addEventListener('mouseenter', () => video.play());
-            video.addEventListener('mouseleave', () => video.pause());
             preview.appendChild(video);
         } else {
             const generic = document.createElement('div');
             generic.className = 'file-preview-generic';
-            const { className, icon } = getFileIconDescriptor(file.name, file.type);
+            const { className, icon } = getFileIconDescriptor(file.name, mimeType);
             generic.innerHTML = `
                 <span class="file-preview-icon ${className}">
                     <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
                         <use href="${icon}"></use>
                     </svg>
                 </span>
-                <strong>${file.name}</strong>
+                <strong>${file.name || `Файл ${index + 1}`}</strong>
                 <span>${formatFileSize(file.size)}</span>`;
             preview.appendChild(generic);
         }
 
         preview.appendChild(removeBtn);
+        preview.addEventListener('click', () => {
+            const viewerUrl = URL.createObjectURL(file);
+            openAttachmentViewer({
+                url: viewerUrl,
+                name: file.name,
+                mime: mimeType,
+                size: file.size,
+                cleanup: () => {
+                    try {
+                        URL.revokeObjectURL(viewerUrl);
+                    } catch (err) {
+                        console.warn('Не удалось освободить ресурс предпросмотра файла:', err);
+                    }
+                }
+            });
+        });
         container.appendChild(preview);
     });
 
-    if (previewArea) {
-        previewArea.scrollTo({ left: previewArea.scrollWidth, behavior: 'smooth' });
-    }
+    previewArea.scrollTo({ left: previewArea.scrollWidth, behavior: 'smooth' });
 }
 
 async function sendMessage() {
@@ -2545,14 +2722,35 @@ function displayMessage(data) {
                 if (item.type === 'image') {
                     const img = document.createElement('img');
                     img.src = item.url;
-                    img.alt = 'Изображение';
-                    img.onclick = () => window.open(item.url, '_blank');
+                    img.alt = item.name || 'Изображение';
+                    img.loading = 'lazy';
+                    img.addEventListener('click', (event) => {
+                        event.preventDefault();
+                        openAttachmentViewer({
+                            url: item.url,
+                            name: item.name || 'Изображение',
+                            mime: item.mime_type || 'image/*',
+                            size: item.size ?? null
+                        });
+                    });
                     gallery.appendChild(img);
                 } else if (item.type === 'video') {
                     const video = document.createElement('video');
                     video.src = item.url;
-                    video.controls = true;
+                    video.muted = true;
+                    video.loop = true;
+                    video.autoplay = true;
+                    video.playsInline = true;
                     video.preload = 'metadata';
+                    video.addEventListener('click', (event) => {
+                        event.preventDefault();
+                        openAttachmentViewer({
+                            url: item.url,
+                            name: item.name || 'Видео',
+                            mime: item.mime_type || 'video/*',
+                            size: item.size ?? null
+                        });
+                    });
                     gallery.appendChild(video);
                 }
             });
@@ -2600,6 +2798,16 @@ function displayMessage(data) {
 
                 attachmentLink.appendChild(iconWrapper);
                 attachmentLink.appendChild(infoWrapper);
+                attachmentLink.addEventListener('click', (event) => {
+                    event.preventDefault();
+                    openAttachmentViewer({
+                        url: item.url,
+                        name: item.name || item.url.split('/').pop(),
+                        mime: item.mime_type || item.type || '',
+                        size: item.size ?? null
+                    });
+                });
+
                 attachmentsContainer.appendChild(attachmentLink);
             });
 
