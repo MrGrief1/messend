@@ -68,13 +68,13 @@ let isCallModalOpen = false;
 let reactionTargetMessageId = null; // ID сообщения, на которое мы реагируем
 
 const reactionIconTemplates = {
-    '👍': `<svg class="reaction-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 11v8a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-6a2 2 0 0 1 2-2h3Z"></path><path d="M7 11V6.5A3.5 3.5 0 0 1 10.5 3h0a1 1 0 0 1 .95.68L12.5 7H18a2 2 0 0 1 1.94 2.5l-1.33 5.02A2 2 0 0 1 16.68 16H11"></path></svg>`,
-    '👎': `<svg class="reaction-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 13V5a2 2 0 0 1 2-2h1a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2h-3Z"></path><path d="M17 13v4.5A3.5 3.5 0 0 1 13.5 21h0a1 1 0 0 1-.95-.68L11.5 17H6a2 2 0 0 1-1.94-2.5l1.33-5.02A2 2 0 0 1 7.32 8H13"></path></svg>`,
-    '❤️': `<svg class="reaction-svg" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"><path d="M12 20.5c-4.4-3.6-6.5-5.8-6.5-9A3.5 3.5 0 0 1 9 8a3.6 3.6 0 0 1 3 1.6A3.6 3.6 0 0 1 15 8a3.5 3.5 0 0 1 3.5 3.5c0 3.2-2.1 5.4-6.5 9Z"></path></svg>`,
-    '😂': `<svg class="reaction-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"></circle><path d="M8.2 10.4c.4-.7 1-.7 1.4 0"></path><path d="M14.4 10.4c.4-.7 1-.7 1.4 0"></path><path d="M7.5 13.5c1.4 1.4 3 2.1 4.5 2.1s3.1-.7 4.5-2.1"></path><path d="M6 13.6c-.8.1-1.4.6-1.4 1.3 0 .6.5 1.1 1.6.9"></path><path d="M18 13.6c.8.1 1.4.6 1.4 1.3 0 .6-.5 1.1-1.6.9"></path></svg>`,
-    '😮': `<svg class="reaction-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"></circle><circle cx="9" cy="10" r="1.1" fill="currentColor" stroke="none"></circle><circle cx="15" cy="10" r="1.1" fill="currentColor" stroke="none"></circle><circle cx="12" cy="15" r="2.2"></circle></svg>`,
-    '😢': `<svg class="reaction-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"></circle><path d="M8.2 10.4c.4-.7 1-.7 1.4 0"></path><path d="M14.4 10.4c.4-.7 1-.7 1.4 0"></path><path d="M8.5 15c1 .8 2.2 1.2 3.5 1.2s2.5-.4 3.5-1.2"></path><path d="M16.1 14.8c.8.7 1.4 1.7 1.4 2.6 0 .9-.6 1.6-1.4 1.6-.7 0-1.2-.5-1.2-1.1 0-.9 1.2-2.1 1.2-2.1Z" fill="currentColor" stroke="none"></path></svg>`,
-    '🔥': `<svg class="reaction-svg" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21c-3.5-1.5-5-3.8-5-6.2 0-2.4 1.7-4 3-5.4 1.2-1.3 2.2-2.6 2.2-4.4 1.6 1.1 4.1 3.4 4.1 6.1 0 1.1-.4 2.1-1 3 1.6.8 2.7 2.2 2.7 3.8 0 1.9-1.3 3.4-3.5 4.4Z"></path></svg>`
+    '👍': `<svg class="reaction-svg" viewBox="0 0 24 24" aria-hidden="true"><use href="#reaction-like"></use></svg>`,
+    '👎': `<svg class="reaction-svg" viewBox="0 0 24 24" aria-hidden="true"><use href="#reaction-dislike"></use></svg>`,
+    '❤️': `<svg class="reaction-svg" viewBox="0 0 24 24" aria-hidden="true"><use href="#reaction-heart"></use></svg>`,
+    '😂': `<svg class="reaction-svg" viewBox="0 0 24 24" aria-hidden="true"><use href="#reaction-laugh"></use></svg>`,
+    '😮': `<svg class="reaction-svg" viewBox="0 0 24 24" aria-hidden="true"><use href="#reaction-wow"></use></svg>`,
+    '😢': `<svg class="reaction-svg" viewBox="0 0 24 24" aria-hidden="true"><use href="#reaction-sad"></use></svg>`,
+    '🔥': `<svg class="reaction-svg" viewBox="0 0 24 24" aria-hidden="true"><use href="#reaction-fire"></use></svg>`
 };
 
 const reactionLabels = {
@@ -1903,12 +1903,12 @@ function setupRoomUI() {
     if (messageInput) messageInput.placeholder = "Введите сообщение...";
     
     if (currentRoomType === 'dm') {
-        if (callButton) callButton.style.display = 'inline-block';
+        if (callButton) callButton.style.display = 'inline-flex';
         // Покажем баннер, если собеседник не в контактах
         const contactData = USER_CONTACTS.find(c => c.id == currentDMotherUserId);
         if (unknownBanner) unknownBanner.style.display = contactData ? 'none' : 'flex';
     } else if (currentRoomType === 'group' || currentRoomType === 'channel') {
-        if (callButton) callButton.style.display = 'inline-block';
+        if (callButton) callButton.style.display = 'inline-flex';
         // Кнопка участников убрана - доступна через три точки
         if (roomSettingsBtn) roomSettingsBtn.style.display = 'inline-block';
         if (unknownBanner) unknownBanner.style.display = 'none';
@@ -2010,6 +2010,64 @@ function formatFileSize(bytes) {
     return `${formatted} ${units[unitIndex]}`;
 }
 
+const FILE_ACCENT_COLORS = {
+    default: '#6366f1',
+    pdf: '#f97373',
+    doc: '#60a5fa',
+    docx: '#60a5fa',
+    rtf: '#60a5fa',
+    pages: '#60a5fa',
+    xls: '#34d399',
+    xlsx: '#34d399',
+    csv: '#38bdf8',
+    numbers: '#34d399',
+    ppt: '#f97316',
+    pptx: '#f97316',
+    key: '#f97316',
+    zip: '#a855f7',
+    rar: '#a855f7',
+    '7z': '#a855f7',
+    tar: '#a855f7',
+    gz: '#a855f7',
+    txt: '#94a3b8',
+    md: '#94a3b8',
+    log: '#94a3b8',
+    json: '#818cf8',
+    xml: '#818cf8'
+};
+
+function extractFileExtension(filename = '', mimeType = '') {
+    if (filename && filename.includes('.')) {
+        const ext = filename.split('.').pop();
+        if (ext) {
+            return ext.trim();
+        }
+    }
+    if (mimeType && mimeType.includes('/')) {
+        const tail = mimeType.split('/').pop();
+        if (tail) {
+            return tail.trim();
+        }
+    }
+    return '';
+}
+
+function getFileBadgeData(name, mimeType) {
+    const rawExt = extractFileExtension(name, mimeType).toLowerCase();
+    let accent = FILE_ACCENT_COLORS.default || '#6366f1';
+
+    if (rawExt) {
+        accent = FILE_ACCENT_COLORS[rawExt] || accent;
+        if (rawExt.startsWith('doc')) accent = FILE_ACCENT_COLORS.doc;
+        if (rawExt.startsWith('xls')) accent = FILE_ACCENT_COLORS.xls;
+        if (rawExt.startsWith('ppt')) accent = FILE_ACCENT_COLORS.ppt;
+    }
+
+    const labelSource = rawExt || (mimeType ? mimeType.split('/')[0] : 'FILE');
+    const extLabel = labelSource.toUpperCase().slice(0, 4) || 'FILE';
+    return { extLabel, accent };
+}
+
 function displayFilePreview() {
     const previewArea = document.getElementById('file-preview-area');
     const container = document.getElementById('file-preview-container');
@@ -2051,15 +2109,32 @@ function displayFilePreview() {
             video.addEventListener('mouseleave', () => video.pause());
             preview.appendChild(video);
         } else {
-            const generic = document.createElement('div');
-            generic.className = 'file-preview-generic';
-            generic.innerHTML = `
-                <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
-                    <use href="#ui-document"></use>
-                </svg>
-                <strong>${file.name}</strong>
-                <span>${formatFileSize(file.size)}</span>`;
-            preview.appendChild(generic);
+            const meta = getFileBadgeData(file.name, file.type);
+            const docWrapper = document.createElement('div');
+            docWrapper.className = 'file-preview-doc';
+            docWrapper.style.setProperty('--doc-accent', meta.accent);
+
+            const badge = document.createElement('span');
+            badge.className = 'file-preview-doc-badge';
+            badge.textContent = meta.extLabel;
+
+            const iconBox = document.createElement('div');
+            iconBox.className = 'file-preview-doc-icon';
+            iconBox.innerHTML = `<svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#ui-document"></use></svg>`;
+
+            const infoBox = document.createElement('div');
+            infoBox.className = 'file-preview-doc-info';
+            const nameEl = document.createElement('strong');
+            nameEl.textContent = file.name || meta.extLabel;
+            infoBox.appendChild(nameEl);
+            if (file.size) {
+                const sizeEl = document.createElement('span');
+                sizeEl.textContent = formatFileSize(file.size);
+                infoBox.appendChild(sizeEl);
+            }
+
+            docWrapper.append(badge, iconBox, infoBox);
+            preview.appendChild(docWrapper);
         }
 
         preview.appendChild(removeBtn);
@@ -2422,6 +2497,8 @@ function displayMessage(data) {
                 attachmentLink.target = '_blank';
                 attachmentLink.rel = 'noopener noreferrer';
                 attachmentLink.className = 'message-attachment';
+                const badgeData = getFileBadgeData(item.name, item.type);
+                attachmentLink.style.setProperty('--attachment-accent', badgeData.accent);
                 if (item.name) {
                     attachmentLink.download = item.name;
                 }
@@ -2429,7 +2506,8 @@ function displayMessage(data) {
                 const iconWrapper = document.createElement('span');
                 iconWrapper.className = 'message-attachment-icon';
                 iconWrapper.innerHTML = `
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <span class="attachment-badge">${badgeData.extLabel}</span>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                         <path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path>
                         <polyline points="14 3 14 9 20 9"></polyline>
                         <path d="M16 13H8"></path>
@@ -7789,7 +7867,7 @@ async function unblockContactFromSettings() {
                 
                 // Показываем кнопку звонка обратно
                 const callButton = document.getElementById('call-button');
-                if (callButton) callButton.style.display = 'flex';
+                if (callButton) callButton.style.display = 'inline-flex';
             }
             
             alert('Пользователь разблокирован.');
@@ -7850,41 +7928,62 @@ let isAudioOnly = false; // Флаг: аудио-звонок (без видео
 let callStartTime = null; // Время начала звонка
 let callTimerInterval = null; // Интервал для таймера
 
+function handleCallButtonClick(event) {
+    const chevronPressed = event.target.closest('.call-button-chevron');
+    if (chevronPressed) {
+        toggleCallDropdown(event);
+        return;
+    }
+
+    closeCallDropdown();
+    startCall();
+}
+
+function closeCallDropdown() {
+    const menu = document.getElementById('call-dropdown-menu');
+    const trigger = document.getElementById('call-button');
+    if (menu) {
+        menu.classList.remove('show');
+        menu.style.display = '';
+    }
+    if (trigger) {
+        trigger.setAttribute('aria-expanded', 'false');
+    }
+}
+
 function toggleCallDropdown(event) {
     event.stopPropagation();
     event.preventDefault();
-    
+
     const menu = document.getElementById('call-dropdown-menu');
-    if (!menu) {
-        console.error('call-dropdown-menu не найдено!');
+    const trigger = document.getElementById('call-button');
+    if (!menu || !trigger) {
+        console.error('call-dropdown-menu или кнопка звонка не найдены!');
         return;
     }
-    
+
     const isVisible = menu.classList.contains('show');
     console.log('toggleCallDropdown вызвана, isVisible:', isVisible);
-    
+
     if (isVisible) {
-        // вместо мгновенного скрытия дадим возможность повторного открытия без конфликтов
-        menu.classList.remove('show');
-        // не выходим, чтобы переустановить обработчик внешнего клика корректно
-        menu.style.display = '';
+        closeCallDropdown();
         return;
     }
 
     menu.classList.add('show');
     menu.style.display = '';
-    
+    trigger.setAttribute('aria-expanded', 'true');
+
     // Закрыть при клике вне меню
     setTimeout(() => {
         function closeDropdown(e) {
-            // если клик по самой кнопке-стрелке — игнорим (чтобы не закрывалось до toggle)
             const inWrapper = e.target.closest('.call-button-wrapper');
             if (!inWrapper) {
-                menu.classList.remove('show');
-                document.removeEventListener('click', closeDropdown);
+                closeCallDropdown();
+                document.removeEventListener('click', closeDropdown, true);
             }
         }
-        document.addEventListener('click', closeDropdown, { capture: true, once: true });
+        document.addEventListener('click', closeDropdown, true);
     }, 50);
 }
 
@@ -7897,8 +7996,7 @@ async function startVideoCall() {
         }
     }
     
-    // Закрываем меню
-    document.getElementById('call-dropdown-menu').classList.remove('show');
+    closeCallDropdown();
     
     isAudioOnly = false; // Видео звонок
     await openCall(); // Используем существующую функцию
@@ -7913,8 +8011,7 @@ async function startAudioCall() {
         }
     }
     
-    // Закрываем меню
-    document.getElementById('call-dropdown-menu').classList.remove('show');
+    closeCallDropdown();
     
     isAudioOnly = true; // Аудио звонок (без видео)
     await openCall(); // Используем существующую функцию

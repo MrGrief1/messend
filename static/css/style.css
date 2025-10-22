@@ -924,41 +924,45 @@ label {
     display: flex;
     flex-direction: column;
     justify-content: center;
-    background: color-mix(in srgb, var(--surface-elevated) 94%, transparent);
-    border-radius: clamp(26px, 5vw, 36px);
-    border: 1px solid color-mix(in srgb, var(--glass-border) 75%, transparent);
-    padding: clamp(14px, 3vw, 22px) clamp(16px, 4vw, 26px);
-    box-shadow: 0 18px 52px rgba(12, 20, 33, 0.14);
-    gap: clamp(10px, 2.5vw, 14px);
+    gap: clamp(12px, 2.6vw, 18px);
+    padding: clamp(12px, 2.6vw, 18px);
+    border-radius: clamp(30px, 5vw, 38px);
+    border: 1.5px solid transparent;
+    background:
+        linear-gradient(140deg, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.9)) padding-box,
+        linear-gradient(135deg, rgba(255, 198, 255, 0.55), rgba(170, 202, 255, 0.55)) border-box;
+    box-shadow: 0 20px 48px rgba(12, 20, 33, 0.16);
 }
 
 .composer-main {
     width: 100%;
     display: grid;
     grid-template-columns: auto 1fr auto;
-    align-items: flex-end;
-    gap: clamp(12px, 3vw, 18px);
+    align-items: center;
+    gap: clamp(14px, 3vw, 20px);
 }
+
 
 .composer-field {
     position: relative;
     display: flex;
     flex-direction: column;
     gap: clamp(8px, 2vw, 12px);
-    padding: clamp(10px, 2.6vw, 14px) clamp(16px, 4vw, 22px);
-    border-radius: clamp(22px, 5vw, 30px);
-    border: 1px solid color-mix(in srgb, var(--glass-border) 95%, transparent);
-    background: color-mix(in srgb, var(--surface-muted) 135%, transparent);
+    padding: clamp(12px, 2.8vw, 16px) clamp(18px, 3.6vw, 24px);
+    border-radius: clamp(24px, 5vw, 34px);
+    border: 1px solid color-mix(in srgb, var(--glass-border) 80%, transparent);
+    background: color-mix(in srgb, #ffffff 92%, transparent);
+    box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.08);
     transition: border-color 0.25s var(--easing-smooth),
                 background 0.25s var(--easing-smooth),
                 box-shadow 0.25s var(--easing-smooth);
-    min-height: clamp(48px, 6vw, 56px);
+    min-height: clamp(56px, 6vw, 64px);
 }
 
 .composer-field:focus-within {
-    background: color-mix(in srgb, var(--surface-muted) 165%, transparent);
-    border-color: color-mix(in srgb, var(--text-color-muted) 45%, transparent);
-    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--text-color-muted) 32%, transparent);
+    background: color-mix(in srgb, #ffffff 98%, transparent);
+    border-color: color-mix(in srgb, var(--color-primary) 45%, transparent);
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--color-primary) 40%, transparent);
 }
 
 .composer-field textarea {
@@ -967,20 +971,32 @@ label {
     background: transparent;
     color: var(--text-color);
     font-size: clamp(15px, 1.7vw, 17px);
-    line-height: 1.5;
+    line-height: 1.6;
+    font-weight: 500;
     resize: none;
     padding: 0;
     margin: 0;
-    min-height: 26px;
-    max-height: 200px;
+    min-height: 30px;
+    max-height: 220px;
+    caret-color: var(--color-primary);
 }
 
 .composer-field textarea::placeholder {
-    color: color-mix(in srgb, var(--text-color-muted) 75%, transparent);
+    color: color-mix(in srgb, var(--text-color-muted) 60%, transparent);
+    font-weight: 400;
 }
 
 .composer-field textarea:focus {
     outline: none;
+}
+
+.composer-field textarea::-webkit-scrollbar {
+    width: 6px;
+}
+
+.composer-field textarea::-webkit-scrollbar-thumb {
+    background: color-mix(in srgb, var(--color-primary) 35%, transparent);
+    border-radius: 999px;
 }
 
 .composer-trailing {
@@ -1002,24 +1018,23 @@ label {
 }
 
 .icon-btn.composer-icon {
-    width: 42px;
-    height: 42px;
+    width: 44px;
+    height: 44px;
     margin: 0;
     border-radius: 50%;
-    background: color-mix(in srgb, var(--surface-muted) 140%, transparent);
-    border: 1px solid color-mix(in srgb, var(--glass-border) 90%, transparent);
-    color: color-mix(in srgb, var(--text-color) 82%, transparent);
+    border: none;
+    background: color-mix(in srgb, #ffffff 92%, transparent);
+    color: color-mix(in srgb, var(--text-color) 88%, transparent);
+    box-shadow: 0 12px 28px rgba(15, 23, 42, 0.12);
     transition: transform 0.2s var(--easing-smooth),
-                background 0.2s var(--easing-smooth),
-                color 0.2s var(--easing-smooth),
-                border-color 0.2s var(--easing-smooth);
-    box-shadow: none;
+                box-shadow 0.2s var(--easing-smooth),
+                background 0.2s var(--easing-smooth);
 }
 
 .icon-btn.composer-icon:hover {
-    transform: translateY(-1px);
-    background: color-mix(in srgb, var(--surface-muted) 165%, transparent);
-    border-color: color-mix(in srgb, var(--glass-border) 110%, transparent);
+    transform: translateY(-2px);
+    background: color-mix(in srgb, #ffffff 98%, transparent);
+    box-shadow: 0 16px 34px rgba(15, 23, 42, 0.16);
 }
 
 .icon-btn.composer-icon:active {
@@ -1064,14 +1079,14 @@ label {
 }
 
 .composer-field.has-attachments {
-    padding-top: clamp(16px, 3.4vw, 22px);
+    padding-top: clamp(18px, 3.8vw, 24px);
 }
 
 .composer-attachments {
     width: 100%;
     display: grid;
     grid-auto-flow: column;
-    gap: clamp(10px, 3vw, 16px);
+    gap: clamp(12px, 3.4vw, 18px);
     overflow-x: auto;
     max-height: 0;
     opacity: 0;
@@ -1143,6 +1158,77 @@ label {
     cursor: pointer;
     transition: transform 0.2s var(--easing-smooth),
                 background 0.2s var(--easing-smooth);
+}
+
+.file-preview-doc {
+    --doc-accent: var(--color-primary);
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: clamp(8px, 2vw, 12px);
+    width: 100%;
+    height: 100%;
+    padding: clamp(12px, 2.8vw, 18px);
+    border-radius: inherit;
+    background: linear-gradient(165deg,
+            color-mix(in srgb, #ffffff 92%, var(--doc-accent) 8%),
+            color-mix(in srgb, #f4f7ff 85%, var(--doc-accent) 18%));
+    color: color-mix(in srgb, #13203b 70%, var(--doc-accent) 30%);
+    text-align: center;
+}
+
+.file-preview-doc-badge {
+    position: absolute;
+    top: clamp(10px, 2.4vw, 14px);
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    color: #fff;
+    background: color-mix(in srgb, var(--doc-accent) 92%, #1f2933);
+    box-shadow: 0 8px 20px color-mix(in srgb, var(--doc-accent) 35%, transparent);
+}
+
+.file-preview-doc-icon {
+    width: clamp(32px, 7vw, 40px);
+    height: clamp(32px, 7vw, 40px);
+    border-radius: 16px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: color-mix(in srgb, #ffffff 88%, var(--doc-accent) 12%);
+    color: color-mix(in srgb, var(--doc-accent) 82%, #1b2335);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--doc-accent) 28%, transparent);
+}
+
+.file-preview-doc-icon .ui-icon {
+    width: 22px;
+    height: 22px;
+}
+
+.file-preview-doc-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding-top: clamp(14px, 3vw, 18px);
+}
+
+.file-preview-doc-info strong {
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1.3;
+    color: color-mix(in srgb, #0f172a 70%, var(--doc-accent) 30%);
+}
+
+.file-preview-doc-info span {
+    font-size: 11px;
+    color: color-mix(in srgb, #4c566a 55%, var(--doc-accent) 45%);
 }
 
 .file-preview-remove:hover {
@@ -1302,42 +1388,76 @@ label {
 .message-attachments {
     display: flex;
     flex-direction: column;
-    gap: 8px;
-    margin-top: 8px;
+    gap: 12px;
+    margin-top: 10px;
 }
 
+
 .message-attachment {
+    --attachment-accent: var(--color-primary);
+    position: relative;
     display: flex;
     align-items: center;
-    gap: 12px;
-    padding: 12px 14px;
-    border-radius: var(--radius-md);
-    background: rgba(255, 255, 255, 0.08);
-    color: inherit;
+    gap: 16px;
+    padding: 16px 20px;
+    border-radius: 22px;
+    background: linear-gradient(160deg,
+            color-mix(in srgb, #ffffff 92%, var(--attachment-accent) 8%),
+            color-mix(in srgb, #f5f7ff 85%, var(--attachment-accent) 15%));
+    border: 1px solid color-mix(in srgb, var(--attachment-accent) 28%, #e5edff);
+    box-shadow: 0 18px 40px color-mix(in srgb, var(--attachment-accent) 18%, transparent);
+    color: var(--text-color);
     text-decoration: none;
-    transition: background 0.2s ease, transform 0.2s ease;
+    transition: transform 0.2s var(--easing-smooth), box-shadow 0.25s var(--easing-smooth);
 }
 
 .message-attachment:hover {
-    background: rgba(255, 255, 255, 0.14);
-    transform: translateY(-1px);
+    transform: translateY(-2px);
+    box-shadow: 0 20px 46px color-mix(in srgb, var(--attachment-accent) 28%, transparent);
+}
+
+.message-attachment:active {
+    transform: scale(0.98);
 }
 
 .message-attachment-icon {
-    display: flex;
+    position: relative;
+    display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 36px;
-    height: 36px;
-    border-radius: var(--radius-sm);
-    background: rgba(255, 255, 255, 0.12);
-    color: var(--color-primary);
+    width: 54px;
+    height: 54px;
+    border-radius: 18px;
+    background: color-mix(in srgb, #ffffff 88%, var(--attachment-accent) 12%);
+    color: color-mix(in srgb, var(--attachment-accent) 90%, #182036);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--attachment-accent) 32%, transparent);
+}
+
+.message-attachment-icon svg {
+    width: 28px;
+    height: 28px;
+}
+
+.attachment-badge {
+    position: absolute;
+    top: -8px;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 4px 12px;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--attachment-accent) 92%, #111827);
+    color: #fff;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+    box-shadow: 0 12px 24px color-mix(in srgb, var(--attachment-accent) 30%, transparent);
 }
 
 .message-attachment-info {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 6px;
     font-size: 13px;
     line-height: 1.3;
 }
@@ -1345,11 +1465,12 @@ label {
 .message-attachment-name {
     font-weight: 600;
     word-break: break-word;
+    color: color-mix(in srgb, var(--attachment-accent) 35%, var(--text-color) 65%);
 }
 
 .message-attachment-size {
     font-size: 12px;
-    opacity: 0.65;
+    color: color-mix(in srgb, #64748b 75%, var(--attachment-accent) 25%);
 }
 
 .gallery-grid-2 { grid-template-columns: 1fr 1fr; }
@@ -1393,59 +1514,74 @@ label {
 }
 
 .call-button-header {
-    background: var(--color-success);
-    width: auto;
-    padding: 10px 14px;
-    font-size: 13px;
-    margin-top: 0;
-    margin-right: 0;
-    border-radius: var(--radius-lg) 0 0 var(--radius-lg);
-    box-shadow: 0 2px 8px rgba(52, 199, 89, 0.3);
-    position: relative;
-    overflow: hidden;
-    border: none;
-    display: flex;
+    display: inline-flex;
     align-items: center;
-    gap: 4px;
-}
-
-.call-button-header::before {
-    content: '';
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    width: 0;
-    height: 0;
-    border-radius: 50%;
-    background: rgba(255, 255, 255, 0.3);
-    transform: translate(-50%, -50%);
-    transition: width var(--transition-normal) var(--easing-smooth), 
-                height var(--transition-normal) var(--easing-smooth);
-}
-
-.call-button-header:hover::before {
-    width: 200px;
-    height: 200px;
+    gap: clamp(10px, 2vw, 14px);
+    padding: clamp(10px, 2.2vw, 14px) clamp(16px, 3vw, 22px);
+    border-radius: 999px;
+    border: 1.5px solid transparent;
+    background:
+        linear-gradient(140deg, rgba(255, 255, 255, 0.96), rgba(255, 255, 255, 0.9)) padding-box,
+        linear-gradient(135deg, color-mix(in srgb, var(--color-success) 78%, rgba(76, 201, 111, 0.45)), color-mix(in srgb, var(--color-success) 58%, rgba(52, 199, 89, 0.35))) border-box;
+    color: color-mix(in srgb, var(--color-success) 90%, #0f5132 10%);
+    font-weight: 600;
+    font-size: 14px;
+    line-height: 1;
+    cursor: pointer;
+    box-shadow: 0 20px 46px rgba(52, 199, 89, 0.22);
+    transition: transform 0.25s var(--easing-smooth), box-shadow 0.25s var(--easing-smooth), filter 0.25s var(--easing-smooth);
 }
 
 .call-button-header:hover {
-    transform: translateY(-2px) scale(1.05);
-    box-shadow: 0 6px 20px rgba(52, 199, 89, 0.5);
+    transform: translateY(-2px);
+    box-shadow: 0 26px 54px rgba(52, 199, 89, 0.28);
+    filter: brightness(1.03);
 }
 
-.call-button-header svg {
-    transition: all var(--transition-normal) var(--easing-bounce);
-    position: relative;
-    z-index: 1;
+.call-button-icon,
+.call-button-chevron {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: color-mix(in srgb, var(--color-success) 16%, rgba(255, 255, 255, 0.9));
+    color: inherit;
+    transition: transform 0.25s var(--easing-smooth), background 0.25s var(--easing-smooth);
 }
 
-.call-button-header:hover svg {
-    transform: rotate(15deg) scale(1.1);
+.call-button-chevron {
+    width: 28px;
+    height: 28px;
+    background: color-mix(in srgb, var(--color-success) 12%, rgba(255, 255, 255, 0.88));
+}
+
+.call-button-icon svg,
+.call-button-chevron svg {
+    width: 18px;
+    height: 18px;
+    transition: transform 0.2s var(--easing-smooth);
+}
+
+.call-button-header:hover .call-button-icon {
+    background: color-mix(in srgb, var(--color-success) 22%, rgba(255, 255, 255, 0.96));
+    transform: translateY(-1px);
+}
+
+.call-button-header:hover .call-button-chevron {
+    background: color-mix(in srgb, var(--color-success) 18%, rgba(255, 255, 255, 0.95));
+}
+
+.call-button-header[aria-expanded="true"] .call-button-chevron svg {
+    transform: rotate(-180deg);
 }
 
 .call-button-text {
     display: inline-flex;
     align-items: center;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
 }
 
 /* --- Стили Сообщений в стиле iOS --- */
@@ -1758,8 +1894,10 @@ label {
 }
 
 #sticker-picker .sticker-btn {
-    background: transparent;
-    border: none;
+    background: linear-gradient(150deg,
+            color-mix(in srgb, #ffffff 90%, var(--color-primary) 10%),
+            color-mix(in srgb, #f6f8ff 85%, var(--color-primary) 15%));
+    border: 1px solid color-mix(in srgb, var(--color-primary) 18%, #dbe4ff);
     border-radius: var(--radius-lg);
     display: flex;
     align-items: center;
@@ -1768,19 +1906,29 @@ label {
     cursor: pointer;
     transition: transform var(--transition-fast), box-shadow var(--transition-fast), background var(--transition-fast);
     padding: 10px;
+    box-shadow: 0 14px 32px rgba(12, 20, 33, 0.18);
+    color: color-mix(in srgb, var(--color-primary) 85%, #1c2538);
 }
 
 #sticker-picker .sticker-btn:hover,
 #sticker-picker .sticker-btn:focus-visible {
-    background: var(--glass-bg-hover);
-    transform: scale(1.05);
-    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.22);
+    background: linear-gradient(150deg,
+            color-mix(in srgb, #ffffff 94%, var(--color-primary) 6%),
+            color-mix(in srgb, #f4f6ff 90%, var(--color-primary) 10%));
+    transform: translateY(-2px) scale(1.04);
+    box-shadow: 0 18px 40px rgba(12, 20, 33, 0.22);
     outline: none;
 }
 
-#sticker-picker .sticker-btn svg {
+#sticker-picker .sticker-btn:active {
+    transform: scale(0.96);
+}
+
+#sticker-picker .sticker-btn svg,
+.sticker-icon {
     width: 36px;
     height: 36px;
+    stroke: currentColor;
 }
 
 .message.received:hover {
@@ -1880,6 +2028,16 @@ label {
     pointer-events: none;
 }
 
+.reaction-svg {
+    width: 100%;
+    height: 100%;
+    stroke: currentColor;
+}
+
+.reaction-svg [fill="currentColor"] {
+    fill: currentColor;
+}
+
 .reaction-count {
     font-size: 12px;
     font-weight: 600;
@@ -1944,39 +2102,52 @@ label {
     background: var(--color-primary);
 }
 
+
 .reaction-option {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 44px;
-    height: 44px;
+    width: 48px;
+    height: 48px;
     border-radius: 50%;
-    border: 1px solid var(--glass-border);
+    border: 1px solid color-mix(in srgb, var(--color-primary) 20%, var(--glass-border));
     cursor: pointer;
     padding: 6px;
     transition: all var(--transition-normal) var(--easing-bounce);
-    display: inline-flex;
-    background: var(--glass-bg);
+    background: linear-gradient(150deg,
+            color-mix(in srgb, #ffffff 92%, var(--color-primary) 8%),
+            color-mix(in srgb, #f4f6ff 88%, var(--color-primary) 12%));
+    box-shadow: 0 12px 28px rgba(15, 23, 42, 0.16);
 }
 
 .reaction-option .reaction-icon {
     width: 32px;
     height: 32px;
+    border-radius: 14px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: color-mix(in srgb, #ffffff 88%, var(--color-primary) 12%);
+    color: color-mix(in srgb, var(--color-primary) 90%, #1f253a);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-primary) 22%, transparent);
 }
 
-.reaction-option .reaction-icon svg {
-    width: 28px;
-    height: 28px;
+.reaction-option .reaction-icon svg,
+.reaction-option .reaction-icon .reaction-svg {
+    width: 24px;
+    height: 24px;
 }
 
 .reaction-option:hover {
-    transform: scale(1.12);
-    background: var(--glass-bg-hover);
-    box-shadow: 0 8px 20px rgba(0, 122, 255, 0.25);
+    transform: translateY(-2px) scale(1.08);
+    background: linear-gradient(150deg,
+            color-mix(in srgb, #ffffff 95%, var(--color-primary) 5%),
+            color-mix(in srgb, #f2f4ff 90%, var(--color-primary) 10%));
+    box-shadow: 0 16px 36px rgba(15, 23, 42, 0.22);
 }
 
 .reaction-option:active {
-    transform: scale(0.95);
+    transform: scale(0.94);
     transition: all var(--transition-fast) var(--easing-smooth);
 }
 
@@ -2753,6 +2924,120 @@ input[type="range"]::-moz-range-thumb:active {
     margin-bottom: 20px;
     font-size: 18px;
     font-weight: 600;
+}
+
+.settings-section-title {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 0 0 18px;
+    font-size: 19px;
+    font-weight: 600;
+    color: var(--text-color);
+}
+
+.settings-title-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 14px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(145deg,
+            color-mix(in srgb, #ffffff 88%, var(--color-primary) 12%),
+            color-mix(in srgb, #ffffff 92%, var(--color-primary) 8%));
+    color: color-mix(in srgb, var(--color-primary) 75%, #1d2a44);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-primary) 25%, transparent);
+}
+
+.settings-label-with-icon {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: var(--text-color);
+}
+
+.label-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 12px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: color-mix(in srgb, #ffffff 90%, var(--color-primary) 10%);
+    color: color-mix(in srgb, var(--color-primary) 80%, #1b2338);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-primary) 25%, transparent);
+}
+
+.btn-icon {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: color-mix(in srgb, #ffffff 96%, var(--glass-border) 4%);
+    color: currentColor;
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--glass-border) 80%, transparent);
+}
+
+.btn-icon svg {
+    width: 18px;
+    height: 18px;
+}
+
+.settings-ghost-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 12px 18px;
+    border-radius: 18px;
+    background: color-mix(in srgb, #ffffff 94%, var(--glass-border) 6%);
+    border: 1px solid color-mix(in srgb, var(--glass-border) 85%, transparent);
+    color: inherit;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.2s var(--easing-smooth), box-shadow 0.25s var(--easing-smooth), background 0.2s var(--easing-smooth);
+}
+
+.settings-ghost-btn:hover {
+    transform: translateY(-1px);
+    background: color-mix(in srgb, #ffffff 97%, var(--glass-border) 3%);
+    box-shadow: 0 16px 40px rgba(15, 23, 42, 0.14);
+}
+
+.settings-ghost-btn:active {
+    transform: scale(0.97);
+}
+
+.settings-primary-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 14px 20px;
+    border-radius: 20px;
+    border: none;
+    background: linear-gradient(135deg,
+            color-mix(in srgb, var(--color-primary) 88%, #4c6ef5),
+            color-mix(in srgb, var(--color-primary) 70%, #2f57eb));
+    color: #fff;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 18px 46px color-mix(in srgb, var(--color-primary) 50%, transparent);
+    transition: transform 0.2s var(--easing-smooth), box-shadow 0.25s var(--easing-smooth);
+}
+
+.settings-primary-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 22px 54px color-mix(in srgb, var(--color-primary) 55%, transparent);
+}
+
+.settings-primary-btn:active {
+    transform: scale(0.98);
 }
 
 .settings-profile-header {
@@ -4529,10 +4814,10 @@ html {
 
 .thread-input-area .chat-composer-floating {
     pointer-events: auto;
-    width: min(620px, calc(100% - 20px));
-    padding: clamp(12px, 3vw, 20px) clamp(16px, 4vw, 22px);
-    border-radius: clamp(24px, 5vw, 32px);
-    box-shadow: 0 14px 38px rgba(12, 20, 33, 0.16);
+    width: min(720px, 100%);
+    padding: clamp(12px, 2.6vw, 18px);
+    border-radius: clamp(30px, 5vw, 38px);
+    box-shadow: 0 20px 48px rgba(12, 20, 33, 0.16);
 }
 
 .thread-composer {
@@ -4541,8 +4826,9 @@ html {
 
 
 .thread-field textarea {
-    min-height: 22px;
-    font-size: clamp(14.5px, 1.6vw, 16px);
+    min-height: 30px;
+    font-size: clamp(15px, 1.7vw, 17px);
+    font-weight: 500;
 }
 
 .thread-composer-actions {
@@ -5063,31 +5349,6 @@ html {
     display: flex;
     gap: 12px;
 }
-.file-preview-generic {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    padding: 12px;
-    width: 100%;
-    text-align: center;
-    color: var(--text-color);
-    font-size: 12px;
-    line-height: 1.3;
-}
-
-.file-preview-generic strong {
-    display: block;
-    font-weight: 600;
-    font-size: 12px;
-}
-
-.file-preview-generic span {
-    opacity: 0.7;
-    font-size: 11px;
-}
-
 @media (max-width: 600px) {
     #chat-header-actions {
         gap: 6px;
@@ -5098,13 +5359,20 @@ html {
     }
 
     .call-button-header {
-        padding: 10px;
+        padding: 10px 14px;
         min-width: 0;
-        border-radius: var(--radius-full);
+        gap: 10px;
+        box-shadow: 0 14px 30px rgba(52, 199, 89, 0.2);
     }
 
     .call-button-text {
         display: none;
+    }
+
+    .call-button-icon,
+    .call-button-chevron {
+        width: 32px;
+        height: 32px;
     }
 
     .thread-input-pill {
