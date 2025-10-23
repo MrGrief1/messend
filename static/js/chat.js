@@ -44,6 +44,10 @@ const mediaPreviewDownload = document.getElementById('media-preview-download');
 const mediaPreviewOpen = document.getElementById('media-preview-open');
 const mediaPreviewClose = document.getElementById('media-preview-close');
 const callButtonSplit = document.querySelector('.call-button-split');
+const whiteboardInviteToast = document.getElementById('whiteboardInviteToast');
+const whiteboardInviteMessage = document.getElementById('whiteboardInviteMessage');
+const whiteboardInviteJoinBtn = document.getElementById('whiteboardInviteJoinBtn');
+const whiteboardInviteDismissBtn = document.getElementById('whiteboardInviteDismissBtn');
 // Вызовы
 let localStream = null;
 let isMicEnabled = true;
@@ -53,7 +57,7 @@ let screenStream = null;     // текущий поток экрана (если
 let peerConnections = {}; // key: userId, value: RTCPeerConnection
 let pendingIceByPeer = {}; // key: userId, value: array of ICE candidates, буфер до готовности PC
 // RTCConfig с расширенными STUN серверами для P2P соединений
-let rtcConfig = { 
+let rtcConfig = {
     iceServers: [
         // Множество STUN серверов для лучшего определения публичных IP
         { urls: 'stun:stun.l.google.com:19302' },
@@ -72,6 +76,15 @@ let rtcConfig = {
 };
 let isDialModalOpen = false;
 let isCallModalOpen = false;
+
+let excalidrawRoot = null;
+let excalidrawApi = null;
+let excalidrawIsApplyingRemote = false;
+let excalidrawPendingScene = null;
+let excalidrawPendingEmitScene = null;
+let excalidrawSyncTimer = null;
+let whiteboardInviteHideTimeout = null;
+const excalidrawScenesByRoom = new Map();
 
 let reactionTargetMessageId = null; // ID сообщения, на которое мы реагируем
 let activePreviewCleanup = null;
@@ -152,6 +165,21 @@ if (mediaPreviewOverlay) {
         if (event.target === mediaPreviewOverlay || event.target.classList.contains('media-preview-backdrop')) {
             closeMediaPreview();
         }
+    });
+}
+
+if (whiteboardInviteJoinBtn) {
+    whiteboardInviteJoinBtn.addEventListener('click', (event) => {
+        event.preventDefault();
+        hideWhiteboardInvite();
+        openWhiteboard();
+    });
+}
+
+if (whiteboardInviteDismissBtn) {
+    whiteboardInviteDismissBtn.addEventListener('click', (event) => {
+        event.preventDefault();
+        hideWhiteboardInvite();
     });
 }
 
@@ -885,36 +913,42 @@ document.addEventListener('DOMContentLoaded', (event) => {
     // ========== Socket обработчики для совместных функций ==========
     
     // Доска для рисования
-    socket.on('whiteboard_draw', (data) => {
-        if (!data) return;
-        if (data.room_id && String(data.room_id) !== String(currentRoomId)) {
+    socket.on('whiteboard_draw', (data = {}) => {
+        const roomKey = data.room_id != null ? String(data.room_id) : (currentRoomId != null ? String(currentRoomId) : null);
+        if (!roomKey || !data.scene) {
             return;
         }
 
-        const segment = {
-            fromX: data.fromX,
-            fromY: data.fromY,
-            toX: data.toX,
-            toY: data.toY,
-            color: data.color,
-            size: data.size
-        };
+        const sanitizedScene = sanitizeExcalidrawScene(data.scene);
+        excalidrawScenesByRoom.set(roomKey, sanitizedScene);
 
-        const targetRoomId = data.room_id ?? currentRoomId;
-        recordWhiteboardSegment(segment, targetRoomId);
-        if (whiteboardCanvas && whiteboardCtx && String(targetRoomId) === String(currentRoomId)) {
-            drawWhiteboardSegment(segment);
+        if (currentRoomId != null && String(currentRoomId) === roomKey) {
+            applySceneToExcalidraw(sanitizedScene, currentRoomId);
         }
     });
 
-    socket.on('whiteboard_clear', (data = {}) => {
-        if (whiteboardCtx && whiteboardCanvas) {
-            whiteboardCtx.clearRect(0, 0, whiteboardCanvas.width, whiteboardCanvas.height);
+    socket.on('whiteboard_request_scene', (data = {}) => {
+        const roomKey = data.room_id != null ? String(data.room_id) : null;
+        if (!roomKey || currentRoomId == null || String(currentRoomId) !== roomKey) {
+            return;
         }
-        if (whiteboardOverlayCtx && whiteboardOverlay) {
-            whiteboardOverlayCtx.clearRect(0, 0, whiteboardOverlay.width, whiteboardOverlay.height);
+        const cachedScene = excalidrawScenesByRoom.get(roomKey);
+        if (cachedScene && socket) {
+            socket.emit('whiteboard_draw', {
+                room_id: currentRoomId,
+                scene: cachedScene
+            });
         }
-        clearWhiteboardHistory(data.room_id ?? currentRoomId);
+    });
+
+    socket.on('whiteboard_open', (data = {}) => {
+        if (!data.room_id || String(data.room_id) !== String(currentRoomId)) {
+            return;
+        }
+        if (data.user_id && Number(data.user_id) === Number(window.CURRENT_USER_ID)) {
+            return;
+        }
+        showWhiteboardInvite();
     });
     
     // Совместные документы
@@ -6441,8 +6475,14 @@ function selectRoom(element) {
     markRoomAsRead(roomId);
 
     const whiteboardModal = document.getElementById('whiteboardModal');
-    if (whiteboardCanvas && whiteboardModal && getComputedStyle(whiteboardModal).display !== 'none') {
-        replayWhiteboardHistory(currentRoomId);
+    if (whiteboardModal && getComputedStyle(whiteboardModal).display !== 'none') {
+        const key = getWhiteboardRoomKey(currentRoomId);
+        const cachedScene = key ? excalidrawScenesByRoom.get(key) : null;
+        if (cachedScene) {
+            applySceneToExcalidraw(cachedScene, currentRoomId);
+        } else {
+            requestWhiteboardScene();
+        }
     }
 
     // НОВОЕ: На мобильных переключаемся на экран чата (Telegram-стиль)
@@ -6660,399 +6700,230 @@ function applyVideoEffect(effectType) {
 
 // ========== ДОСКА ДЛЯ РИСОВАНИЯ ==========
 
-﻿let whiteboardCanvas = null;
-let whiteboardCtx = null;
-let whiteboardOverlay = null;
-let whiteboardOverlayCtx = null;
-let whiteboardIsDrawing = false;
-let whiteboardTool = 'pen';
-let whiteboardColor = '#007aff';
-let whiteboardSize = 3;
-let whiteboardStartX = 0;
-let whiteboardStartY = 0;
-let whiteboardLastX = 0;
-let whiteboardLastY = 0;
-const whiteboardHistoryByRoom = new Map();
-const MAX_WHITEBOARD_HISTORY = 4000;
-
-function clampWhiteboardValue(value) {
-    const num = Number(value);
-    if (!Number.isFinite(num)) return 0;
-    if (num < 0) return 0;
-    if (num > 1) return 1;
-    return num;
+function getWhiteboardRoomKey(roomId) {
+    if (roomId == null) return null;
+    return String(roomId);
 }
 
-function getWhiteboardHistory(roomId = currentRoomId) {
-    if (!roomId) return [];
-    const key = String(roomId);
-    let history = whiteboardHistoryByRoom.get(key);
-    if (!history) {
-        history = [];
-        whiteboardHistoryByRoom.set(key, history);
+function ensureExcalidrawMounted() {
+    if (excalidrawRoot) {
+        return true;
     }
-    return history;
-}
+    if (!window.React || !window.ReactDOM || !window.ExcalidrawLib) {
+        console.error('Excalidraw: зависимости не загружены');
+        return false;
+    }
+    const container = document.getElementById('excalidrawContainer');
+    if (!container) {
+        return false;
+    }
 
-function recordWhiteboardSegment(segment, roomId = currentRoomId) {
-    if (!segment || !roomId) return;
-    const normalized = {
-        fromX: clampWhiteboardValue(segment.fromX),
-        fromY: clampWhiteboardValue(segment.fromY),
-        toX: clampWhiteboardValue(segment.toX),
-        toY: clampWhiteboardValue(segment.toY),
-        color: typeof segment.color === 'string' ? segment.color : whiteboardColor,
-        size: Number(segment.size) || whiteboardSize
+    const { createElement, useCallback, useEffect, useMemo } = window.React;
+
+    const ExcalidrawWrapper = () => {
+        const handleChange = useCallback((elements, appState, files) => {
+            if (!socket || currentRoomId == null || excalidrawIsApplyingRemote) {
+                return;
+            }
+            const scene = buildScenePayload(elements, appState, files);
+            const key = getWhiteboardRoomKey(currentRoomId);
+            if (key) {
+                excalidrawScenesByRoom.set(key, scene);
+            }
+            excalidrawPendingEmitScene = scene;
+            if (!excalidrawSyncTimer) {
+                excalidrawSyncTimer = setTimeout(() => {
+                    excalidrawSyncTimer = null;
+                    const sceneToEmit = excalidrawPendingEmitScene;
+                    excalidrawPendingEmitScene = null;
+                    if (socket && currentRoomId != null && sceneToEmit) {
+                        socket.emit('whiteboard_draw', {
+                            room_id: currentRoomId,
+                            scene: sceneToEmit
+                        });
+                    }
+                }, 350);
+            }
+        }, []);
+
+        const setApi = useCallback((api) => {
+            if (api) {
+                excalidrawApi = api;
+                if (excalidrawPendingScene) {
+                    const sceneToApply = excalidrawPendingScene;
+                    excalidrawPendingScene = null;
+                    applySceneToExcalidraw(sceneToApply, currentRoomId);
+                }
+            }
+        }, []);
+
+        useEffect(() => () => {
+            excalidrawApi = null;
+        }, []);
+
+        const uiOptions = useMemo(() => ({
+            canvasActions: {
+                changeViewBackgroundColor: true,
+                clearCanvas: true,
+                export: false,
+                loadScene: false,
+                saveToActiveFile: false,
+                saveAsImage: false,
+                toggleTheme: false,
+            },
+            tools: { image: true },
+            welcomeScreen: false,
+            dockedSidebarBreakpoint: 0
+        }), []);
+
+        const renderTopLeft = useCallback(() => createElement('div', { className: 'custom-excalidraw-title' }, 'Совместная доска'), []);
+
+        return createElement(window.ExcalidrawLib.Excalidraw, {
+            ref: setApi,
+            onChange: handleChange,
+            UIOptions: uiOptions,
+            renderTopLeftUI: renderTopLeft,
+            renderTopRightUI: () => null,
+            name: 'GlassChat Board',
+            langCode: 'ru-RU'
+        });
     };
-    const history = getWhiteboardHistory(roomId);
-    history.push(normalized);
-    if (history.length > MAX_WHITEBOARD_HISTORY) {
-        history.splice(0, history.length - MAX_WHITEBOARD_HISTORY);
+
+    excalidrawRoot = window.ReactDOM.createRoot(container);
+    excalidrawRoot.render(window.React.createElement(ExcalidrawWrapper));
+    return true;
+}
+
+function buildScenePayload(elements, appState, files) {
+    return sanitizeExcalidrawScene({ elements, appState, files });
+}
+
+function sanitizeExcalidrawScene(scene) {
+    if (!scene) {
+        return { elements: [], appState: {}, files: {} };
+    }
+    return {
+        elements: deepCloneSerializable(scene.elements || []),
+        appState: sanitizeAppStateForSync(scene.appState || {}),
+        files: deepCloneSerializable(scene.files || {})
+    };
+}
+
+function sanitizeAppStateForSync(appState) {
+    if (!appState) return {};
+    const clone = { ...appState };
+    delete clone.collaborators;
+    delete clone.selectionElement;
+    delete clone.editingElement;
+    delete clone.openDialog;
+    delete clone.contextMenu;
+    delete clone.activeEmbeddable;
+    delete clone.pendingImageElementId;
+    return deepCloneSerializable(clone);
+}
+
+function deepCloneSerializable(value) {
+    if (value == null) return value;
+    try {
+        return JSON.parse(JSON.stringify(value, (_, v) => (typeof v === 'function' ? undefined : v)));
+    } catch (error) {
+        console.warn('Не удалось сериализовать данные доски', error);
+        return value;
     }
 }
 
-function clearWhiteboardHistory(roomId = currentRoomId) {
-    if (!roomId) return;
-    const history = getWhiteboardHistory(roomId);
-    history.length = 0;
-}
+function applySceneToExcalidraw(scene, roomId) {
+    const key = getWhiteboardRoomKey(roomId != null ? roomId : currentRoomId);
+    if (!key) return;
+    const normalizedScene = sanitizeExcalidrawScene(scene);
+    excalidrawScenesByRoom.set(key, normalizedScene);
 
-function drawWhiteboardSegment(segment) {
-    if (!whiteboardCanvas || !whiteboardCtx || !segment) return;
-    const width = whiteboardCanvas.width;
-    const height = whiteboardCanvas.height;
-    if (!width || !height) return;
-
-    const fromX = clampWhiteboardValue(segment.fromX) * width;
-    const fromY = clampWhiteboardValue(segment.fromY) * height;
-    const toX = clampWhiteboardValue(segment.toX) * width;
-    const toY = clampWhiteboardValue(segment.toY) * height;
-    const color = typeof segment.color === 'string' ? segment.color : whiteboardColor;
-    const size = Number(segment.size) || whiteboardSize;
-
-    drawLine(fromX, fromY, toX, toY, color, size);
-}
-
-function replayWhiteboardHistory(roomId = currentRoomId) {
-    if (!whiteboardCanvas || !whiteboardCtx) return;
-    const width = whiteboardCanvas.width;
-    const height = whiteboardCanvas.height;
-    if (!width || !height) return;
-
-    whiteboardCtx.clearRect(0, 0, width, height);
-    if (whiteboardOverlayCtx && whiteboardOverlay) {
-        whiteboardOverlayCtx.clearRect(0, 0, whiteboardOverlay.width, whiteboardOverlay.height);
+    if (currentRoomId != null && key === String(currentRoomId)) {
+        if (excalidrawApi) {
+            excalidrawIsApplyingRemote = true;
+            try {
+                excalidrawApi.updateScene(normalizedScene);
+            } finally {
+                setTimeout(() => {
+                    excalidrawIsApplyingRemote = false;
+                }, 0);
+            }
+        } else {
+            excalidrawPendingScene = normalizedScene;
+        }
     }
+}
 
-    const history = getWhiteboardHistory(roomId);
-    history.forEach(drawWhiteboardSegment);
+function requestWhiteboardScene() {
+    if (!socket || currentRoomId == null) return;
+    socket.emit('whiteboard_request_scene', { room_id: currentRoomId });
 }
 
 function openWhiteboard() {
+    if (!currentRoomId) return;
     openModal('whiteboardModal');
-
-    if (!whiteboardCanvas) {
-        whiteboardCanvas = document.getElementById('whiteboardCanvas');
-        whiteboardOverlay = document.getElementById('whiteboardOverlay');
-        whiteboardCtx = whiteboardCanvas.getContext('2d');
-        whiteboardOverlayCtx = whiteboardOverlay.getContext('2d');
-
-        resizeWhiteboardCanvas();
-        window.addEventListener('resize', resizeWhiteboardCanvas);
-
-        whiteboardCanvas.addEventListener('mousedown', startWhiteboardStroke);
-        whiteboardCanvas.addEventListener('mousemove', drawWhiteboardStroke);
-        whiteboardCanvas.addEventListener('mouseup', endWhiteboardStroke);
-        whiteboardCanvas.addEventListener('mouseleave', endWhiteboardStroke);
-
-        whiteboardCanvas.addEventListener('touchstart', (e) => {
-            startWhiteboardStroke(e);
-        }, { passive: false });
-        whiteboardCanvas.addEventListener('touchmove', (e) => {
-            drawWhiteboardStroke(e);
-        }, { passive: false });
-        whiteboardCanvas.addEventListener('touchend', endWhiteboardStroke);
+    if (!ensureExcalidrawMounted()) {
+        return;
     }
 
-    resetWhiteboardToolbar();
-    replayWhiteboardHistory();
-}
-
-function resizeWhiteboardCanvas() {
-    if (!whiteboardCanvas) return;
-    const { width, height } = whiteboardCanvas.getBoundingClientRect();
-    whiteboardCanvas.width = width;
-    whiteboardCanvas.height = height;
-    if (whiteboardOverlay) {
-        whiteboardOverlay.width = width;
-        whiteboardOverlay.height = height;
-    }
-    replayWhiteboardHistory();
-}
-
-function resetWhiteboardToolbar() {
-    const palette = document.getElementById('whiteboardPalette');
-    if (palette) {
-        palette.querySelectorAll('.color-swatch').forEach(swatch => {
-            const color = swatch.style.getPropertyValue('--swatch');
-            swatch.classList.toggle('active', color && color.trim().toLowerCase() === whiteboardColor.toLowerCase());
-        });
-        const colorInput = document.getElementById('brushColor');
-        if (colorInput && colorInput.value.toLowerCase() !== whiteboardColor.toLowerCase()) {
-            colorInput.value = whiteboardColor;
-        }
-    }
-    const toolbar = document.getElementById('whiteboardToolbar');
-    if (toolbar) {
-        toolbar.querySelectorAll('.tool-btn').forEach(btn => btn.classList.remove('active'));
-    }
-    const activeBtn = document.querySelector(`.whiteboard-toolbar .tool-btn[data-tool="${whiteboardTool}"]`);
-    if (activeBtn) activeBtn.classList.add('active');
-
-    const sizeInput = document.getElementById('brushSize');
-    if (sizeInput) sizeInput.value = whiteboardSize;
-    const sizeValue = document.getElementById('whiteboardSizeValue');
-    if (sizeValue) sizeValue.textContent = `${whiteboardSize} px`;
-}
-
-function setWhiteboardTool(tool, button) {
-    whiteboardTool = tool;
-    const toolbar = document.getElementById('whiteboardToolbar');
-    if (toolbar) {
-        toolbar.querySelectorAll('.tool-btn').forEach(btn => btn.classList.remove('active'));
-    }
-    if (button) button.classList.add('active');
-}
-
-function setWhiteboardColor(color) {
-    whiteboardColor = color;
-    const palette = document.getElementById('whiteboardPalette');
-    if (palette) {
-        palette.querySelectorAll('.color-swatch').forEach(swatch => swatch.classList.remove('active'));
-        const matching = Array.from(palette.querySelectorAll('.color-swatch')).find(swatch => swatch.style.getPropertyValue('--swatch') === color);
-        if (matching) matching.classList.add('active');
-    }
-    const colorInput = document.getElementById('brushColor');
-    if (colorInput) colorInput.value = color;
-}
-
-function setWhiteboardSize(value) {
-    whiteboardSize = Math.max(1, Math.min(30, parseInt(value, 10) || whiteboardSize));
-    const sizeValue = document.getElementById('whiteboardSizeValue');
-    if (sizeValue) sizeValue.textContent = `${whiteboardSize} px`;
-}
-
-function getWhiteboardCoordinates(event) {
-    const rect = whiteboardCanvas.getBoundingClientRect();
-    let clientX;
-    let clientY;
-    if (event.touches && event.touches[0]) {
-        clientX = event.touches[0].clientX;
-        clientY = event.touches[0].clientY;
-    } else {
-        clientX = event.clientX;
-        clientY = event.clientY;
-    }
-    const x = clientX - rect.left;
-    const y = clientY - rect.top;
-    return { x, y };
-}
-
-function startWhiteboardStroke(event) {
-    event.preventDefault();
-    if (!whiteboardCanvas) return;
-    whiteboardIsDrawing = true;
-    const { x, y } = getWhiteboardCoordinates(event);
-    whiteboardStartX = x;
-    whiteboardStartY = y;
-    whiteboardLastX = x;
-    whiteboardLastY = y;
-    if (whiteboardOverlayCtx) {
-        whiteboardOverlayCtx.clearRect(0, 0, whiteboardOverlay.width, whiteboardOverlay.height);
-    }
-}
-
-function drawWhiteboardStroke(event) {
-    if (!whiteboardIsDrawing) return;
-    event.preventDefault();
-    const { x, y } = getWhiteboardCoordinates(event);
-
-    if (whiteboardTool === 'pen' || whiteboardTool === 'highlighter' || whiteboardTool === 'eraser') {
-        drawContinuousStroke(x, y);
-    } else {
-        drawPreviewShape(x, y);
-    }
-}
-
-function endWhiteboardStroke(event) {
-    if (!whiteboardIsDrawing) return;
-    whiteboardIsDrawing = false;
-    const coords = event ? getWhiteboardCoordinates(event) : { x: whiteboardLastX, y: whiteboardLastY };
-    const endX = coords.x;
-    const endY = coords.y;
-
-    if (whiteboardTool === 'line') {
-        drawShapeLine(whiteboardStartX, whiteboardStartY, endX, endY);
-    } else if (whiteboardTool === 'rectangle') {
-        drawShapeRectangle(whiteboardStartX, whiteboardStartY, endX, endY);
-    } else if (whiteboardTool === 'circle') {
-        drawShapeCircle(whiteboardStartX, whiteboardStartY, endX, endY);
-    }
-
-    if (whiteboardOverlayCtx) {
-        whiteboardOverlayCtx.clearRect(0, 0, whiteboardOverlay.width, whiteboardOverlay.height);
-    }
-}
-
-function drawContinuousStroke(x, y) {
-    const baseColor = whiteboardTool === 'highlighter' ? applyAlphaToColor(whiteboardColor, 0.35) : whiteboardColor;
-    const color = whiteboardTool === 'eraser' ? '__eraser__' : baseColor;
-    const size = whiteboardTool === 'highlighter' ? whiteboardSize * 1.5 : whiteboardSize;
-    drawLine(whiteboardLastX, whiteboardLastY, x, y, color, size);
-
-    if (currentRoomId && socket) {
-        emitWhiteboardSegment(whiteboardLastX, whiteboardLastY, x, y, color, size);
-    }
-
-    whiteboardLastX = x;
-    whiteboardLastY = y;
-}
-
-function drawPreviewShape(x, y) {
-    if (!whiteboardOverlayCtx) return;
-    whiteboardOverlayCtx.clearRect(0, 0, whiteboardOverlay.width, whiteboardOverlay.height);
-    whiteboardOverlayCtx.strokeStyle = whiteboardColor;
-    whiteboardOverlayCtx.lineWidth = whiteboardSize;
-    whiteboardOverlayCtx.lineCap = 'round';
-    whiteboardOverlayCtx.globalAlpha = 0.6;
-    whiteboardOverlayCtx.beginPath();
-
-    if (whiteboardTool === 'line') {
-        whiteboardOverlayCtx.moveTo(whiteboardStartX, whiteboardStartY);
-        whiteboardOverlayCtx.lineTo(x, y);
-        whiteboardOverlayCtx.stroke();
-    } else if (whiteboardTool === 'rectangle') {
-        whiteboardOverlayCtx.strokeRect(Math.min(whiteboardStartX, x), Math.min(whiteboardStartY, y), Math.abs(x - whiteboardStartX), Math.abs(y - whiteboardStartY));
-    } else if (whiteboardTool === 'circle') {
-        const radius = Math.sqrt(Math.pow(x - whiteboardStartX, 2) + Math.pow(y - whiteboardStartY, 2));
-        whiteboardOverlayCtx.arc(whiteboardStartX, whiteboardStartY, radius, 0, Math.PI * 2);
-        whiteboardOverlayCtx.stroke();
-    }
-
-    whiteboardOverlayCtx.globalAlpha = 1;
-}
-
-function drawShapeLine(fromX, fromY, toX, toY) {
-    drawLine(fromX, fromY, toX, toY, whiteboardColor, whiteboardSize);
-    if (currentRoomId && socket) {
-        emitWhiteboardSegment(fromX, fromY, toX, toY, whiteboardColor, whiteboardSize);
-    }
-}
-
-function drawShapeRectangle(startX, startY, endX, endY) {
-    const x1 = Math.min(startX, endX);
-    const y1 = Math.min(startY, endY);
-    const x2 = Math.max(startX, endX);
-    const y2 = Math.max(startY, endY);
-    drawShapeLine(x1, y1, x2, y1);
-    drawShapeLine(x2, y1, x2, y2);
-    drawShapeLine(x2, y2, x1, y2);
-    drawShapeLine(x1, y2, x1, y1);
-}
-
-function drawShapeCircle(startX, startY, endX, endY) {
-    const radius = Math.sqrt(Math.pow(endX - startX, 2) + Math.pow(endY - startY, 2));
-    const segments = 64;
-    let prevX = startX + radius;
-    let prevY = startY;
-    for (let i = 1; i <= segments; i++) {
-        const angle = (i / segments) * Math.PI * 2;
-        const nextX = startX + radius * Math.cos(angle);
-        const nextY = startY + radius * Math.sin(angle);
-        drawShapeLine(prevX, prevY, nextX, nextY);
-        prevX = nextX;
-        prevY = nextY;
-    }
-}
-
-function emitWhiteboardSegment(fromX, fromY, toX, toY, color, size) {
-    if (!whiteboardCanvas) return;
-    const width = whiteboardCanvas.width;
-    const height = whiteboardCanvas.height;
-    if (!width || !height) return;
-
-    const normalized = {
-        fromX: fromX / width,
-        fromY: fromY / height,
-        toX: toX / width,
-        toY: toY / height,
-        color: color,
-        size: size
-    };
-
-    recordWhiteboardSegment(normalized);
-    socket.emit('whiteboard_draw', {
-        room_id: currentRoomId,
-        ...normalized
+    const key = getWhiteboardRoomKey(currentRoomId);
+    const cachedScene = key ? excalidrawScenesByRoom.get(key) : null;
+    const initialScene = cachedScene || sanitizeExcalidrawScene({
+        elements: [],
+        appState: { viewBackgroundColor: '#ffffff' },
+        files: {}
     });
+    applySceneToExcalidraw(initialScene, currentRoomId);
+    if (!cachedScene) {
+        requestWhiteboardScene();
+    }
+
+    hideWhiteboardInvite();
+    if (socket) {
+        socket.emit('whiteboard_open', { room_id: currentRoomId });
+    }
 }
 
-function applyAlphaToColor(color, alpha) {
-    if (!color) return `rgba(0,0,0,${alpha})`;
-    if (color.startsWith('rgba')) {
-        return color.replace(/rgba\(([^,]+),([^,]+),([^,]+),([^\)]+)\)/, (_, r, g, b) => `rgba(${r.trim()},${g.trim()},${b.trim()},${alpha})`);
+function clearExcalidrawBoard() {
+    if (!currentRoomId) return;
+    ensureExcalidrawMounted();
+    const key = getWhiteboardRoomKey(currentRoomId);
+    const baseAppState = sanitizeAppStateForSync(excalidrawApi && excalidrawApi.getAppState ? excalidrawApi.getAppState() : {});
+    baseAppState.selectedElementIds = {};
+    baseAppState.selectedGroupIds = {};
+    const blankScene = {
+        elements: [],
+        appState: baseAppState,
+        files: {}
+    };
+    if (key) {
+        excalidrawScenesByRoom.set(key, blankScene);
     }
-    if (color.startsWith('rgb')) {
-        return color.replace(/rgb\(([^,]+),([^,]+),([^\)]+)\)/, (_, r, g, b) => `rgba(${r.trim()},${g.trim()},${b.trim()},${alpha})`);
-    }
-    const hex = color.replace('#', '');
-    const bigint = parseInt(hex, 16);
-    const r = (bigint >> 16) & 255;
-    const g = (bigint >> 8) & 255;
-    const b = bigint & 255;
-    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-}
-
-function drawLine(fromX, fromY, toX, toY, color, size) {
-    if (!whiteboardCtx) return;
-    whiteboardCtx.save();
-    if (color === '__eraser__') {
-        whiteboardCtx.globalCompositeOperation = 'destination-out';
-        whiteboardCtx.strokeStyle = 'rgba(0,0,0,1)';
+    if (excalidrawApi) {
+        excalidrawApi.updateScene(blankScene);
     } else {
-        whiteboardCtx.globalCompositeOperation = 'source-over';
-        whiteboardCtx.strokeStyle = color;
-        if (color && color.startsWith('rgba')) {
-            const parts = color.split(',');
-            const alphaPart = parts[3];
-            if (alphaPart) {
-                const alpha = parseFloat(alphaPart.replace(')', '').trim());
-                if (!Number.isNaN(alpha)) whiteboardCtx.globalAlpha = alpha;
-            }
-        }
+        excalidrawPendingScene = blankScene;
     }
-    whiteboardCtx.lineWidth = size;
-    whiteboardCtx.lineCap = 'round';
-    whiteboardCtx.beginPath();
-    whiteboardCtx.moveTo(fromX, fromY);
-    whiteboardCtx.lineTo(toX, toY);
-    whiteboardCtx.stroke();
-    whiteboardCtx.globalAlpha = 1;
-    whiteboardCtx.restore();
 }
 
-function clearWhiteboard() {
-    if (whiteboardCtx && whiteboardCanvas) {
-        whiteboardCtx.clearRect(0, 0, whiteboardCanvas.width, whiteboardCanvas.height);
+function showWhiteboardInvite() {
+    if (!whiteboardInviteToast || !whiteboardInviteMessage) return;
+    whiteboardInviteMessage.textContent = 'Совместная доска открыта. Нажмите «Присоединиться», чтобы подключиться.';
+    whiteboardInviteToast.classList.add('show');
+    if (whiteboardInviteHideTimeout) {
+        clearTimeout(whiteboardInviteHideTimeout);
     }
-    if (whiteboardOverlayCtx && whiteboardOverlay) {
-        whiteboardOverlayCtx.clearRect(0, 0, whiteboardOverlay.width, whiteboardOverlay.height);
-    }
-    clearWhiteboardHistory(currentRoomId);
-    if (currentRoomId && socket) {
-        socket.emit('whiteboard_clear', {
-            room_id: currentRoomId
-        });
+    whiteboardInviteHideTimeout = setTimeout(() => {
+        hideWhiteboardInvite();
+    }, 8000);
+}
+
+function hideWhiteboardInvite() {
+    if (!whiteboardInviteToast) return;
+    whiteboardInviteToast.classList.remove('show');
+    if (whiteboardInviteHideTimeout) {
+        clearTimeout(whiteboardInviteHideTimeout);
+        whiteboardInviteHideTimeout = null;
     }
 }
 

@@ -1878,33 +1878,58 @@ def handle_system_message(data):
 
 @socketio.on('whiteboard_draw')
 def handle_whiteboard_draw(data):
-    """Синхронизация рисования на доске между участниками"""
-    if 'user_id' not in session: return
-    
-    room_id = data.get('room_id')
-    if not room_id: return
-    
-    # Проверяем доступ к комнате
-    if not RoomParticipant.query.filter_by(user_id=session['user_id'], room_id=room_id).first():
+    """Синхронизация доски Excalidraw между участниками"""
+    if 'user_id' not in session:
         return
-    
-    # Отправляем всем участникам кроме отправителя
-    emit('whiteboard_draw', data, room=str(room_id), include_self=False)
 
-@socketio.on('whiteboard_clear')
-def handle_whiteboard_clear(data):
-    """Очистка доски для всех участников"""
-    if 'user_id' not in session: return
-    
     room_id = data.get('room_id')
-    if not room_id: return
-    
-    # Проверяем доступ к комнате
+    scene = data.get('scene')
+    if not room_id or scene is None:
+        return
+
     if not RoomParticipant.query.filter_by(user_id=session['user_id'], room_id=room_id).first():
         return
-    
-    # Отправляем всем участникам кроме отправителя
-    emit('whiteboard_clear', {'room_id': room_id}, room=str(room_id), include_self=False)
+
+    payload = {
+        'room_id': room_id,
+        'scene': scene,
+        'user_id': session['user_id']
+    }
+    emit('whiteboard_draw', payload, room=str(room_id), include_self=False)
+
+@socketio.on('whiteboard_request_scene')
+def handle_whiteboard_request_scene(data):
+    if 'user_id' not in session:
+        return
+
+    room_id = data.get('room_id')
+    if not room_id:
+        return
+
+    if not RoomParticipant.query.filter_by(user_id=session['user_id'], room_id=room_id).first():
+        return
+
+    emit('whiteboard_request_scene', {
+        'room_id': room_id,
+        'requester_id': session['user_id']
+    }, room=str(room_id), include_self=False)
+
+@socketio.on('whiteboard_open')
+def handle_whiteboard_open(data):
+    if 'user_id' not in session:
+        return
+
+    room_id = data.get('room_id')
+    if not room_id:
+        return
+
+    if not RoomParticipant.query.filter_by(user_id=session['user_id'], room_id=room_id).first():
+        return
+
+    emit('whiteboard_open', {
+        'room_id': room_id,
+        'user_id': session['user_id']
+    }, room=str(room_id), include_self=False)
 
 @socketio.on('document_update')
 def handle_document_update(data):

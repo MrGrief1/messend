@@ -13,7 +13,13 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.5/socket.io.min.js"></script>
-    
+    <script>
+        window.EXCALIDRAW_ASSET_PATH = "https://unpkg.com/@excalidraw/excalidraw@0.17.6/dist/excalidraw-assets-dev/";
+    </script>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/@excalidraw/excalidraw@0.17.6/dist/excalidraw.production.min.js" crossorigin></script>
+
     <style>
         /* Дополнительные стили для жидкого фона и мобильной оптимизации */
         
@@ -2489,50 +2495,16 @@
         <div id="whiteboardModal" class="modal-overlay" onclick="closeModal(event)">
         <div class="modal-content glass whiteboard-modal">
             <div class="modal-header">
-                <h3>Интерактивная доска</h3>
-                <div class="whiteboard-toolbar" id="whiteboardToolbar">
-                    <button class="tool-btn active" data-tool="pen" onclick="setWhiteboardTool('pen', this)" title="Перо">
-                        <span class="material-icons-round">edit</span>
-                    </button>
-                    <button class="tool-btn" data-tool="highlighter" onclick="setWhiteboardTool('highlighter', this)" title="Маркер">
-                        <span class="material-icons-round">gesture</span>
-                    </button>
-                    <button class="tool-btn" data-tool="eraser" onclick="setWhiteboardTool('eraser', this)" title="Ластик">
-                        <span class="material-icons-round">format_clear</span>
-                    </button>
-                    <button class="tool-btn" data-tool="line" onclick="setWhiteboardTool('line', this)" title="Линия">
-                        <span class="material-icons-round">show_chart</span>
-                    </button>
-                    <button class="tool-btn" data-tool="rectangle" onclick="setWhiteboardTool('rectangle', this)" title="Прямоугольник">
-                        <span class="material-icons-round">crop_7_5</span>
-                    </button>
-                    <button class="tool-btn" data-tool="circle" onclick="setWhiteboardTool('circle', this)" title="Эллипс">
-                        <span class="material-icons-round">panorama_fish_eye</span>
-                    </button>
-                    <div class="whiteboard-divider"></div>
-                    <div class="whiteboard-palette" id="whiteboardPalette">
-                        <button class="color-swatch active" style="--swatch:#007aff" onclick="setWhiteboardColor('#007aff')" title="#007AFF"></button>
-                        <button class="color-swatch" style="--swatch:#ff2d55" onclick="setWhiteboardColor('#ff2d55')" title="#FF2D55"></button>
-                        <button class="color-swatch" style="--swatch:#34c759" onclick="setWhiteboardColor('#34c759')" title="#34C759"></button>
-                        <button class="color-swatch" style="--swatch:#ffbf00" onclick="setWhiteboardColor('#ffbf00')" title="#FFBF00"></button>
-                        <button class="color-swatch" style="--swatch:#333333" onclick="setWhiteboardColor('#333333')" title="#333333"></button>
-                        <button class="color-swatch" style="--swatch:#ffffff" onclick="setWhiteboardColor('#ffffff')" title="#FFFFFF"></button>
-                        <label class="color-picker" title="Другой цвет">
-                            <input type="color" id="brushColor" value="#007AFF" onchange="setWhiteboardColor(this.value)">
-                        </label>
-                    </div>
-                    <div class="whiteboard-slider">
-                        <input type="range" id="brushSize" min="1" max="30" value="3" oninput="setWhiteboardSize(this.value)">
-                        <span id="whiteboardSizeValue">3 px</span>
-                    </div>
-                    <button class="ghost-btn danger" onclick="clearWhiteboard()" title="Очистить доску">Очистить</button>
-                    <button class="close-btn" onclick="closeModal(event)">&times;</button>
+                <h3>Совместная доска</h3>
+                <div class="modal-actions">
+                    <button class="ghost-btn" onclick="clearExcalidrawBoard()" title="Очистить доску">Очистить</button>
+                    <button class="close-btn" onclick="closeModal(event)" title="Закрыть">&times;</button>
                 </div>
             </div>
             <div class="whiteboard-stage">
-                <canvas id="whiteboardCanvas"></canvas>
-                <canvas id="whiteboardOverlay"></canvas>
+                <div id="excalidrawContainer" class="excalidraw-wrapper"></div>
             </div>
+            <div class="whiteboard-hint">Изменения синхронизируются для всех участников комнаты</div>
         </div>
     </div>
 
@@ -2577,6 +2549,19 @@
 
 
     <!-- Telegram-style мобильная навигация -->
+    <div id="whiteboardInviteToast" class="whiteboard-invite-toast">
+        <div class="whiteboard-invite-content">
+            <div class="whiteboard-invite-text">
+                <span class="material-icons-round">draw</span>
+                <span id="whiteboardInviteMessage">Совместная доска открыта</span>
+            </div>
+            <div class="whiteboard-invite-actions">
+                <button class="primary-btn" id="whiteboardInviteJoinBtn">Присоединиться</button>
+                <button class="ghost-btn" id="whiteboardInviteDismissBtn">Скрыть</button>
+            </div>
+        </div>
+    </div>
+
     <nav class="telegram-mobile-nav" id="telegram-mobile-nav">
         <div class="telegram-nav-container">
             <button class="telegram-nav-item active" data-nav="chats" onclick="switchMobileNav('chats', this)">
