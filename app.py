@@ -94,6 +94,9 @@ s = URLSafeTimedSerializer(app.config['SECRET_KEY'])
 mail = Mail(app)
 IS_MAIL_CONFIGURED = bool(app.config.get('MAIL_SERVER') and app.config.get('MAIL_USERNAME'))
 
+# Хранилище последних состояний доски Excalidraw по комнатам
+whiteboard_states = {}
+
 # --- Модели Базы Данных ---
 class Contact(db.Model):
     __tablename__ = 'contact'
@@ -1876,35 +1879,58 @@ def handle_system_message(data):
     
     return message_dict
 
-@socketio.on('whiteboard_draw')
-def handle_whiteboard_draw(data):
-    """Синхронизация рисования на доске между участниками"""
-    if 'user_id' not in session: return
-    
-    room_id = data.get('room_id')
-    if not room_id: return
-    
-    # Проверяем доступ к комнате
-    if not RoomParticipant.query.filter_by(user_id=session['user_id'], room_id=room_id).first():
+@socketio.on('whiteboard_scene_update')
+def handle_whiteboard_scene_update(data):
+    """Обновление сцены Excalidraw в рамках комнаты."""
+    if 'user_id' not in session:
         return
-    
-    # Отправляем всем участникам кроме отправителя
-    emit('whiteboard_draw', data, room=str(room_id), include_self=False)
 
-@socketio.on('whiteboard_clear')
-def handle_whiteboard_clear(data):
-    """Очистка доски для всех участников"""
-    if 'user_id' not in session: return
-    
     room_id = data.get('room_id')
-    if not room_id: return
-    
-    # Проверяем доступ к комнате
+    if not room_id:
+        return
+
     if not RoomParticipant.query.filter_by(user_id=session['user_id'], room_id=room_id).first():
         return
-    
-    # Отправляем всем участникам кроме отправителя
-    emit('whiteboard_clear', {'room_id': room_id}, room=str(room_id), include_self=False)
+
+    key = str(room_id)
+    scene = data.get('scene')
+    version = data.get('version')
+
+    if scene is not None:
+        whiteboard_states[key] = {
+            'scene': scene,
+            'version': version
+        }
+
+    emit('whiteboard_scene_update', {
+        'room_id': room_id,
+        'scene': scene,
+        'version': version
+    }, room=key, include_self=False)
+
+@socketio.on('whiteboard_state_request')
+def handle_whiteboard_state_request(data):
+    """Отправка последнего состояния доски запросившему клиенту."""
+    if 'user_id' not in session:
+        return
+
+    room_id = data.get('room_id')
+    if not room_id:
+        return
+
+    if not RoomParticipant.query.filter_by(user_id=session['user_id'], room_id=room_id).first():
+        return
+
+    key = str(room_id)
+    state = whiteboard_states.get(key)
+    if not state:
+        return
+
+    emit('whiteboard_state_response', {
+        'room_id': room_id,
+        'scene': state.get('scene'),
+        'version': state.get('version')
+    }, to=request.sid)
 
 @socketio.on('document_update')
 def handle_document_update(data):

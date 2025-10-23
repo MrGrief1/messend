@@ -5223,134 +5223,77 @@ html {
 .whiteboard-modal {
     max-width: 1100px;
     width: 95%;
-    max-height: 95%;
+    max-height: 92vh;
     height: 780px;
     display: flex;
     flex-direction: column;
-    gap: 16px;
-}
-
-.whiteboard-toolbar {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 10px;
-    background: rgba(255, 255, 255, 0.04);
-    padding: 10px 14px;
-    border-radius: var(--radius-md);
-}
-
-.whiteboard-toolbar .tool-btn {
-    width: 40px;
-    height: 40px;
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    background: rgba(255, 255, 255, 0.06);
-    border-radius: var(--radius-sm);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: inherit;
-    cursor: pointer;
-    transition: background var(--transition-fast), transform var(--transition-fast), border var(--transition-fast), color var(--transition-fast);
-}
-
-.whiteboard-toolbar .tool-btn:hover {
-    background: rgba(255, 255, 255, 0.12);
-    transform: translateY(-1px);
-}
-
-.whiteboard-toolbar .tool-btn.active {
-    background: rgba(0, 122, 255, 0.2);
-    border-color: rgba(0, 122, 255, 0.6);
-    color: var(--color-primary);
-}
-
-.whiteboard-divider {
-    width: 1px;
-    height: 32px;
-    background: rgba(255, 255, 255, 0.12);
-}
-
-.whiteboard-palette {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.color-swatch {
-    width: 28px;
-    height: 28px;
-    border-radius: 50%;
-    border: 2px solid rgba(255, 255, 255, 0.2);
-    background: var(--swatch);
-    cursor: pointer;
-    transition: transform var(--transition-fast), border var(--transition-fast);
-}
-
-.color-swatch:hover {
-    transform: translateY(-1px);
-}
-
-.color-swatch.active {
-    border-color: #ffffff;
-    box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.45);
-}
-
-.color-swatch[style*='#ffffff'] {
-    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.1);
-}
-
-.color-picker input[type="color"] {
-    width: 32px;
-    height: 32px;
-    border: none;
-    border-radius: 10px;
-    cursor: pointer;
     padding: 0;
-    background: transparent;
 }
 
-.whiteboard-slider {
+.whiteboard-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    gap: 12px;
+}
+
+.whiteboard-actions {
     display: flex;
     align-items: center;
     gap: 8px;
-    min-width: 160px;
 }
 
-.whiteboard-slider input[type="range"] {
-    width: 120px;
-    accent-color: var(--color-primary);
-}
-
-.whiteboard-slider span {
-    font-size: 12px;
-    opacity: 0.7;
-}
-
-.whiteboard-stage {
+.whiteboard-body {
     position: relative;
     flex: 1 1 auto;
     width: 100%;
-    background: #ffffff;
+    min-height: 400px;
+    margin-top: 12px;
     border-radius: var(--radius-lg);
     overflow: hidden;
-    box-shadow: 0 22px 44px rgba(0, 0, 0, 0.22);
+    background: rgba(0, 0, 0, 0.2);
 }
 
-#whiteboardCanvas,
-#whiteboardOverlay {
-    position: absolute;
-    inset: 0;
+.excalidraw-container {
     width: 100%;
     height: 100%;
 }
 
-#whiteboardCanvas {
-    cursor: crosshair;
+.whiteboard-loading {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    background: rgba(18, 18, 18, 0.65);
+    backdrop-filter: blur(12px);
+    color: var(--text-primary, #ffffff);
+    font-size: 15px;
+    letter-spacing: 0.3px;
+    transition: opacity var(--transition-fast);
 }
 
-#whiteboardOverlay {
+.whiteboard-loading.hidden {
+    opacity: 0;
     pointer-events: none;
+}
+
+.whiteboard-loading .spinner {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    border: 4px solid rgba(255, 255, 255, 0.25);
+    border-top-color: var(--color-primary, #007aff);
+    animation: whiteboard-spin 1s linear infinite;
+}
+
+@keyframes whiteboard-spin {
+    to {
+        transform: rotate(360deg);
+    }
 }
 
 .documents-modal {

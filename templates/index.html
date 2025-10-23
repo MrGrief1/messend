@@ -9,6 +9,7 @@
     <meta name="theme-color" content="#000000">
     <title>GlassChat</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://unpkg.com/@excalidraw/excalidraw@0.18.0/dist/excalidraw.min.css" crossorigin>
     <!-- Fonts and Icons -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
@@ -2485,53 +2486,25 @@
     </div>
 
 
-<!-- Модальное окно доски для рисования -->
-        <div id="whiteboardModal" class="modal-overlay" onclick="closeModal(event)">
-        <div class="modal-content glass whiteboard-modal">
-            <div class="modal-header">
-                <h3>Интерактивная доска</h3>
-                <div class="whiteboard-toolbar" id="whiteboardToolbar">
-                    <button class="tool-btn active" data-tool="pen" onclick="setWhiteboardTool('pen', this)" title="Перо">
-                        <span class="material-icons-round">edit</span>
+    <!-- Модальное окно доски Excalidraw -->
+    <div id="whiteboardModal" class="modal-overlay" onclick="closeModal(event)">
+        <div class="modal-content glass whiteboard-modal" role="dialog" aria-modal="true" aria-labelledby="whiteboardTitle">
+            <div class="modal-header whiteboard-header">
+                <h3 id="whiteboardTitle">Совместная доска</h3>
+                <div class="whiteboard-actions">
+                    <button class="ghost-btn" type="button" onclick="toggleWhiteboardTheme()" title="Сменить тему доски">
+                        <span class="material-icons-round">brightness_6</span>
                     </button>
-                    <button class="tool-btn" data-tool="highlighter" onclick="setWhiteboardTool('highlighter', this)" title="Маркер">
-                        <span class="material-icons-round">gesture</span>
-                    </button>
-                    <button class="tool-btn" data-tool="eraser" onclick="setWhiteboardTool('eraser', this)" title="Ластик">
-                        <span class="material-icons-round">format_clear</span>
-                    </button>
-                    <button class="tool-btn" data-tool="line" onclick="setWhiteboardTool('line', this)" title="Линия">
-                        <span class="material-icons-round">show_chart</span>
-                    </button>
-                    <button class="tool-btn" data-tool="rectangle" onclick="setWhiteboardTool('rectangle', this)" title="Прямоугольник">
-                        <span class="material-icons-round">crop_7_5</span>
-                    </button>
-                    <button class="tool-btn" data-tool="circle" onclick="setWhiteboardTool('circle', this)" title="Эллипс">
-                        <span class="material-icons-round">panorama_fish_eye</span>
-                    </button>
-                    <div class="whiteboard-divider"></div>
-                    <div class="whiteboard-palette" id="whiteboardPalette">
-                        <button class="color-swatch active" style="--swatch:#007aff" onclick="setWhiteboardColor('#007aff')" title="#007AFF"></button>
-                        <button class="color-swatch" style="--swatch:#ff2d55" onclick="setWhiteboardColor('#ff2d55')" title="#FF2D55"></button>
-                        <button class="color-swatch" style="--swatch:#34c759" onclick="setWhiteboardColor('#34c759')" title="#34C759"></button>
-                        <button class="color-swatch" style="--swatch:#ffbf00" onclick="setWhiteboardColor('#ffbf00')" title="#FFBF00"></button>
-                        <button class="color-swatch" style="--swatch:#333333" onclick="setWhiteboardColor('#333333')" title="#333333"></button>
-                        <button class="color-swatch" style="--swatch:#ffffff" onclick="setWhiteboardColor('#ffffff')" title="#FFFFFF"></button>
-                        <label class="color-picker" title="Другой цвет">
-                            <input type="color" id="brushColor" value="#007AFF" onchange="setWhiteboardColor(this.value)">
-                        </label>
-                    </div>
-                    <div class="whiteboard-slider">
-                        <input type="range" id="brushSize" min="1" max="30" value="3" oninput="setWhiteboardSize(this.value)">
-                        <span id="whiteboardSizeValue">3 px</span>
-                    </div>
-                    <button class="ghost-btn danger" onclick="clearWhiteboard()" title="Очистить доску">Очистить</button>
-                    <button class="close-btn" onclick="closeModal(event)">&times;</button>
+                    <button class="ghost-btn danger" type="button" onclick="clearWhiteboardScene()" title="Очистить доску">Очистить</button>
+                    <button class="close-btn" type="button" onclick="closeModal(event)" aria-label="Закрыть">&times;</button>
                 </div>
             </div>
-            <div class="whiteboard-stage">
-                <canvas id="whiteboardCanvas"></canvas>
-                <canvas id="whiteboardOverlay"></canvas>
+            <div class="whiteboard-body">
+                <div id="excalidrawRoot" class="excalidraw-container" role="presentation"></div>
+                <div class="whiteboard-loading" id="whiteboardLoading">
+                    <div class="spinner"></div>
+                    <span>Загружаем Excalidraw…</span>
+                </div>
             </div>
         </div>
     </div>
