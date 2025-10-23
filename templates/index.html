@@ -2415,10 +2415,10 @@
         </div>
     </div>
 
-        <div id="presentationModal" class="modal-overlay" onclick="closeModal(event)">
-        <div class="modal-content glass presentation-modal">
+        <div id="presentationModal" class="modal-overlay presentation-overlay" onclick="closeModal(event)">
+        <div class="modal-content glass presentation-modal" onclick="event.stopPropagation()">
             <div class="modal-header">
-                <h3>Доска презентаций</h3>
+                <h3>Доска презентаций (PPTist)</h3>
                 <div class="presentation-header-controls">
                     <button onclick="prevSlide()" class="icon-btn" title="Предыдущий слайд">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -2495,7 +2495,7 @@
                     </svg>
                     <div>
                         <h3 id="whiteboardTitle">Совместная доска Excalidraw</h3>
-                        <p id="whiteboardSubtitle" class="whiteboard-subtitle">Создайте визуальные заметки вместе с командой в режиме реального времени.</p>
+                        <p id="whiteboardSubtitle" class="whiteboard-subtitle">Каждый участник может присоединиться без ссылки — просто откройте доску и рисуйте вместе.</p>
                     </div>
                 </div>
                 <div class="whiteboard-modal-actions">
@@ -2509,21 +2509,6 @@
                         <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
                             <use href="#ui-xmark"></use>
                         </svg>
-                    </button>
-                </div>
-            </div>
-            <div class="whiteboard-share-bar" id="whiteboardShareBar">
-                <div class="whiteboard-share-text">
-                    <span>Ссылка для команды</span>
-                    <small>Поделитесь ею, чтобы участники мгновенно подключились к доске.</small>
-                </div>
-                <div class="whiteboard-share-controls">
-                    <input id="whiteboardShareInput" type="text" readonly value="" aria-label="Ссылка на доску">
-                    <button class="primary-btn" onclick="copyWhiteboardLink()">
-                        <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
-                            <use href="#ui-copy"></use>
-                        </svg>
-                        Скопировать
                     </button>
                 </div>
             </div>
@@ -2545,10 +2530,10 @@
 
 
     <!-- Модальное окно совместных документов -->
-        <div id="documentsModal" class="modal-overlay" onclick="closeModal(event)">
-        <div class="modal-content glass documents-modal">
+        <div id="documentsModal" class="modal-overlay documents-overlay" onclick="closeModal(event)">
+        <div class="modal-content glass documents-modal" onclick="event.stopPropagation()">
             <div class="modal-header">
-                <h3>Общие документы</h3>
+                <h3>Общие документы (Etherpad)</h3>
                 <button class="close-btn" onclick="closeModal(event)" title="Закрыть">&times;</button>
             </div>
             <div class="document-toolbar" id="documentToolbar">
@@ -2573,7 +2558,7 @@
             </div>
             <div id="documentEditor" class="document-editor" contenteditable="true" data-placeholder="Начните писать..." spellcheck="true"></div>
             <div class="document-footer">
-                <span class="document-hint">Изменения синхронизируются автоматически</span>
+                <span class="document-hint">Интерфейс полностью на русском языке, изменения синхронизируются автоматически.</span>
                 <div class="document-actions">
                     <button class="ghost-btn" onclick="shareDocument()">Скопировать текст</button>
                     <button class="primary-btn" onclick="sendDocumentToChat()">Отправить в чат</button>

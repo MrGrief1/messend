@@ -6649,8 +6649,6 @@ function applyVideoEffect(effectType) {
 
 const whiteboardSessions = new Map();
 let whiteboardFrameEl = null;
-let whiteboardShareInputEl = null;
-let whiteboardShareBarEl = null;
 let whiteboardEmptyStateEl = null;
 let whiteboardInviteToastEl = null;
 let whiteboardToastTitleEl = null;
@@ -6662,9 +6660,6 @@ let activeWhiteboardSession = null;
 
 function initializeWhiteboardUI() {
     ensureWhiteboardElements();
-    if (whiteboardShareBarEl) {
-        whiteboardShareBarEl.style.display = 'none';
-    }
     if (whiteboardEmptyStateEl) {
         whiteboardEmptyStateEl.style.display = '';
     }
@@ -6672,8 +6667,6 @@ function initializeWhiteboardUI() {
 
 function ensureWhiteboardElements() {
     if (!whiteboardFrameEl) whiteboardFrameEl = document.getElementById('whiteboardFrame');
-    if (!whiteboardShareInputEl) whiteboardShareInputEl = document.getElementById('whiteboardShareInput');
-    if (!whiteboardShareBarEl) whiteboardShareBarEl = document.getElementById('whiteboardShareBar');
     if (!whiteboardEmptyStateEl) whiteboardEmptyStateEl = document.getElementById('whiteboardEmptyState');
     if (!whiteboardInviteToastEl) whiteboardInviteToastEl = document.getElementById('whiteboardInviteToast');
     if (!whiteboardToastTitleEl) whiteboardToastTitleEl = document.getElementById('whiteboardToastTitle');
@@ -6745,7 +6738,7 @@ function normalizeWhiteboardSession(data) {
 
 function setWhiteboardSessionUI(session) {
     ensureWhiteboardElements();
-    if (!whiteboardFrameEl || !whiteboardShareInputEl || !whiteboardShareBarEl) return;
+    if (!whiteboardFrameEl) return;
 
     activeWhiteboardSession = session || null;
 
@@ -6758,8 +6751,6 @@ function setWhiteboardSessionUI(session) {
         }
         whiteboardFrameEl.src = session.embedUrl;
         whiteboardFrameEl.dataset.boardUrl = session.boardUrl;
-        whiteboardShareInputEl.value = session.boardUrl;
-        whiteboardShareBarEl.style.display = 'flex';
         if (whiteboardEmptyStateEl) {
             whiteboardEmptyStateEl.style.display = 'none';
         }
@@ -6770,8 +6761,6 @@ function setWhiteboardSessionUI(session) {
         }
         whiteboardFrameEl.removeAttribute('src');
         whiteboardFrameEl.dataset.boardUrl = '';
-        whiteboardShareInputEl.value = '';
-        whiteboardShareBarEl.style.display = 'none';
         if (whiteboardEmptyStateEl) {
             whiteboardEmptyStateEl.style.display = '';
         }
@@ -6783,7 +6772,7 @@ function announceWhiteboardSession(session) {
     if (!socket || !currentRoomId || !session) return;
     socket.emit('system_message', {
         room_id: parseInt(currentRoomId, 10),
-        content: `Открыта новая доска Excalidraw: ${session.boardUrl}`,
+        content: 'Открыта новая доска Excalidraw. Используйте кнопку «Доска» для подключения.',
         type: 'system'
     });
 }
@@ -6859,38 +6848,6 @@ function openWhiteboard(session) {
 
     openModal('whiteboardModal');
     dismissWhiteboardInvite();
-}
-
-function copyWhiteboardLink() {
-    ensureWhiteboardElements();
-    if (!whiteboardShareInputEl || !whiteboardShareInputEl.value) return;
-    const text = whiteboardShareInputEl.value;
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(text).then(() => {
-            showInlineBanner('Ссылка на доску скопирована.');
-        }).catch(() => {
-            fallbackCopyWhiteboardLink(text);
-        });
-    } else {
-        fallbackCopyWhiteboardLink(text);
-    }
-}
-
-function fallbackCopyWhiteboardLink(text) {
-    try {
-        const tempInput = document.createElement('textarea');
-        tempInput.value = text;
-        tempInput.setAttribute('readonly', 'readonly');
-        tempInput.style.position = 'absolute';
-        tempInput.style.left = '-9999px';
-        document.body.appendChild(tempInput);
-        tempInput.select();
-        document.execCommand('copy');
-        document.body.removeChild(tempInput);
-        showInlineBanner('Ссылка на доску скопирована.');
-    } catch (error) {
-        alert('Не удалось скопировать ссылку. Скопируйте её вручную.');
-    }
 }
 
 function showInlineBanner(message) {
