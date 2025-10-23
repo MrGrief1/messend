@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Совместные документы</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/collab-embed.css') }}">
+</head>
+<body class="collab-body{% if theme == 'light' %} light{% endif %}">
+    <iframe id="etherpadFrame" class="collab-iframe" title="Совместный документ"></iframe>
+    <script>
+        const params = new URLSearchParams(window.location.search);
+        const padId = params.get('pad');
+        const userName = params.get('user') || 'Участник';
+        const locale = params.get('lang') || 'ru';
+        const theme = params.get('theme') || 'light';
+        if (theme === 'light') {
+            document.body.classList.add('light');
+        }
+        const frame = document.getElementById('etherpadFrame');
+        if (padId) {
+            const etherpadUrl = `https://etherpad.wikimedia.org/p/${padId}?userName=${encodeURIComponent(userName)}&lang=${encodeURIComponent(locale)}&showChat=false&showControls=true&showLineNumbers=true`;
+            frame.src = etherpadUrl;
+        }
+    </script>
+</body>
+</html>

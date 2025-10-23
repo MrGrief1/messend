@@ -897,27 +897,6 @@ document.addEventListener('DOMContentLoaded', (event) => {
         }
     });
     
-    // Совместные документы
-    socket.on('document_update', (data) => {
-        if (!data.content) return;
-        
-        documentContent = data.content;
-        const editor = document.getElementById('documentEditor');
-        
-        // Обновляем только если документ открыт и пользователь не редактирует
-        if (editor && document.activeElement !== editor) {
-            const scrollPos = editor.scrollTop;
-            editor.innerHTML = data.content;
-            editor.scrollTop = scrollPos;
-        }
-    });
-    
-    // Презентации
-    socket.on('presentation_slide_change', (data) => {
-        currentSlideIndex = data.slide_index;
-        renderSlides();
-    });
-    
     // Инициализация счетчиков чатов
     updateChatCounts();
     
@@ -6649,12 +6628,7 @@ function applyVideoEffect(effectType) {
 
 const whiteboardSessions = new Map();
 let whiteboardFrameEl = null;
-let whiteboardShareInputEl = null;
-let whiteboardShareBarEl = null;
 let whiteboardEmptyStateEl = null;
-let whiteboardInviteToastEl = null;
-let whiteboardToastTitleEl = null;
-let whiteboardToastDescriptionEl = null;
 let whiteboardSubtitleEl = null;
 let whiteboardDefaultSubtitle = '';
 let pendingWhiteboardInvite = null;
@@ -6662,9 +6636,6 @@ let activeWhiteboardSession = null;
 
 function initializeWhiteboardUI() {
     ensureWhiteboardElements();
-    if (whiteboardShareBarEl) {
-        whiteboardShareBarEl.style.display = 'none';
-    }
     if (whiteboardEmptyStateEl) {
         whiteboardEmptyStateEl.style.display = '';
     }
@@ -6672,12 +6643,7 @@ function initializeWhiteboardUI() {
 
 function ensureWhiteboardElements() {
     if (!whiteboardFrameEl) whiteboardFrameEl = document.getElementById('whiteboardFrame');
-    if (!whiteboardShareInputEl) whiteboardShareInputEl = document.getElementById('whiteboardShareInput');
-    if (!whiteboardShareBarEl) whiteboardShareBarEl = document.getElementById('whiteboardShareBar');
     if (!whiteboardEmptyStateEl) whiteboardEmptyStateEl = document.getElementById('whiteboardEmptyState');
-    if (!whiteboardInviteToastEl) whiteboardInviteToastEl = document.getElementById('whiteboardInviteToast');
-    if (!whiteboardToastTitleEl) whiteboardToastTitleEl = document.getElementById('whiteboardToastTitle');
-    if (!whiteboardToastDescriptionEl) whiteboardToastDescriptionEl = document.getElementById('whiteboardToastDescription');
     if (!whiteboardSubtitleEl) {
         whiteboardSubtitleEl = document.getElementById('whiteboardSubtitle');
         if (whiteboardSubtitleEl) {
@@ -6686,13 +6652,30 @@ function ensureWhiteboardElements() {
     }
 }
 
-function buildExcalidrawEmbedUrl(boardUrl) {
+function buildExcalidrawEmbedUrl(boardUrl, roomId) {
     try {
-        const url = new URL(boardUrl);
-        url.searchParams.set('embed', '1');
-        url.searchParams.set('collab', '1');
-        url.searchParams.set('theme', 'dark');
-        return url.toString();
+        const origin = window.location.origin || '';
+        const embedUrl = new URL(`${origin}/collab/whiteboard/${roomId}`);
+        const hash = (boardUrl.split('#')[1] || '').trim();
+        if (hash.startsWith('room=')) {
+            const [, roomToken] = hash.split('room=');
+            if (roomToken) {
+                const parts = roomToken.split(',');
+                if (parts[0]) {
+                    embedUrl.searchParams.set('room', parts[0]);
+                }
+                if (parts[1]) {
+                    embedUrl.searchParams.set('key', parts[1]);
+                }
+            }
+        }
+        if (window.CURRENT_USERNAME) {
+            embedUrl.searchParams.set('user', window.CURRENT_USERNAME);
+        }
+        const themePreference = window.CURRENT_THEME || document.documentElement?.dataset?.theme;
+        const theme = themePreference === 'light' ? 'light' : 'dark';
+        embedUrl.searchParams.set('theme', theme);
+        return embedUrl.toString();
     } catch (error) {
         console.warn('Не удалось подготовить ссылку встраивания Excalidraw:', error);
         return boardUrl;
@@ -6724,7 +6707,7 @@ function createWhiteboardSession(roomId) {
     return normalizeWhiteboardSession({
         room_id: roomId,
         board_url: boardUrl,
-        embed_url: buildExcalidrawEmbedUrl(boardUrl),
+        embed_url: buildExcalidrawEmbedUrl(boardUrl, roomId),
         created_by: CURRENT_USER_ID,
         created_by_name: 'Вы',
         created_at: Date.now()
@@ -6736,7 +6719,7 @@ function normalizeWhiteboardSession(data) {
     return {
         roomId: String(data.room_id),
         boardUrl,
-        embedUrl: data.embed_url ? String(data.embed_url) : buildExcalidrawEmbedUrl(boardUrl),
+        embedUrl: data.embed_url ? String(data.embed_url) : buildExcalidrawEmbedUrl(boardUrl, data.room_id),
         createdBy: data.created_by ?? null,
         createdByName: data.created_by_name || data.creator_name || 'Участник',
         createdAt: data.created_at ? Number(data.created_at) : Date.now()
@@ -6745,7 +6728,7 @@ function normalizeWhiteboardSession(data) {
 
 function setWhiteboardSessionUI(session) {
     ensureWhiteboardElements();
-    if (!whiteboardFrameEl || !whiteboardShareInputEl || !whiteboardShareBarEl) return;
+    if (!whiteboardFrameEl) return;
 
     activeWhiteboardSession = session || null;
 
@@ -6754,12 +6737,10 @@ function setWhiteboardSessionUI(session) {
             const author = session.createdBy && Number(session.createdBy) === Number(CURRENT_USER_ID)
                 ? 'Создано вами'
                 : `Создал ${session.createdByName || 'участник'}`;
-            whiteboardSubtitleEl.textContent = `${author}. Все изменения синхронизируются через Excalidraw.`;
+            whiteboardSubtitleEl.textContent = `${author}. Все изменения синхронизируются автоматически.`;
         }
         whiteboardFrameEl.src = session.embedUrl;
         whiteboardFrameEl.dataset.boardUrl = session.boardUrl;
-        whiteboardShareInputEl.value = session.boardUrl;
-        whiteboardShareBarEl.style.display = 'flex';
         if (whiteboardEmptyStateEl) {
             whiteboardEmptyStateEl.style.display = 'none';
         }
@@ -6770,8 +6751,6 @@ function setWhiteboardSessionUI(session) {
         }
         whiteboardFrameEl.removeAttribute('src');
         whiteboardFrameEl.dataset.boardUrl = '';
-        whiteboardShareInputEl.value = '';
-        whiteboardShareBarEl.style.display = 'none';
         if (whiteboardEmptyStateEl) {
             whiteboardEmptyStateEl.style.display = '';
         }
@@ -6783,7 +6762,7 @@ function announceWhiteboardSession(session) {
     if (!socket || !currentRoomId || !session) return;
     socket.emit('system_message', {
         room_id: parseInt(currentRoomId, 10),
-        content: `Открыта новая доска Excalidraw: ${session.boardUrl}`,
+        content: 'Открыта новая совместная доска Excalidraw.',
         type: 'system'
     });
 }
@@ -6801,36 +6780,21 @@ function broadcastWhiteboardSession(session) {
 }
 
 function updateWhiteboardInvite(session) {
-    ensureWhiteboardElements();
     pendingWhiteboardInvite = session;
-
-    if (!whiteboardInviteToastEl || !session) {
-        dismissWhiteboardInvite();
-        return;
-    }
-
     const isSelf = session.createdBy && Number(session.createdBy) === Number(CURRENT_USER_ID);
     if (isSelf) {
         setWhiteboardSessionUI(session);
-        dismissWhiteboardInvite();
         return;
     }
 
-    if (whiteboardToastTitleEl) {
-        whiteboardToastTitleEl.textContent = 'Совместная доска открыта';
+    if (String(currentRoomId) === session.roomId) {
+        setWhiteboardSessionUI(session);
+        showInlineBanner(`${session.createdByName || 'Участник'} открыл доску.`);
     }
-    if (whiteboardToastDescriptionEl) {
-        whiteboardToastDescriptionEl.textContent = `${session.createdByName || 'Участник'} приглашает вас рисовать вместе.`;
-    }
-    whiteboardInviteToastEl.classList.add('show');
 }
 
 function dismissWhiteboardInvite() {
-    ensureWhiteboardElements();
     pendingWhiteboardInvite = null;
-    if (whiteboardInviteToastEl) {
-        whiteboardInviteToastEl.classList.remove('show');
-    }
 }
 
 function acceptWhiteboardInvite() {
@@ -6861,38 +6825,6 @@ function openWhiteboard(session) {
     dismissWhiteboardInvite();
 }
 
-function copyWhiteboardLink() {
-    ensureWhiteboardElements();
-    if (!whiteboardShareInputEl || !whiteboardShareInputEl.value) return;
-    const text = whiteboardShareInputEl.value;
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(text).then(() => {
-            showInlineBanner('Ссылка на доску скопирована.');
-        }).catch(() => {
-            fallbackCopyWhiteboardLink(text);
-        });
-    } else {
-        fallbackCopyWhiteboardLink(text);
-    }
-}
-
-function fallbackCopyWhiteboardLink(text) {
-    try {
-        const tempInput = document.createElement('textarea');
-        tempInput.value = text;
-        tempInput.setAttribute('readonly', 'readonly');
-        tempInput.style.position = 'absolute';
-        tempInput.style.left = '-9999px';
-        document.body.appendChild(tempInput);
-        tempInput.select();
-        document.execCommand('copy');
-        document.body.removeChild(tempInput);
-        showInlineBanner('Ссылка на доску скопирована.');
-    } catch (error) {
-        alert('Не удалось скопировать ссылку. Скопируйте её вручную.');
-    }
-}
-
 function showInlineBanner(message) {
     try {
         const banner = document.getElementById('poll-comment-banner');
@@ -6912,7 +6844,8 @@ function openWhiteboardInNewTab() {
         alert('Сначала создайте или откройте доску, чтобы перейти в новую вкладку.');
         return;
     }
-    window.open(activeWhiteboardSession.boardUrl, '_blank', 'noopener');
+    const targetUrl = activeWhiteboardSession.embedUrl || activeWhiteboardSession.boardUrl;
+    window.open(targetUrl, '_blank', 'noopener');
 }
 
 function closeWhiteboardModal() {
@@ -6924,979 +6857,70 @@ function closeWhiteboardModal() {
 
 // ========== СОВМЕСТНЫЕ ДОКУМЕНТЫ ==========
 
-let documentContent = '';
+let documentsFrameEl = null;
 
-let documentSyncTimeout = null;
+function buildSharedPadId(roomId) {
+    return `glasschat-${roomId}`;
+}
+
+function buildDocumentUrl(roomId) {
+    const padId = buildSharedPadId(roomId);
+    const url = new URL(`${window.location.origin}/collab/documents/${roomId}`);
+    url.searchParams.set('pad', padId);
+    if (window.CURRENT_USERNAME) {
+        url.searchParams.set('user', window.CURRENT_USERNAME);
+    }
+    const themePreference = window.CURRENT_THEME || document.documentElement?.dataset?.theme;
+    const theme = themePreference === 'light' ? 'light' : 'dark';
+    url.searchParams.set('theme', theme);
+    url.searchParams.set('lang', 'ru');
+    return url.toString();
+}
 
 function openDocuments() {
-    openModal('documentsModal');
-    const editor = document.getElementById('documentEditor');
-
-    if (documentContent) {
-        editor.innerHTML = documentContent;
-    }
-
-    if (!editor.dataset.bound) {
-        editor.addEventListener('input', () => {
-            documentContent = editor.innerHTML;
-
-            if (documentSyncTimeout) clearTimeout(documentSyncTimeout);
-
-            documentSyncTimeout = setTimeout(() => {
-                if (currentRoomId && socket) {
-                    socket.emit('document_update', {
-                        room_id: currentRoomId,
-                        content: documentContent
-                    });
-                }
-            }, 500);
-        });
-        editor.dataset.bound = 'true';
-    }
-}
-
-function formatText(command) {
-    document.execCommand(command, false, null);
-    document.getElementById('documentEditor').focus();
-}
-
-function shareDocument() {
-    if (!documentContent) {
-        alert('Документ пуст!');
-        return;
-    }
-    
-    // Копируем контент в буфер обмена
-    const tempDiv = document.createElement('div');
-    tempDiv.innerHTML = documentContent;
-    const textContent = tempDiv.textContent || tempDiv.innerText;
-    
-    navigator.clipboard.writeText(textContent).then(() => {
-        alert('Текст документа скопирован в буфер обмена!');
-    }).catch(() => {
-        alert('Не удалось скопировать текст');
-    });
-
-function setDocumentBlock(block) {
-    const editor = document.getElementById('documentEditor');
-    if (!editor) return;
-    document.execCommand('formatBlock', false, block);
-    editor.focus();
-}
-
-function setDocumentAlignment(direction) {
-    const editor = document.getElementById('documentEditor');
-    if (!editor) return;
-    const commandMap = { left: 'justifyLeft', center: 'justifyCenter', right: 'justifyRight' };
-    const command = commandMap[direction];
-    if (command) {
-        document.execCommand(command, false, null);
-        editor.focus();
-    }
-}
-
-function applyDocumentHighlight() {
-    const editor = document.getElementById('documentEditor');
-    if (!editor) return;
-    document.execCommand('hiliteColor', false, '#fff4a3');
-    editor.focus();
-}
-
-function toggleDocumentCode() {
-    const editor = document.getElementById('documentEditor');
-    if (!editor) return;
-    document.execCommand('formatBlock', false, 'pre');
-    editor.focus();
-}
-
-function sendDocumentToChat() {
-    const editor = document.getElementById('documentEditor');
-    if (!editor) return;
-    const content = (editor.innerText || '').trim();
-    if (!content) {
-        alert('Добавьте текст, прежде чем отправлять.');
-        return;
-    }
     if (!currentRoomId) {
-        alert('Выберите чат, чтобы отправить документ.');
+        alert('Выберите чат, чтобы открыть документы.');
         return;
     }
-    socket.emit('send_message', {
-        room_id: parseInt(currentRoomId),
-        content: `?? ${content}`
-    });
-    alert('Документ отправлен в чат.');
-}
+    openModal('documentsModal');
+    if (!documentsFrameEl) {
+        documentsFrameEl = document.getElementById('documentsFrame');
+    }
+    if (!documentsFrameEl) return;
+    const targetSrc = buildDocumentUrl(currentRoomId);
+    if (documentsFrameEl.src !== targetSrc) {
+        documentsFrameEl.src = targetSrc;
+    }
 }
 
 // ========== ПРЕЗЕНТАЦИЯ ==========
 
-let slides = [];
-let currentSlideIndex = 0;
-let presentationSelectedElementId = null;
-let presentationColor = '#007aff';
-let presentationFontSize = 32;
-let presentationDragState = null;
-let presentationGridEnabled = false;
-let presentationActiveTool = 'select';
+let presentationFrameEl = null;
 
-function generatePresentationId(prefix) {
-    return `${prefix}-${Date.now()}`;
+function buildPresentationUrl(roomId) {
+    const url = new URL(`${window.location.origin}/collab/presentation/${roomId}`);
+    url.searchParams.set('deck', `glasschat-${roomId}`);
+    const themePreference = window.CURRENT_THEME || document.documentElement?.dataset?.theme;
+    const theme = themePreference === 'light' ? 'light' : 'dark';
+    url.searchParams.set('theme', theme);
+    return url.toString();
 }
 
 function openPresentation() {
-    openModal('presentationModal');
-    ensureDefaultPresentation();
-    if (currentSlideIndex >= slides.length) {
-        currentSlideIndex = slides.length - 1;
-    }
-    renderSlides();
-    const selectBtn = document.querySelector('.presentation-toolbar .tool-btn[data-tool="select"]');
-    if (selectBtn) {
-        selectPresentationTool('select', selectBtn);
-    }
-}
-
-function ensureDefaultPresentation() {
-    if (slides.length === 0) {
-        slides.push({
-            id: generatePresentationId('slide'),
-            name: 'Слайд 1',
-            background: '#ffffff',
-            elements: [
-                {
-                    id: generatePresentationId('element'),
-                    type: 'text',
-                    x: 15,
-                    y: 18,
-                    width: 50,
-                    height: 22,
-                    rotation: 0,
-                    text: 'Дважды щёлкните, чтобы редактировать текст',
-                    fontSize: 32,
-                    color: '#1f1f1f',
-                    background: 'transparent',
-                    align: 'left'
-                },
-                {
-                    id: generatePresentationId('element'),
-                    type: 'rectangle',
-                    x: 55,
-                    y: 55,
-                    width: 28,
-                    height: 18,
-                    rotation: 0,
-                    color: presentationColor,
-                    fill: '#cfe4ff',
-                    border: presentationColor
-                }
-            ]
-        });
-    }
-}
-
-function createPresentationSlide(name) {
-    return {
-        id: generatePresentationId('slide'),
-        name: name || Слайд ,
-        background: '#ffffff',
-        elements: []
-    };
-}
-
-function createPresentationElement(type, overrides = {}) {
-    const base = {
-        id: generatePresentationId('element'),
-        type: type,
-        x: overrides.x !== undefined ? overrides.x : 30,
-        y: overrides.y !== undefined ? overrides.y : 30,
-        width: overrides.width !== undefined ? overrides.width : 30,
-        height: overrides.height !== undefined ? overrides.height : 18,
-        rotation: overrides.rotation || 0
-    };
-
-    if (type === 'text') {
-        return Object.assign(base, {
-            text: overrides.text || 'Новый текст',
-            fontSize: overrides.fontSize || presentationFontSize,
-            color: overrides.color || presentationColor,
-            background: overrides.background || 'transparent',
-            align: overrides.align || 'left'
-        });
-    }
-
-    if (type === 'sticky') {
-        return Object.assign(base, {
-            text: overrides.text || 'Идея',
-            fontSize: overrides.fontSize || 24,
-            color: overrides.color || '#2d2200',
-            background: overrides.background || '#ffe68a',
-            align: overrides.align || 'left'
-        });
-    }
-
-    if (type === 'rectangle') {
-        return Object.assign(base, {
-            color: overrides.color || presentationColor,
-            fill: overrides.fill || '#cfe4ff',
-            border: overrides.border || presentationColor
-        });
-    }
-
-    if (type === 'circle') {
-        return Object.assign(base, {
-            color: overrides.color || presentationColor,
-            fill: overrides.fill || '#cfe4ff',
-            border: overrides.border || presentationColor,
-            width: overrides.width !== undefined ? overrides.width : 22,
-            height: overrides.height !== undefined ? overrides.height : 22
-        });
-    }
-
-    if (type === 'arrow') {
-        return Object.assign(base, {
-            color: overrides.color || presentationColor,
-            width: overrides.width !== undefined ? overrides.width : 35,
-            height: overrides.height !== undefined ? overrides.height : 8
-        });
-    }
-
-    if (type === 'image') {
-        return Object.assign(base, {
-            src: overrides.src || '',
-            width: overrides.width !== undefined ? overrides.width : 35,
-            height: overrides.height !== undefined ? overrides.height : 28
-        });
-    }
-
-    return Object.assign(base, overrides);
-}
-function selectPresentationTool(tool, button) {
-    presentationActiveTool = tool;
-    const buttons = document.querySelectorAll('.presentation-toolbar .tool-btn');
-    buttons.forEach(btn => btn.classList.toggle('active', btn === button));
-}
-
-function syncPresentationToolbar(element) {
-    const colorInput = document.getElementById('presentationColor');
-    const sizeInput = document.getElementById('presentationFontSize');
-    if (!element) {
-        if (colorInput) colorInput.value = presentationColor;
-        if (sizeInput) sizeInput.value = presentationFontSize;
-        return;
-    }
-
-    if (element.type === 'text' || element.type === 'sticky') {
-        if (colorInput && element.color) colorInput.value = element.color;
-        if (sizeInput && element.fontSize) sizeInput.value = Math.round(element.fontSize);
-    } else if ((element.type === 'rectangle' || element.type === 'circle' || element.type === 'arrow') && colorInput && element.color) {
-        colorInput.value = element.color;
-    }
-}
-
-function renderSlides() {
-    ensureDefaultPresentation();
-    const container = document.getElementById('presentationSlides');
-    if (!container) return;
-
-    container.innerHTML = '';
-    container.classList.toggle('grid-on', presentationGridEnabled);
-
-    const slide = slides[currentSlideIndex];
-    if (!slide) return;
-
-    const slideCanvas = document.createElement('div');
-    slideCanvas.className = 'presentation-slide';
-    slideCanvas.dataset.slideId = slide.id;
-    slideCanvas.style.background = slide.background || '#ffffff';
-
-    slideCanvas.addEventListener('pointerdown', (event) => {
-        if (event.target === slideCanvas) {
-            selectPresentationElement(null);
-        }
-    });
-
-    slide.elements.forEach((element) => {
-        const elementEl = renderPresentationElement(slideCanvas, slide, element);
-        slideCanvas.appendChild(elementEl);
-    });
-
-    container.appendChild(slideCanvas);
-    updateSlideCounter();
-    updatePresentationInspector();
-    syncPresentationToolbar(getSelectedElement());
-}
-
-function renderPresentationElement(slideCanvas, slide, element) {
-    const elementEl = document.createElement('div');
-    elementEl.className = 'presentation-element';
-    elementEl.dataset.elementId = element.id;
-    elementEl.style.left = `${element.x}%`;
-    elementEl.style.top = `${element.y}%`;
-    elementEl.style.width = `${element.width}%`;
-    elementEl.style.height = `${element.height}%`;
-    elementEl.style.transformOrigin = 'center center';
-    elementEl.style.transform = `rotate(${element.rotate || 0}deg)`;
-    if (element.type === 'text' || element.type === 'sticky') {
-        elementEl.textContent = element.text || '';
-        elementEl.style.fontSize = `${element.fontSize || 24}px`;
-        elementEl.style.color = element.color || '#1f1f1f';
-        elementEl.style.textAlign = element.align || 'left';
-        elementEl.style.background = element.type === 'sticky' ? (element.background || '#ffe68a') : (element.background || 'transparent');
-        elementEl.dataset.editing = 'false';
-        elementEl.addEventListener('dblclick', () => {
-            elementEl.contentEditable = 'true';
-            elementEl.dataset.editing = 'true';
-            elementEl.focus();
-            document.execCommand('selectAll', false, null);
-        });
-        elementEl.addEventListener('blur', () => {
-            if (elementEl.dataset.editing === 'true') {
-                elementEl.contentEditable = 'false';
-                elementEl.dataset.editing = 'false';
-                element.text = elementEl.textContent || '';
-            }
-        });
-        elementEl.addEventListener('input', () => {
-            element.text = elementEl.textContent || '';
-        });
-    } else if (element.type === 'rectangle' || element.type === 'circle') {
-        elementEl.style.background = element.fill || '#cfe4ff';
-        elementEl.style.border = `2px solid ${element.stroke || element.color || '#1f1f1f'}`;
-        elementEl.style.borderRadius = element.type === 'circle' ? '50%' : '18px';
-    } else if (element.type === 'arrow') {
-        elementEl.textContent = '➔';
-        elementEl.style.fontSize = `${element.fontSize || 32}px`;
-        elementEl.style.color = element.color || element.stroke || '#1f1f1f';
-    } else if (element.type === 'image') {
-        const img = document.createElement('img');
-        img.alt = 'Изображение презентации';
-        if (element.src) {
-            img.src = element.src;
-        }
-        elementEl.classList.add('image');
-        elementEl.appendChild(img);
-    }
-
-    const handle = document.createElement('div');
-    handle.className = 'resize-handle';
-    elementEl.appendChild(handle);
-
-    elementEl.addEventListener('pointerdown', (event) => {
-        if (event.target === handle) {
-            startPresentationInteraction(event, element, slideCanvas, 'resize');
-        } else {
-            const isEditing = elementEl.dataset.editing === 'true';
-            if (!isEditing) {
-                startPresentationInteraction(event, element, slideCanvas, 'move');
-            }
-        }
-        selectPresentationElement(element.id);
-    });
-
-    return elementEl;
-}
-
-function startPresentationInteraction(event, element, slideCanvas, mode) {
-    if (event.pointerType === 'mouse' && event.button !== 0) return;
-    event.preventDefault();
-    presentationDragState = {
-        mode,
-        elementId: element.id,
-        startX: event.clientX,
-        startY: event.clientY,
-        startLeft: element.x,
-        startTop: element.y,
-        startWidth: element.width,
-        startHeight: element.height,
-        slideRect: slideCanvas.getBoundingClientRect()
-    };
-    if (event.target.setPointerCapture) {
-        try { event.target.setPointerCapture(event.pointerId); } catch (err) {}
-    }
-    document.addEventListener('pointermove', handlePresentationPointerMove);
-    document.addEventListener('pointerup', handlePresentationPointerUp, { once: true });
-}
-
-function handlePresentationPointerMove(event) {
-    if (!presentationDragState) return;
-    const slide = slides[currentSlideIndex];
-    if (!slide) return;
-    const element = slide.elements.find(el => el.id === presentationDragState.elementId);
-    if (!element) return;
-
-    const deltaXPercent = ((event.clientX - presentationDragState.startX) / presentationDragState.slideRect.width) * 100;
-    const deltaYPercent = ((event.clientY - presentationDragState.startY) / presentationDragState.slideRect.height) * 100;
-
-    if (presentationDragState.mode === 'move') {
-        element.x = clamp(presentationDragState.startLeft + deltaXPercent, 0, 100 - element.width);
-        element.y = clamp(presentationDragState.startTop + deltaYPercent, 0, 100 - element.height);
-    } else if (presentationDragState.mode === 'resize') {
-        element.width = clamp(presentationDragState.startWidth + deltaXPercent, 5, 100 - element.x);
-        element.height = clamp(presentationDragState.startHeight + deltaYPercent, 5, 100 - element.y);
-    }
-
-    applyPresentationElementStyles(element);
-    updatePresentationInspectorValues(element);
-}
-
-function handlePresentationPointerUp() {
-    document.removeEventListener('pointermove', handlePresentationPointerMove);
-    presentationDragState = null;
-    const element = getSelectedElement();
-    if (element) {
-        updatePresentationInspector();
-    }
-}
-function clamp(value, min, max) {
-    return Math.min(Math.max(value, min), max);
-}
-
-function drawRoundedRect(ctx, x, y, width, height, radius) {
-    const r = Math.min(radius, width / 2, height / 2);
-    ctx.beginPath();
-    ctx.moveTo(x + r, y);
-    ctx.lineTo(x + width - r, y);
-    ctx.quadraticCurveTo(x + width, y, x + width, y + r);
-    ctx.lineTo(x + width, y + height - r);
-    ctx.quadraticCurveTo(x + width, y + height, x + width - r, y + height);
-    ctx.lineTo(x + r, y + height);
-    ctx.quadraticCurveTo(x, y + height, x, y + height - r);
-    ctx.lineTo(x, y + r);
-    ctx.quadraticCurveTo(x, y, x + r, y);
-    ctx.closePath();
-}
-
-function applyPresentationElementStyles(element) {
-    const elementEl = document.querySelector(`.presentation-element[data-element-id="${element.id}"]`);
-    if (!elementEl) return;
-    elementEl.style.left = `${element.x}%`;
-    elementEl.style.top = `${element.y}%`;
-    elementEl.style.width = `${element.width}%`;
-    elementEl.style.height = `${element.height}%`;
-    elementEl.style.transform = `rotate(${element.rotate || 0}deg)`;
-
-    if (element.type === 'text' || element.type === 'sticky') {
-        elementEl.style.fontSize = `${element.fontSize || 24}px`;
-        elementEl.style.color = element.color || '#1f1f1f';
-        elementEl.style.textAlign = element.align || 'left';
-        elementEl.style.background = element.type === 'sticky' ? (element.background || '#ffe68a') : (element.background || 'transparent');
-        if (element.type === 'sticky') {
-            elementEl.style.borderRadius = '16px';
-        }
-        elementEl.textContent = element.text || '';
-    } else if (element.type === 'rectangle' || element.type === 'circle') {
-        elementEl.style.background = element.fill || '#cfe4ff';
-        elementEl.style.border = `2px solid ${element.stroke || element.color || '#1f1f1f'}`;
-        elementEl.style.borderRadius = element.type === 'circle' ? '50%' : '18px';
-    } else if (element.type === 'arrow') {
-        const svg = elementEl.querySelector('svg');
-        if (svg) {
-            const line = svg.querySelector('line');
-            const marker = svg.querySelector('marker path');
-            if (line) line.setAttribute('stroke', element.color || presentationColor);
-            if (marker) marker.setAttribute('fill', element.color || presentationColor);
-        }
-    } else if (element.type === 'image') {
-        const img = elementEl.querySelector('img');
-        if (img && element.src && img.src !== element.src) {
-            img.src = element.src;
-        }
-    }
-}
-
-function updatePresentationInspectorValues(element) {
-    const inspector = document.getElementById('presentationInspector');
-    if (!inspector) return;
-    const map = {
-        '#inspector-pos-x': Math.round(element.x),
-        '#inspector-pos-y': Math.round(element.y),
-        '#inspector-width': Math.round(element.width),
-        '#inspector-height': Math.round(element.height),
-        '#inspector-rotation': Math.round(element.rotation || 0)
-    };
-    Object.keys(map).forEach(selector => {
-        const input = inspector.querySelector(selector);
-        if (input) input.value = map[selector];
-    });
-}
-
-function getSelectedElement() {
-    const slide = slides[currentSlideIndex];
-    if (!slide) return null;
-    return slide.elements.find(el => el.id === presentationSelectedElementId) || null;
-}
-
-function selectPresentationElement(elementId) {
-    presentationSelectedElementId = elementId;
-    document.querySelectorAll('.presentation-element').forEach(el => {
-        el.classList.toggle('selected', el.dataset.elementId === elementId);
-    });
-    updatePresentationInspector();
-    syncPresentationToolbar(getSelectedElement());
-}
-
-function updatePresentationInspector() {
-    const inspector = document.getElementById('presentationInspector');
-    if (!inspector) return;
-
-    const slide = slides[currentSlideIndex];
-    if (!slide) {
-        inspector.innerHTML = '<p style="opacity:0.7;font-size:13px;">Создайте слайд, чтобы добавить элементы.</p>';
-        return;
-    }
-
-    const element = getSelectedElement();
-    if (!element) {
-        inspector.innerHTML = '<p style="opacity:0.7;font-size:13px;">Выберите элемент на слайде, чтобы настроить его стиль.</p>';
-        return;
-    }
-
-    let html = `
-        <div class="inspector-section">
-            <h4>Положение</h4>
-            <label>По горизонтали (%):
-                <input type="range" id="inspector-pos-x" min="0" max="95" value="">
-            </label>
-            <label>По вертикали (%):
-                <input type="range" id="inspector-pos-y" min="0" max="95" value="">
-            </label>
-            <label>Ширина (%):
-                <input type="range" id="inspector-width" min="5" max="100" value="">
-            </label>
-            <label>Высота (%):
-                <input type="range" id="inspector-height" min="5" max="100" value="">
-            </label>
-            <label>Поворот:
-                <input type="range" id="inspector-rotation" min="0" max="360" value="">
-            </label>
-        </div>
-    `;
-    if (element.type === 'text' || element.type === 'sticky') {
-        html += `
-            <div class="inspector-section">
-                <h4>Текст</h4>
-                <label>Размер шрифта:
-                    <input type="range" id="inspector-fontsize" min="12" max="96" value="">
-                </label>
-                <label>Цвет текста:
-                    <input type="color" id="inspector-text-color" value="">
-                </label>
-                <label>Цвет фона:
-                    <input type="color" id="inspector-background" value="${element.background || (element.type === 'sticky' ? '#ffe68a' : '#ffffff')}">
-                </label>
-                <label>Выравнивание:
-                    <select id="inspector-align">
-                        <option value="left">По левому краю</option>
-                        <option value="center">По центру</option>
-                        <option value="right">По правому краю</option>
-                    </select>
-                </label>
-            </div>
-        `;
-    } else if (element.type === 'rectangle' || element.type === 'circle') {
-        html += `
-            <div class="inspector-section">
-                <h4>Оформление</h4>
-                <label>Цвет заливки:
-                    <input type="color" id="inspector-fill" value="">
-                </label>
-                <label>Цвет линии:
-                    <input type="color" id="inspector-border" value="">
-                </label>
-            </div>
-        `;
-    } else if (element.type === 'arrow') {
-        html += `
-            <div class="inspector-section">
-                <h4>Стрелка</h4>
-                <label>Цвет:
-                    <input type="color" id="inspector-arrow-color" value="">
-                </label>
-                <label>Толщина (%):
-                    <input type="range" id="inspector-arrow-thickness" min="3" max="25" value="">
-                </label>
-            </div>
-        `;
-    } else if (element.type === 'image') {
-        html += `
-            <div class="inspector-section">
-                <h4>Изображение</h4>
-                <button class="ghost-btn" id="inspector-replace-image">Заменить изображение</button>
-            </div>
-        `;
-    }
-
-    inspector.innerHTML = html;
-
-    const posX = inspector.querySelector('#inspector-pos-x');
-    if (posX) {
-        posX.addEventListener('input', (e) => updatePresentationElement(element.id, { x: clamp(parseFloat(e.target.value), 0, 95) }));
-    }
-    const posY = inspector.querySelector('#inspector-pos-y');
-    if (posY) {
-        posY.addEventListener('input', (e) => updatePresentationElement(element.id, { y: clamp(parseFloat(e.target.value), 0, 95) }));
-    }
-    const widthInput = inspector.querySelector('#inspector-width');
-    if (widthInput) {
-        widthInput.addEventListener('input', (e) => updatePresentationElement(element.id, { width: clamp(parseFloat(e.target.value), 5, 100) }));
-    }
-    const heightInput = inspector.querySelector('#inspector-height');
-    if (heightInput) {
-        heightInput.addEventListener('input', (e) => updatePresentationElement(element.id, { height: clamp(parseFloat(e.target.value), 5, 100) }));
-    }
-    const rotationInput = inspector.querySelector('#inspector-rotation');
-    if (rotationInput) {
-        rotationInput.addEventListener('input', (e) => updatePresentationElement(element.id, { rotation: parseFloat(e.target.value) % 360 }));
-    }
-
-    const fontSizeInput = inspector.querySelector('#inspector-fontsize');
-    if (fontSizeInput) {
-        fontSizeInput.addEventListener('input', (e) => updatePresentationElement(element.id, { fontSize: parseInt(e.target.value, 10) || 24 }));
-    }
-    const textColorInput = inspector.querySelector('#inspector-text-color');
-    if (textColorInput) {
-        textColorInput.addEventListener('input', (e) => updatePresentationElement(element.id, { color: e.target.value }));
-    }
-    const backgroundInput = inspector.querySelector('#inspector-background');
-    if (backgroundInput) {
-        backgroundInput.addEventListener('input', (e) => updatePresentationElement(element.id, { background: e.target.value }));
-    }
-    const alignSelect = inspector.querySelector('#inspector-align');
-    if (alignSelect) {
-        alignSelect.addEventListener('change', (e) => updatePresentationElement(element.id, { align: e.target.value }));
-    }
-    const fillInput = inspector.querySelector('#inspector-fill');
-    if (fillInput) {
-        fillInput.addEventListener('input', (e) => updatePresentationElement(element.id, { fill: e.target.value }));
-    }
-    const borderInput = inspector.querySelector('#inspector-border');
-    if (borderInput) {
-        borderInput.addEventListener('input', (e) => updatePresentationElement(element.id, { border: e.target.value }));
-    }
-    const arrowColorInput = inspector.querySelector('#inspector-arrow-color');
-    if (arrowColorInput) {
-        arrowColorInput.addEventListener('input', (e) => updatePresentationElement(element.id, { color: e.target.value }));
-    }
-    const arrowThickness = inspector.querySelector('#inspector-arrow-thickness');
-    if (arrowThickness) {
-        arrowThickness.addEventListener('input', (e) => updatePresentationElement(element.id, { height: clamp(parseFloat(e.target.value), 3, 25) }));
-    }
-    const replaceBtn = inspector.querySelector('#inspector-replace-image');
-    if (replaceBtn) {
-        replaceBtn.addEventListener('click', () => {
-            const input = document.getElementById('presentationImageInput');
-            if (input) input.click();
-        });
-    }
-}
-
-function updatePresentationElement(elementId, updates) {
-    const slide = slides[currentSlideIndex];
-    if (!slide) return;
-    const element = slide.elements.find(el => el.id === elementId);
-    if (!element) return;
-    Object.assign(element, updates);
-    applyPresentationElementStyles(element);
-    updatePresentationInspectorValues(element);
-    syncPresentationToolbar(getSelectedElement());
-}
-function addPresentationElement(type, overrides = {}) {
-    ensureDefaultPresentation();
-    const slide = slides[currentSlideIndex];
-    if (!slide) return;
-    const element = createPresentationElement(type, overrides);
-    slide.elements.push(element);
-    presentationSelectedElementId = element.id;
-    renderSlides();
-    const selectBtn = document.querySelector('.presentation-toolbar .tool-btn[data-tool="select"]');
-    if (selectBtn) selectPresentationTool('select', selectBtn);
-}
-
-function handlePresentationImage(event) {
-    const file = event.target.files && event.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-        addPresentationElement('image', { src: reader.result, width: 40, height: 30, x: 50, y: 45 });
-    };
-    reader.readAsDataURL(file);
-    event.target.value = '';
-}
-
-function setPresentationColor(color) {
-    presentationColor = color;
-    const element = getSelectedElement();
-    if (!element) return;
-    if (element.type === 'text' || element.type === 'sticky') {
-        element.color = color;
-    } else if (element.type === 'rectangle' || element.type === 'circle' || element.type === 'arrow') {
-        element.color = color;
-        if (element.type === 'rectangle' || element.type === 'circle') {
-            element.border = color;
-        }
-    }
-    applyPresentationElementStyles(element);
-    updatePresentationInspectorValues(element);
-}
-
-function setPresentationFontSize(size) {
-    presentationFontSize = parseInt(size, 10) || presentationFontSize;
-    const element = getSelectedElement();
-    if (element && (element.type === 'text' || element.type === 'sticky')) {
-        element.fontSize = presentationFontSize;
-        applyPresentationElementStyles(element);
-        updatePresentationInspectorValues(element);
-    }
-}
-
-function toggleSlideGrid() {
-    presentationGridEnabled = !presentationGridEnabled;
-    const container = document.getElementById('presentationSlides');
-    if (container) {
-        container.classList.toggle('grid-on', presentationGridEnabled);
-    }
-    const gridButton = document.getElementById('presentationGridToggle');
-    if (gridButton) {
-        if (presentationGridEnabled) {
-            gridButton.classList.add('active');
-        } else {
-            gridButton.classList.remove('active');
-        }
-    }
-}
-
-function updateSlideCounter() {
-    const counter = document.getElementById('slideCounter');
-    if (counter) {
-        counter.textContent = `${currentSlideIndex + 1} / ${slides.length}`;
-    }
-}
-
-function nextSlide() {
-    if (currentSlideIndex < slides.length - 1) {
-        currentSlideIndex += 1;
-        presentationSelectedElementId = null;
-        renderSlides();
-        syncSlideChange();
-    }
-}
-
-function prevSlide() {
-    if (currentSlideIndex > 0) {
-        currentSlideIndex -= 1;
-        presentationSelectedElementId = null;
-        renderSlides();
-        syncSlideChange();
-    }
-}
-
-function addNewSlide() {
-    const newSlide = createPresentationSlide();
-    slides.push(newSlide);
-    currentSlideIndex = slides.length - 1;
-    presentationSelectedElementId = null;
-    renderSlides();
-    syncSlideChange();
-}
-
-function duplicateSlide() {
-    ensureDefaultPresentation();
-    const slide = slides[currentSlideIndex];
-    if (!slide) return;
-    const clone = JSON.parse(JSON.stringify(slide));
-    clone.id = generatePresentationId('slide');
-    clone.name = `${slide.name || 'Слайд'} (копия)`;
-    clone.elements = clone.elements.map(el => ({ ...el, id: generatePresentationId('element') }));
-    slides.splice(currentSlideIndex + 1, 0, clone);
-    currentSlideIndex += 1;
-    presentationSelectedElementId = null;
-    renderSlides();
-    syncSlideChange();
-}
-
-function deleteSlide() {
-    if (slides.length <= 1) {
-        slides[0].elements = [];
-        presentationSelectedElementId = null;
-        renderSlides();
-        return;
-    }
-    slides.splice(currentSlideIndex, 1);
-    currentSlideIndex = Math.max(0, currentSlideIndex - 1);
-    presentationSelectedElementId = null;
-    renderSlides();
-    syncSlideChange();
-}
-
-function syncSlideChange() {
-    if (currentRoomId && socket) {
-        socket.emit('presentation_slide_change', {
-            room_id: currentRoomId,
-            slide_index: currentSlideIndex
-        });
-    }
-}
-
-function startPresentation() {
-    const slidesContainer = document.getElementById('presentationSlides');
-    if (!slidesContainer) return;
-    if (slidesContainer.requestFullscreen) {
-        slidesContainer.requestFullscreen();
-    } else if (slidesContainer.webkitRequestFullscreen) {
-        slidesContainer.webkitRequestFullscreen();
-    } else if (slidesContainer.msRequestFullscreen) {
-        slidesContainer.msRequestFullscreen();
-    }
-    document.addEventListener('keydown', handlePresentationKeys);
-}
-
-document.addEventListener('click', function detachPresentationKeys(e) {
-    const overlay = e && e.target && e.target.closest && e.target.closest('#presentationModal');
-    if (overlay && (e.target.classList.contains('close-btn') || e.target.id === 'presentationModal')) {
-        document.removeEventListener('keydown', handlePresentationKeys);
-    }
-});
-
-function handlePresentationKeys(e) {
-    if (e.key === 'ArrowRight' || e.key === 'PageDown') {
-        nextSlide();
-    } else if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
-        prevSlide();
-    } else if (e.key === 'Escape') {
-        if (document.fullscreenElement) {
-            document.exitFullscreen();
-        }
-        document.removeEventListener('keydown', handlePresentationKeys);
-    }
-}
-async function exportCurrentSlideAsBlob() {
-    ensureDefaultPresentation();
-    const slide = slides[currentSlideIndex];
-    if (!slide) return null;
-    const canvas = document.createElement('canvas');
-    const width = 1920;
-    const height = 1080;
-    canvas.width = width;
-    canvas.height = height;
-    const ctx = canvas.getContext('2d');
-    ctx.fillStyle = slide.background || '#ffffff';
-    ctx.fillRect(0, 0, width, height);
-
-    const imagePromises = [];
-
-    slide.elements.forEach((element) => {
-        const x = (element.x / 100) * width;
-        const y = (element.y / 100) * height;
-        const w = (element.width / 100) * width;
-        const h = (element.height / 100) * height;
-        const radians = (element.rotation || 0) * Math.PI / 180;
-
-        ctx.save();
-        ctx.translate(x + w / 2, y + h / 2);
-        ctx.rotate(radians);
-        ctx.translate(-w / 2, -h / 2);
-
-        if (element.type === 'text' || element.type === 'sticky') {
-            if (element.type === 'sticky') {
-                ctx.fillStyle = element.background || '#ffe68a';
-                ctx.fillRect(0, 0, w, h);
-            }
-            ctx.fillStyle = element.color || '#1f1f1f';
-            ctx.font = `${element.fontSize || 32}px 'Inter', 'Arial', sans-serif`;
-            ctx.textAlign = element.align || 'left';
-            ctx.textBaseline = 'top';
-            const lines = (element.text || '').split(/\n/);
-            const lineHeight = (element.fontSize || 32) * 1.25;
-            let offsetX = 0;
-            if (ctx.textAlign === 'center') offsetX = w / 2;
-            if (ctx.textAlign === 'right') offsetX = w;
-            lines.forEach((line, idx) => ctx.fillText(line, offsetX, 12 + idx * lineHeight));
-        } else if (element.type === 'rectangle' || element.type === 'circle') {
-            ctx.fillStyle = element.fill || '#cfe4ff';
-            ctx.strokeStyle = element.border || presentationColor;
-            ctx.lineWidth = 6;
-            if (element.type === 'circle') {
-                ctx.beginPath();
-                ctx.arc(w / 2, h / 2, Math.min(w, h) / 2, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.stroke();
-            } else {
-                if (ctx.roundRect) {
-                    ctx.beginPath();
-                    ctx.roundRect(0, 0, w, h, 28);
-                    ctx.fill();
-                    ctx.stroke();
-                } else {
-                    drawRoundedRect(ctx, 0, 0, w, h, 28);
-                    ctx.fill();
-                    ctx.stroke();
-                }
-            }
-        } else if (element.type === 'arrow') {
-            ctx.strokeStyle = element.color || presentationColor;
-            ctx.lineWidth = Math.max(8, h * 0.4);
-            ctx.lineCap = 'round';
-            ctx.beginPath();
-            ctx.moveTo(10, h / 2);
-            ctx.lineTo(w - 30, h / 2);
-            ctx.stroke();
-            ctx.beginPath();
-            ctx.moveTo(w - 40, h / 2 - ctx.lineWidth);
-            ctx.lineTo(w - 10, h / 2);
-            ctx.lineTo(w - 40, h / 2 + ctx.lineWidth);
-            ctx.closePath();
-            ctx.fillStyle = element.color || presentationColor;
-            ctx.fill();
-        } else if (element.type === 'image' && element.src) {
-            const promise = new Promise((resolve) => {
-                const img = new Image();
-                img.onload = () => {
-                    ctx.drawImage(img, 0, 0, w, h);
-                    resolve();
-                };
-                img.onerror = resolve;
-                img.src = element.src;
-            });
-            imagePromises.push(promise);
-        }
-
-        ctx.restore();
-    });
-
-    await Promise.all(imagePromises);
-    return await new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
-}
-
-async function sharePresentation() {
     if (!currentRoomId) {
-        alert('Выберите чат, чтобы отправить слайд.');
+        alert('Выберите чат, чтобы открыть презентацию.');
         return;
     }
-    const blob = await exportCurrentSlideAsBlob();
-    if (!blob) {
-        alert('Не удалось подготовить изображение слайда.');
-        return;
+    openModal('presentationModal');
+    if (!presentationFrameEl) {
+        presentationFrameEl = document.getElementById('presentationFrame');
     }
-    const formData = new FormData();
-    formData.append('room_id', currentRoomId);
-    formData.append('caption', slides[currentSlideIndex] && slides[currentSlideIndex].name ? slides[currentSlideIndex].name : 'Слайд презентации');
-    formData.append('files', new File([blob], `slide-${currentSlideIndex + 1}.png`, { type: 'image/png' }));
-    try {
-        const response = await fetch('/api/send_media', {
-            method: 'POST',
-            body: formData
-        });
-        const data = await response.json();
-        if (!data.success) {
-            alert(data.message || 'Не удалось отправить слайд.');
-        }
-    } catch (error) {
-        console.error('sharePresentation error:', error);
-        alert('Произошла ошибка при отправке слайда.');
+    if (!presentationFrameEl) return;
+    const targetSrc = buildPresentationUrl(currentRoomId);
+    if (presentationFrameEl.src !== targetSrc) {
+        presentationFrameEl.src = targetSrc;
     }
 }
-
 // ========== НОВОЕ: Функции для работы с аватарами комнат ==========
 
 async function uploadRoomAvatarFile(event) {

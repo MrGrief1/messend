@@ -2416,70 +2416,13 @@
     </div>
 
         <div id="presentationModal" class="modal-overlay" onclick="closeModal(event)">
-        <div class="modal-content glass presentation-modal">
+        <div class="modal-content glass presentation-modal simple-collab-modal" onclick="event.stopPropagation()">
             <div class="modal-header">
-                <h3>Доска презентаций</h3>
-                <div class="presentation-header-controls">
-                    <button onclick="prevSlide()" class="icon-btn" title="Предыдущий слайд">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <polyline points="15 18 9 12 15 6"></polyline>
-                        </svg>
-                    </button>
-                    <span id="slideCounter" class="slide-counter">1 / 1</span>
-                    <button onclick="nextSlide()" class="icon-btn" title="Следующий слайд">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <polyline points="9 18 15 12 9 6"></polyline>
-                        </svg>
-                    </button>
-                    <button class="ghost-btn" onclick="duplicateSlide()" title="Дублировать слайд">Дублировать</button>
-                    <button class="ghost-btn danger" onclick="deleteSlide()" title="Удалить слайд">Удалить</button>
-                    <button class="close-btn" onclick="closeModal(event)">&times;</button>
-                </div>
+                <h3>Презентации PPTist</h3>
+                <button class="close-btn" onclick="closeModal(event)" title="Закрыть">&times;</button>
             </div>
-
-            <div class="presentation-toolbar" id="presentationToolbar">
-                <button class="tool-btn" data-tool="select" onclick="selectPresentationTool('select', this)" title="Выделение">
-                    <span class="material-icons-round">ads_click</span>
-                </button>
-                <button class="tool-btn" data-tool="text" onclick="addPresentationElement('text')" title="Добавить текст">
-                    <span class="material-icons-round">title</span>
-                </button>
-                <button class="tool-btn" data-tool="rectangle" onclick="addPresentationElement('rectangle')" title="Прямоугольник">
-                    <span class="material-icons-round">check_box_outline_blank</span>
-                </button>
-                <button class="tool-btn" data-tool="circle" onclick="addPresentationElement('circle')" title="Круг">
-                    <span class="material-icons-round">radio_button_unchecked</span>
-                </button>
-                <button class="tool-btn" data-tool="arrow" onclick="addPresentationElement('arrow')" title="Стрелка">
-                    <span class="material-icons-round">trending_flat</span>
-                </button>
-                <button class="tool-btn" data-tool="sticky" onclick="addPresentationElement('sticky')" title="Стикер">
-                    <span class="material-icons-round">sticky_note_2</span>
-                </button>
-                <label class="tool-btn upload" title="Вставить изображение">
-                    <span class="material-icons-round">image</span>
-                    <input type="file" id="presentationImageInput" accept="image/*" onchange="handlePresentationImage(event)">
-                </label>
-                <input type="color" id="presentationColor" value="#007aff" onchange="setPresentationColor(this.value)" title="Цвет акцентов">
-                <input type="range" id="presentationFontSize" min="12" max="96" value="32" onchange="setPresentationFontSize(this.value)" title="Размер текста">
-            </div>
-
-            <div class="presentation-workspace">
-                <div id="presentationSlides" class="presentation-canvas"></div>
-                <div id="presentationInspector" class="presentation-inspector">
-                    <p style="opacity: 0.7; font-size: 13px;">Выберите элемент на слайде, чтобы настроить его стиль.</p>
-                </div>
-            </div>
-
-            <div class="presentation-footer">
-                <div class="presentation-footer-left">
-                    <button class="ghost-btn" onclick="addNewSlide()">+ Новый слайд</button>
-                    <button class="ghost-btn" id="presentationGridToggle" onclick="toggleSlideGrid()">Сетка</button>
-                </div>
-                <div class="presentation-footer-right">
-                    <button class="secondary-btn" onclick="startPresentation()">Полноэкранный режим</button>
-                    <button class="primary-btn" onclick="sharePresentation()">Отправить в чат</button>
-                </div>
+            <div class="collab-iframe-wrapper">
+                <iframe id="presentationFrame" title="Совместная презентация" allow="clipboard-write; fullscreen" allowfullscreen loading="lazy"></iframe>
             </div>
         </div>
     </div>
@@ -2495,7 +2438,7 @@
                     </svg>
                     <div>
                         <h3 id="whiteboardTitle">Совместная доска Excalidraw</h3>
-                        <p id="whiteboardSubtitle" class="whiteboard-subtitle">Создайте визуальные заметки вместе с командой в режиме реального времени.</p>
+                        <p id="whiteboardSubtitle" class="whiteboard-subtitle">Создавайте визуальные заметки вместе с командой в режиме реального времени без ссылок и приглашений.</p>
                     </div>
                 </div>
                 <div class="whiteboard-modal-actions">
@@ -2512,21 +2455,6 @@
                     </button>
                 </div>
             </div>
-            <div class="whiteboard-share-bar" id="whiteboardShareBar">
-                <div class="whiteboard-share-text">
-                    <span>Ссылка для команды</span>
-                    <small>Поделитесь ею, чтобы участники мгновенно подключились к доске.</small>
-                </div>
-                <div class="whiteboard-share-controls">
-                    <input id="whiteboardShareInput" type="text" readonly value="" aria-label="Ссылка на доску">
-                    <button class="primary-btn" onclick="copyWhiteboardLink()">
-                        <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
-                            <use href="#ui-copy"></use>
-                        </svg>
-                        Скопировать
-                    </button>
-                </div>
-            </div>
             <div class="whiteboard-frame-wrapper">
                 <div id="whiteboardEmptyState" class="whiteboard-empty">
                     <svg class="whiteboard-empty-illustration" viewBox="0 0 160 120" role="presentation" aria-hidden="true">
@@ -2536,9 +2464,9 @@
                         <circle cx="80" cy="70" r="5" opacity="0.6"></circle>
                     </svg>
                     <h4>Здесь появится доска</h4>
-                    <p>Создайте новую сессию или дождитесь приглашения от коллег.</p>
+                    <p>Нажмите «Совместная доска», чтобы открыть Excalidraw. Команда подключится автоматически.</p>
                 </div>
-                <iframe id="whiteboardFrame" title="Доска Excalidraw" allow="clipboard-write; camera; microphone" loading="lazy"></iframe>
+                <iframe id="whiteboardFrame" title="Доска Excalidraw" allow="clipboard-write; camera; microphone" allowfullscreen loading="lazy"></iframe>
             </div>
         </div>
     </div>
@@ -2546,61 +2474,17 @@
 
     <!-- Модальное окно совместных документов -->
         <div id="documentsModal" class="modal-overlay" onclick="closeModal(event)">
-        <div class="modal-content glass documents-modal">
+        <div class="modal-content glass documents-modal simple-collab-modal" onclick="event.stopPropagation()">
             <div class="modal-header">
-                <h3>Общие документы</h3>
+                <h3>Документы Etherpad</h3>
                 <button class="close-btn" onclick="closeModal(event)" title="Закрыть">&times;</button>
             </div>
-            <div class="document-toolbar" id="documentToolbar">
-                <button onclick="formatText('bold')" class="tool-btn" title="Жирный"><strong>B</strong></button>
-                <button onclick="formatText('italic')" class="tool-btn" title="Курсив"><em>I</em></button>
-                <button onclick="formatText('underline')" class="tool-btn" title="Подчёркнутый"><u>U</u></button>
-                <button onclick="formatText('strikeThrough')" class="tool-btn" title="Зачёркнутый"><span class="material-icons-round">strikethrough_s</span></button>
-                <div class="toolbar-divider"></div>
-                <button onclick="formatText('insertUnorderedList')" class="tool-btn" title="Маркированный список"><span class="material-icons-round">format_list_bulleted</span></button>
-                <button onclick="formatText('insertOrderedList')" class="tool-btn" title="Нумерованный список"><span class="material-icons-round">format_list_numbered</span></button>
-                <div class="toolbar-divider"></div>
-                <button onclick="setDocumentBlock('P')" class="tool-btn" title="Обычный текст">¶</button>
-                <button onclick="setDocumentBlock('H2')" class="tool-btn" title="Заголовок 2">H2</button>
-                <button onclick="setDocumentBlock('H3')" class="tool-btn" title="Заголовок 3">H3</button>
-                <div class="toolbar-divider"></div>
-                <button onclick="setDocumentAlignment('left')" class="tool-btn" title="По левому краю"><span class="material-icons-round">format_align_left</span></button>
-                <button onclick="setDocumentAlignment('center')" class="tool-btn" title="По центру"><span class="material-icons-round">format_align_center</span></button>
-                <button onclick="setDocumentAlignment('right')" class="tool-btn" title="По правому краю"><span class="material-icons-round">format_align_right</span></button>
-                <div class="toolbar-divider"></div>
-                <button onclick="applyDocumentHighlight()" class="tool-btn" title="Маркер"><span class="material-icons-round">highlight</span></button>
-                <button onclick="toggleDocumentCode()" class="tool-btn" title="Код"><span class="material-icons-round">code</span></button>
-            </div>
-            <div id="documentEditor" class="document-editor" contenteditable="true" data-placeholder="Начните писать..." spellcheck="true"></div>
-            <div class="document-footer">
-                <span class="document-hint">Изменения синхронизируются автоматически</span>
-                <div class="document-actions">
-                    <button class="ghost-btn" onclick="shareDocument()">Скопировать текст</button>
-                    <button class="primary-btn" onclick="sendDocumentToChat()">Отправить в чат</button>
-                </div>
+            <div class="collab-iframe-wrapper">
+                <iframe id="documentsFrame" title="Совместный документ" allowfullscreen loading="lazy"></iframe>
             </div>
         </div>
     </div>
 
-
-    <!-- Приглашения на доску -->
-    <div id="whiteboardInviteToast" class="whiteboard-toast" role="status" aria-live="polite">
-        <div class="whiteboard-toast-body">
-            <div class="whiteboard-toast-icon">
-                <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
-                    <use href="#ui-whiteboard"></use>
-                </svg>
-            </div>
-            <div class="whiteboard-toast-text">
-                <strong id="whiteboardToastTitle">Новая доска</strong>
-                <span id="whiteboardToastDescription">Участник пригласил вас присоединиться.</span>
-            </div>
-            <div class="whiteboard-toast-actions">
-                <button class="primary-btn" id="whiteboardToastJoin" onclick="acceptWhiteboardInvite()">Присоединиться</button>
-                <button class="ghost-btn" id="whiteboardToastDismiss" onclick="dismissWhiteboardInvite()">Позже</button>
-            </div>
-        </div>
-    </div>
 
     <!-- Telegram-style мобильная навигация -->
     <nav class="telegram-mobile-nav" id="telegram-mobile-nav">
@@ -2643,7 +2527,7 @@
     </nav>
 
     <script id="bootstrap-data" type="application/json">
-        {"CURRENT_USER_ID": {{ user.id | tojson }}, "USER_CONTACTS": {{ contacts | tojson }}, "SFU_URL": {{ (sfu_url or none) | tojson }}}
+        {"CURRENT_USER_ID": {{ user.id | tojson }}, "CURRENT_USERNAME": {{ user.username | tojson }}, "CURRENT_THEME": {{ (user.theme or 'dark') | tojson }}, "USER_CONTACTS": {{ contacts | tojson }}, "SFU_URL": {{ (sfu_url or none) | tojson }}}
     </script>
     <script>
         (function(){
@@ -2651,6 +2535,8 @@
                 const el = document.getElementById('bootstrap-data');
                 const data = JSON.parse(el.textContent || '{}');
                 window.CURRENT_USER_ID = data.CURRENT_USER_ID;
+                window.CURRENT_USERNAME = data.CURRENT_USERNAME;
+                window.CURRENT_THEME = data.CURRENT_THEME;
                 window.USER_CONTACTS = data.USER_CONTACTS || [];
                 if (data.SFU_URL) window.SFU_URL = data.SFU_URL;
             } catch(e) {}

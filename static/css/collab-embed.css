@@ -1,0 +1,60 @@
+:root {
+    color-scheme: light dark;
+}
+
+body.collab-body {
+    margin: 0;
+    font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--collab-bg, #0f172a);
+    color: #fff;
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+}
+
+.collab-body.light {
+    --collab-bg: #f8fafc;
+    color: #0f172a;
+}
+
+.collab-container {
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    align-items: stretch;
+    justify-content: stretch;
+}
+
+.collab-excalidraw-wrapper,
+.collab-iframe {
+    width: 100%;
+    height: 100%;
+}
+
+.collab-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(15, 23, 42, 0.65);
+    color: #fff;
+    font-size: 1.1rem;
+    font-weight: 500;
+    z-index: 10;
+}
+
+.collab-loader {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    border: 4px solid rgba(255, 255, 255, 0.3);
+    border-top-color: #38bdf8;
+    animation: spin 0.9s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}

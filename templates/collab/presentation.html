@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Совместные презентации</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/collab-embed.css') }}">
+</head>
+<body class="collab-body{% if theme == 'light' %} light{% endif %}">
+    <iframe id="pptistFrame" class="collab-iframe" title="Совместная презентация"></iframe>
+    <script>
+        const params = new URLSearchParams(window.location.search);
+        const deckId = params.get('deck') || '';
+        const theme = params.get('theme') || 'dark';
+        if (theme === 'light') {
+            document.body.classList.add('light');
+        }
+        const frame = document.getElementById('pptistFrame');
+        const baseUrl = 'https://pipipi-pikachu.github.io/PPTist/#/editor';
+        const url = new URL(baseUrl);
+        if (deckId) {
+            url.searchParams.set('id', deckId);
+        }
+        url.searchParams.set('lang', 'ru-RU');
+        frame.src = url.toString();
+    </script>
+</body>
+</html>

@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Совместная доска</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/collab-embed.css') }}">
+    <link rel="stylesheet" href="https://unpkg.com/@excalidraw/excalidraw@0.18.0/dist/excalidraw.min.css">
+</head>
+<body class="collab-body{% if theme == 'light' %} light{% endif %}">
+    <div id="excalidraw-root" class="collab-container" role="application" aria-label="Совместная доска"></div>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/@excalidraw/excalidraw@0.18.0/dist/excalidraw.production.min.js" crossorigin></script>
+    <script>
+        const params = new URLSearchParams(window.location.search);
+        const roomId = params.get('room');
+        const roomKey = params.get('key');
+        const userName = params.get('user') || 'Участник';
+        const theme = params.get('theme') || 'dark';
+
+        if (roomId && roomKey) {
+            window.location.hash = `room=${roomId},${roomKey}`;
+        }
+
+        const { useEffect, useRef } = React;
+        const { Excalidraw } = window.ExcalidrawLib || {};
+
+        function WhiteboardApp() {
+            const apiRef = useRef(null);
+
+            useEffect(() => {
+                if (apiRef.current) {
+                    apiRef.current.updateScene({ appState: { theme } });
+                }
+            }, [theme]);
+
+            return React.createElement(
+                'div',
+                { className: 'collab-excalidraw-wrapper' },
+                React.createElement(Excalidraw, {
+                    langCode: 'ru-RU',
+                    theme,
+                    name: `Комната ${roomId || ''}`,
+                    username: userName,
+                    renderFooter: () => null,
+                    UIOptions: {
+                        canvasActions: {
+                            changeViewBackgroundColor: true,
+                            changeTheme: true,
+                            clearCanvas: true,
+                        }
+                    },
+                    ref: apiRef,
+                })
+            );
+        }
+
+        const mountNode = document.getElementById('excalidraw-root');
+        if (Excalidraw && mountNode) {
+            const root = ReactDOM.createRoot(mountNode);
+            root.render(React.createElement(WhiteboardApp));
+        } else if (mountNode) {
+            mountNode.innerHTML = '<p style="padding:24px;text-align:center;font-weight:600;">Не удалось загрузить Excalidraw.</p>';
+        }
+    </script>
+</body>
+</html>

@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, jsonify, redirect, url_for, session
+from flask import Flask, render_template, request, jsonify, redirect, url_for, session, abort
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_socketio import SocketIO, emit, join_room, leave_room
@@ -619,6 +619,45 @@ def get_ice_servers():
     ]
 
     return jsonify({ 'iceServers': ice_servers })
+
+
+def ensure_room_participation(room_id):
+    if 'user_id' not in session:
+        return None, redirect(url_for('auth'))
+
+    participant = RoomParticipant.query.filter_by(user_id=session['user_id'], room_id=room_id).first()
+    if not participant:
+        abort(403)
+
+    user = User.query.get(session['user_id'])
+    return user, None
+
+
+@app.route('/collab/whiteboard/<int:room_id>')
+def collab_whiteboard(room_id):
+    user, redirect_response = ensure_room_participation(room_id)
+    if redirect_response:
+        return redirect_response
+    theme = (user.theme if user and user.theme else 'dark')
+    return render_template('collab/whiteboard.html', user=user, theme=theme)
+
+
+@app.route('/collab/documents/<int:room_id>')
+def collab_documents(room_id):
+    user, redirect_response = ensure_room_participation(room_id)
+    if redirect_response:
+        return redirect_response
+    theme = (user.theme if user and user.theme else 'dark')
+    return render_template('collab/documents.html', user=user, theme=theme)
+
+
+@app.route('/collab/presentation/<int:room_id>')
+def collab_presentation(room_id):
+    user, redirect_response = ensure_room_participation(room_id)
+    if redirect_response:
+        return redirect_response
+    theme = (user.theme if user and user.theme else 'dark')
+    return render_template('collab/presentation.html', user=user, theme=theme)
 
 # --- ОПРОСЫ ---
 @socketio.on('send_poll')
