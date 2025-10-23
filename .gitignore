@@ -28,3 +28,8 @@
 # deps
 /node_modules/
 /sfu_server/node_modules/
+
+# local data
+/instance/database.db
+/static/uploads/
+
