@@ -20,3 +20,7 @@
 *.png
 *.jpg
 *.pdf
+
+# deps
+/node_modules/
+/sfu_server/node_modules/
