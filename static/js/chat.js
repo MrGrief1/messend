@@ -44,10 +44,6 @@ const mediaPreviewDownload = document.getElementById('media-preview-download');
 const mediaPreviewOpen = document.getElementById('media-preview-open');
 const mediaPreviewClose = document.getElementById('media-preview-close');
 const callButtonSplit = document.querySelector('.call-button-split');
-const whiteboardInviteToast = document.getElementById('whiteboardInviteToast');
-const whiteboardInviteMessage = document.getElementById('whiteboardInviteMessage');
-const whiteboardInviteJoinBtn = document.getElementById('whiteboardInviteJoinBtn');
-const whiteboardInviteDismissBtn = document.getElementById('whiteboardInviteDismissBtn');
 // Вызовы
 let localStream = null;
 let isMicEnabled = true;
@@ -57,7 +53,7 @@ let screenStream = null;     // текущий поток экрана (если
 let peerConnections = {}; // key: userId, value: RTCPeerConnection
 let pendingIceByPeer = {}; // key: userId, value: array of ICE candidates, буфер до готовности PC
 // RTCConfig с расширенными STUN серверами для P2P соединений
-let rtcConfig = {
+let rtcConfig = { 
     iceServers: [
         // Множество STUN серверов для лучшего определения публичных IP
         { urls: 'stun:stun.l.google.com:19302' },
@@ -76,15 +72,6 @@ let rtcConfig = {
 };
 let isDialModalOpen = false;
 let isCallModalOpen = false;
-
-let excalidrawRoot = null;
-let excalidrawApi = null;
-let excalidrawIsApplyingRemote = false;
-let excalidrawPendingScene = null;
-let excalidrawPendingEmitScene = null;
-let excalidrawSyncTimer = null;
-let whiteboardInviteHideTimeout = null;
-const excalidrawScenesByRoom = new Map();
 
 let reactionTargetMessageId = null; // ID сообщения, на которое мы реагируем
 let activePreviewCleanup = null;
@@ -165,21 +152,6 @@ if (mediaPreviewOverlay) {
         if (event.target === mediaPreviewOverlay || event.target.classList.contains('media-preview-backdrop')) {
             closeMediaPreview();
         }
-    });
-}
-
-if (whiteboardInviteJoinBtn) {
-    whiteboardInviteJoinBtn.addEventListener('click', (event) => {
-        event.preventDefault();
-        hideWhiteboardInvite();
-        openWhiteboard();
-    });
-}
-
-if (whiteboardInviteDismissBtn) {
-    whiteboardInviteDismissBtn.addEventListener('click', (event) => {
-        event.preventDefault();
-        hideWhiteboardInvite();
     });
 }
 
@@ -544,6 +516,7 @@ document.addEventListener('DOMContentLoaded', (event) => {
     socket = io({ transports: ['polling'], upgrade: false });
 
     initializeReactionPicker();
+    initializeWhiteboardUI();
 
     socket.on('connect', () => console.log('WebSocket подключен!'));
 
@@ -912,43 +885,16 @@ document.addEventListener('DOMContentLoaded', (event) => {
     
     // ========== Socket обработчики для совместных функций ==========
     
-    // Доска для рисования
-    socket.on('whiteboard_draw', (data = {}) => {
-        const roomKey = data.room_id != null ? String(data.room_id) : (currentRoomId != null ? String(currentRoomId) : null);
-        if (!roomKey || !data.scene) {
-            return;
-        }
+    // Совместная доска Excalidraw
+    socket.on('whiteboard_session', (data = {}) => {
+        if (!data.room_id || !data.board_url) return;
+        const roomKey = String(data.room_id);
+        const session = normalizeWhiteboardSession(data);
+        whiteboardSessions.set(roomKey, session);
 
-        const sanitizedScene = sanitizeExcalidrawScene(data.scene);
-        excalidrawScenesByRoom.set(roomKey, sanitizedScene);
-
-        if (currentRoomId != null && String(currentRoomId) === roomKey) {
-            applySceneToExcalidraw(sanitizedScene, currentRoomId);
+        if (String(currentRoomId) === roomKey) {
+            updateWhiteboardInvite(session);
         }
-    });
-
-    socket.on('whiteboard_request_scene', (data = {}) => {
-        const roomKey = data.room_id != null ? String(data.room_id) : null;
-        if (!roomKey || currentRoomId == null || String(currentRoomId) !== roomKey) {
-            return;
-        }
-        const cachedScene = excalidrawScenesByRoom.get(roomKey);
-        if (cachedScene && socket) {
-            socket.emit('whiteboard_draw', {
-                room_id: currentRoomId,
-                scene: cachedScene
-            });
-        }
-    });
-
-    socket.on('whiteboard_open', (data = {}) => {
-        if (!data.room_id || String(data.room_id) !== String(currentRoomId)) {
-            return;
-        }
-        if (data.user_id && Number(data.user_id) === Number(window.CURRENT_USER_ID)) {
-            return;
-        }
-        showWhiteboardInvite();
     });
     
     // Совместные документы
@@ -6474,15 +6420,16 @@ function selectRoom(element) {
     // F. Сбрасываем счетчик непрочитанных
     markRoomAsRead(roomId);
 
+    const currentSession = whiteboardSessions.get(String(currentRoomId));
     const whiteboardModal = document.getElementById('whiteboardModal');
     if (whiteboardModal && getComputedStyle(whiteboardModal).display !== 'none') {
-        const key = getWhiteboardRoomKey(currentRoomId);
-        const cachedScene = key ? excalidrawScenesByRoom.get(key) : null;
-        if (cachedScene) {
-            applySceneToExcalidraw(cachedScene, currentRoomId);
-        } else {
-            requestWhiteboardScene();
-        }
+        setWhiteboardSessionUI(currentSession || null);
+    }
+
+    if (currentSession && (!currentSession.createdBy || Number(currentSession.createdBy) !== Number(CURRENT_USER_ID))) {
+        updateWhiteboardInvite(currentSession);
+    } else {
+        dismissWhiteboardInvite();
     }
 
     // НОВОЕ: На мобильных переключаемся на экран чата (Telegram-стиль)
@@ -6698,232 +6645,280 @@ function applyVideoEffect(effectType) {
     console.log('Эффект применен:', effectType);
 }
 
-// ========== ДОСКА ДЛЯ РИСОВАНИЯ ==========
+// ========== ДОСКА EXCALIDRAW ==========
 
-function getWhiteboardRoomKey(roomId) {
-    if (roomId == null) return null;
-    return String(roomId);
-}
+const whiteboardSessions = new Map();
+let whiteboardFrameEl = null;
+let whiteboardShareInputEl = null;
+let whiteboardShareBarEl = null;
+let whiteboardEmptyStateEl = null;
+let whiteboardInviteToastEl = null;
+let whiteboardToastTitleEl = null;
+let whiteboardToastDescriptionEl = null;
+let whiteboardSubtitleEl = null;
+let whiteboardDefaultSubtitle = '';
+let pendingWhiteboardInvite = null;
+let activeWhiteboardSession = null;
 
-function ensureExcalidrawMounted() {
-    if (excalidrawRoot) {
-        return true;
+function initializeWhiteboardUI() {
+    ensureWhiteboardElements();
+    if (whiteboardShareBarEl) {
+        whiteboardShareBarEl.style.display = 'none';
     }
-    if (!window.React || !window.ReactDOM || !window.ExcalidrawLib) {
-        console.error('Excalidraw: зависимости не загружены');
-        return false;
-    }
-    const container = document.getElementById('excalidrawContainer');
-    if (!container) {
-        return false;
-    }
-
-    const { createElement, useCallback, useEffect, useMemo } = window.React;
-
-    const ExcalidrawWrapper = () => {
-        const handleChange = useCallback((elements, appState, files) => {
-            if (!socket || currentRoomId == null || excalidrawIsApplyingRemote) {
-                return;
-            }
-            const scene = buildScenePayload(elements, appState, files);
-            const key = getWhiteboardRoomKey(currentRoomId);
-            if (key) {
-                excalidrawScenesByRoom.set(key, scene);
-            }
-            excalidrawPendingEmitScene = scene;
-            if (!excalidrawSyncTimer) {
-                excalidrawSyncTimer = setTimeout(() => {
-                    excalidrawSyncTimer = null;
-                    const sceneToEmit = excalidrawPendingEmitScene;
-                    excalidrawPendingEmitScene = null;
-                    if (socket && currentRoomId != null && sceneToEmit) {
-                        socket.emit('whiteboard_draw', {
-                            room_id: currentRoomId,
-                            scene: sceneToEmit
-                        });
-                    }
-                }, 350);
-            }
-        }, []);
-
-        const setApi = useCallback((api) => {
-            if (api) {
-                excalidrawApi = api;
-                if (excalidrawPendingScene) {
-                    const sceneToApply = excalidrawPendingScene;
-                    excalidrawPendingScene = null;
-                    applySceneToExcalidraw(sceneToApply, currentRoomId);
-                }
-            }
-        }, []);
-
-        useEffect(() => () => {
-            excalidrawApi = null;
-        }, []);
-
-        const uiOptions = useMemo(() => ({
-            canvasActions: {
-                changeViewBackgroundColor: true,
-                clearCanvas: true,
-                export: false,
-                loadScene: false,
-                saveToActiveFile: false,
-                saveAsImage: false,
-                toggleTheme: false,
-            },
-            tools: { image: true },
-            welcomeScreen: false,
-            dockedSidebarBreakpoint: 0
-        }), []);
-
-        const renderTopLeft = useCallback(() => createElement('div', { className: 'custom-excalidraw-title' }, 'Совместная доска'), []);
-
-        return createElement(window.ExcalidrawLib.Excalidraw, {
-            ref: setApi,
-            onChange: handleChange,
-            UIOptions: uiOptions,
-            renderTopLeftUI: renderTopLeft,
-            renderTopRightUI: () => null,
-            name: 'GlassChat Board',
-            langCode: 'ru-RU'
-        });
-    };
-
-    excalidrawRoot = window.ReactDOM.createRoot(container);
-    excalidrawRoot.render(window.React.createElement(ExcalidrawWrapper));
-    return true;
-}
-
-function buildScenePayload(elements, appState, files) {
-    return sanitizeExcalidrawScene({ elements, appState, files });
-}
-
-function sanitizeExcalidrawScene(scene) {
-    if (!scene) {
-        return { elements: [], appState: {}, files: {} };
-    }
-    return {
-        elements: deepCloneSerializable(scene.elements || []),
-        appState: sanitizeAppStateForSync(scene.appState || {}),
-        files: deepCloneSerializable(scene.files || {})
-    };
-}
-
-function sanitizeAppStateForSync(appState) {
-    if (!appState) return {};
-    const clone = { ...appState };
-    delete clone.collaborators;
-    delete clone.selectionElement;
-    delete clone.editingElement;
-    delete clone.openDialog;
-    delete clone.contextMenu;
-    delete clone.activeEmbeddable;
-    delete clone.pendingImageElementId;
-    return deepCloneSerializable(clone);
-}
-
-function deepCloneSerializable(value) {
-    if (value == null) return value;
-    try {
-        return JSON.parse(JSON.stringify(value, (_, v) => (typeof v === 'function' ? undefined : v)));
-    } catch (error) {
-        console.warn('Не удалось сериализовать данные доски', error);
-        return value;
+    if (whiteboardEmptyStateEl) {
+        whiteboardEmptyStateEl.style.display = '';
     }
 }
 
-function applySceneToExcalidraw(scene, roomId) {
-    const key = getWhiteboardRoomKey(roomId != null ? roomId : currentRoomId);
-    if (!key) return;
-    const normalizedScene = sanitizeExcalidrawScene(scene);
-    excalidrawScenesByRoom.set(key, normalizedScene);
-
-    if (currentRoomId != null && key === String(currentRoomId)) {
-        if (excalidrawApi) {
-            excalidrawIsApplyingRemote = true;
-            try {
-                excalidrawApi.updateScene(normalizedScene);
-            } finally {
-                setTimeout(() => {
-                    excalidrawIsApplyingRemote = false;
-                }, 0);
-            }
-        } else {
-            excalidrawPendingScene = normalizedScene;
+function ensureWhiteboardElements() {
+    if (!whiteboardFrameEl) whiteboardFrameEl = document.getElementById('whiteboardFrame');
+    if (!whiteboardShareInputEl) whiteboardShareInputEl = document.getElementById('whiteboardShareInput');
+    if (!whiteboardShareBarEl) whiteboardShareBarEl = document.getElementById('whiteboardShareBar');
+    if (!whiteboardEmptyStateEl) whiteboardEmptyStateEl = document.getElementById('whiteboardEmptyState');
+    if (!whiteboardInviteToastEl) whiteboardInviteToastEl = document.getElementById('whiteboardInviteToast');
+    if (!whiteboardToastTitleEl) whiteboardToastTitleEl = document.getElementById('whiteboardToastTitle');
+    if (!whiteboardToastDescriptionEl) whiteboardToastDescriptionEl = document.getElementById('whiteboardToastDescription');
+    if (!whiteboardSubtitleEl) {
+        whiteboardSubtitleEl = document.getElementById('whiteboardSubtitle');
+        if (whiteboardSubtitleEl) {
+            whiteboardDefaultSubtitle = whiteboardSubtitleEl.textContent;
         }
     }
 }
 
-function requestWhiteboardScene() {
-    if (!socket || currentRoomId == null) return;
-    socket.emit('whiteboard_request_scene', { room_id: currentRoomId });
+function buildExcalidrawEmbedUrl(boardUrl) {
+    try {
+        const url = new URL(boardUrl);
+        url.searchParams.set('embed', '1');
+        url.searchParams.set('collab', '1');
+        url.searchParams.set('theme', 'dark');
+        return url.toString();
+    } catch (error) {
+        console.warn('Не удалось подготовить ссылку встраивания Excalidraw:', error);
+        return boardUrl;
+    }
 }
 
-function openWhiteboard() {
-    if (!currentRoomId) return;
-    openModal('whiteboardModal');
-    if (!ensureExcalidrawMounted()) {
+function generateExcalidrawToken(length) {
+    const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_';
+    const characters = [];
+    if (window.crypto && window.crypto.getRandomValues) {
+        const buffer = new Uint32Array(length);
+        window.crypto.getRandomValues(buffer);
+        for (let i = 0; i < length; i += 1) {
+            characters.push(alphabet[buffer[i] % alphabet.length]);
+        }
+    } else {
+        for (let i = 0; i < length; i += 1) {
+            const index = Math.floor(Math.random() * alphabet.length);
+            characters.push(alphabet[index]);
+        }
+    }
+    return characters.join('');
+}
+
+function createWhiteboardSession(roomId) {
+    const boardRoomId = generateExcalidrawToken(20);
+    const boardRoomKey = generateExcalidrawToken(22);
+    const boardUrl = `https://excalidraw.com/#room=${boardRoomId},${boardRoomKey}`;
+    return normalizeWhiteboardSession({
+        room_id: roomId,
+        board_url: boardUrl,
+        embed_url: buildExcalidrawEmbedUrl(boardUrl),
+        created_by: CURRENT_USER_ID,
+        created_by_name: 'Вы',
+        created_at: Date.now()
+    });
+}
+
+function normalizeWhiteboardSession(data) {
+    const boardUrl = String(data.board_url || '');
+    return {
+        roomId: String(data.room_id),
+        boardUrl,
+        embedUrl: data.embed_url ? String(data.embed_url) : buildExcalidrawEmbedUrl(boardUrl),
+        createdBy: data.created_by ?? null,
+        createdByName: data.created_by_name || data.creator_name || 'Участник',
+        createdAt: data.created_at ? Number(data.created_at) : Date.now()
+    };
+}
+
+function setWhiteboardSessionUI(session) {
+    ensureWhiteboardElements();
+    if (!whiteboardFrameEl || !whiteboardShareInputEl || !whiteboardShareBarEl) return;
+
+    activeWhiteboardSession = session || null;
+
+    if (session) {
+        if (whiteboardSubtitleEl) {
+            const author = session.createdBy && Number(session.createdBy) === Number(CURRENT_USER_ID)
+                ? 'Создано вами'
+                : `Создал ${session.createdByName || 'участник'}`;
+            whiteboardSubtitleEl.textContent = `${author}. Все изменения синхронизируются через Excalidraw.`;
+        }
+        whiteboardFrameEl.src = session.embedUrl;
+        whiteboardFrameEl.dataset.boardUrl = session.boardUrl;
+        whiteboardShareInputEl.value = session.boardUrl;
+        whiteboardShareBarEl.style.display = 'flex';
+        if (whiteboardEmptyStateEl) {
+            whiteboardEmptyStateEl.style.display = 'none';
+        }
+        whiteboardFrameEl.parentElement?.classList.add('has-session');
+    } else {
+        if (whiteboardSubtitleEl) {
+            whiteboardSubtitleEl.textContent = whiteboardDefaultSubtitle;
+        }
+        whiteboardFrameEl.removeAttribute('src');
+        whiteboardFrameEl.dataset.boardUrl = '';
+        whiteboardShareInputEl.value = '';
+        whiteboardShareBarEl.style.display = 'none';
+        if (whiteboardEmptyStateEl) {
+            whiteboardEmptyStateEl.style.display = '';
+        }
+        whiteboardFrameEl.parentElement?.classList.remove('has-session');
+    }
+}
+
+function announceWhiteboardSession(session) {
+    if (!socket || !currentRoomId || !session) return;
+    socket.emit('system_message', {
+        room_id: parseInt(currentRoomId, 10),
+        content: `Открыта новая доска Excalidraw: ${session.boardUrl}`,
+        type: 'system'
+    });
+}
+
+function broadcastWhiteboardSession(session) {
+    if (!socket || !currentRoomId || !session) return;
+    socket.emit('whiteboard_session', {
+        room_id: parseInt(currentRoomId, 10),
+        board_url: session.boardUrl,
+        embed_url: session.embedUrl,
+        created_by: session.createdBy,
+        created_by_name: session.createdByName,
+        created_at: session.createdAt
+    });
+}
+
+function updateWhiteboardInvite(session) {
+    ensureWhiteboardElements();
+    pendingWhiteboardInvite = session;
+
+    if (!whiteboardInviteToastEl || !session) {
+        dismissWhiteboardInvite();
         return;
     }
 
-    const key = getWhiteboardRoomKey(currentRoomId);
-    const cachedScene = key ? excalidrawScenesByRoom.get(key) : null;
-    const initialScene = cachedScene || sanitizeExcalidrawScene({
-        elements: [],
-        appState: { viewBackgroundColor: '#ffffff' },
-        files: {}
-    });
-    applySceneToExcalidraw(initialScene, currentRoomId);
-    if (!cachedScene) {
-        requestWhiteboardScene();
+    const isSelf = session.createdBy && Number(session.createdBy) === Number(CURRENT_USER_ID);
+    if (isSelf) {
+        setWhiteboardSessionUI(session);
+        dismissWhiteboardInvite();
+        return;
     }
 
-    hideWhiteboardInvite();
-    if (socket) {
-        socket.emit('whiteboard_open', { room_id: currentRoomId });
+    if (whiteboardToastTitleEl) {
+        whiteboardToastTitleEl.textContent = 'Совместная доска открыта';
+    }
+    if (whiteboardToastDescriptionEl) {
+        whiteboardToastDescriptionEl.textContent = `${session.createdByName || 'Участник'} приглашает вас рисовать вместе.`;
+    }
+    whiteboardInviteToastEl.classList.add('show');
+}
+
+function dismissWhiteboardInvite() {
+    ensureWhiteboardElements();
+    pendingWhiteboardInvite = null;
+    if (whiteboardInviteToastEl) {
+        whiteboardInviteToastEl.classList.remove('show');
     }
 }
 
-function clearExcalidrawBoard() {
-    if (!currentRoomId) return;
-    ensureExcalidrawMounted();
-    const key = getWhiteboardRoomKey(currentRoomId);
-    const baseAppState = sanitizeAppStateForSync(excalidrawApi && excalidrawApi.getAppState ? excalidrawApi.getAppState() : {});
-    baseAppState.selectedElementIds = {};
-    baseAppState.selectedGroupIds = {};
-    const blankScene = {
-        elements: [],
-        appState: baseAppState,
-        files: {}
-    };
-    if (key) {
-        excalidrawScenesByRoom.set(key, blankScene);
+function acceptWhiteboardInvite() {
+    if (!pendingWhiteboardInvite) return;
+    openWhiteboard(pendingWhiteboardInvite);
+    dismissWhiteboardInvite();
+}
+
+function openWhiteboard(session) {
+    ensureWhiteboardElements();
+    if (!currentRoomId) {
+        alert('Выберите чат, чтобы открыть совместную доску.');
+        return;
     }
-    if (excalidrawApi) {
-        excalidrawApi.updateScene(blankScene);
+
+    let targetSession = session || whiteboardSessions.get(String(currentRoomId));
+    if (!targetSession) {
+        targetSession = createWhiteboardSession(String(currentRoomId));
+        whiteboardSessions.set(String(currentRoomId), targetSession);
+        setWhiteboardSessionUI(targetSession);
+        announceWhiteboardSession(targetSession);
+        broadcastWhiteboardSession(targetSession);
     } else {
-        excalidrawPendingScene = blankScene;
+        setWhiteboardSessionUI(targetSession);
+    }
+
+    openModal('whiteboardModal');
+    dismissWhiteboardInvite();
+}
+
+function copyWhiteboardLink() {
+    ensureWhiteboardElements();
+    if (!whiteboardShareInputEl || !whiteboardShareInputEl.value) return;
+    const text = whiteboardShareInputEl.value;
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(() => {
+            showInlineBanner('Ссылка на доску скопирована.');
+        }).catch(() => {
+            fallbackCopyWhiteboardLink(text);
+        });
+    } else {
+        fallbackCopyWhiteboardLink(text);
     }
 }
 
-function showWhiteboardInvite() {
-    if (!whiteboardInviteToast || !whiteboardInviteMessage) return;
-    whiteboardInviteMessage.textContent = 'Совместная доска открыта. Нажмите «Присоединиться», чтобы подключиться.';
-    whiteboardInviteToast.classList.add('show');
-    if (whiteboardInviteHideTimeout) {
-        clearTimeout(whiteboardInviteHideTimeout);
+function fallbackCopyWhiteboardLink(text) {
+    try {
+        const tempInput = document.createElement('textarea');
+        tempInput.value = text;
+        tempInput.setAttribute('readonly', 'readonly');
+        tempInput.style.position = 'absolute';
+        tempInput.style.left = '-9999px';
+        document.body.appendChild(tempInput);
+        tempInput.select();
+        document.execCommand('copy');
+        document.body.removeChild(tempInput);
+        showInlineBanner('Ссылка на доску скопирована.');
+    } catch (error) {
+        alert('Не удалось скопировать ссылку. Скопируйте её вручную.');
     }
-    whiteboardInviteHideTimeout = setTimeout(() => {
-        hideWhiteboardInvite();
-    }, 8000);
 }
 
-function hideWhiteboardInvite() {
-    if (!whiteboardInviteToast) return;
-    whiteboardInviteToast.classList.remove('show');
-    if (whiteboardInviteHideTimeout) {
-        clearTimeout(whiteboardInviteHideTimeout);
-        whiteboardInviteHideTimeout = null;
+function showInlineBanner(message) {
+    try {
+        const banner = document.getElementById('poll-comment-banner');
+        const bannerText = document.getElementById('poll-comment-text');
+        if (banner && bannerText) {
+            bannerText.textContent = message;
+            banner.classList.add('visible');
+            setTimeout(() => banner.classList.remove('visible'), 2200);
+        }
+    } catch (error) {
+        console.warn('Не удалось показать уведомление о копировании ссылки:', error);
+    }
+}
+
+function openWhiteboardInNewTab() {
+    if (!activeWhiteboardSession) {
+        alert('Сначала создайте или откройте доску, чтобы перейти в новую вкладку.');
+        return;
+    }
+    window.open(activeWhiteboardSession.boardUrl, '_blank', 'noopener');
+}
+
+function closeWhiteboardModal() {
+    const modal = document.getElementById('whiteboardModal');
+    if (modal) {
+        closeModal({ target: modal, forceClose: true });
     }
 }
 

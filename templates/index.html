@@ -13,13 +13,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.5/socket.io.min.js"></script>
-    <script>
-        window.EXCALIDRAW_ASSET_PATH = "https://unpkg.com/@excalidraw/excalidraw@0.17.6/dist/excalidraw-assets-dev/";
-    </script>
-    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
-    <script src="https://unpkg.com/@excalidraw/excalidraw@0.17.6/dist/excalidraw.production.min.js" crossorigin></script>
-
+    
     <style>
         /* Дополнительные стили для жидкого фона и мобильной оптимизации */
         
@@ -2491,20 +2485,61 @@
     </div>
 
 
-<!-- Модальное окно доски для рисования -->
-        <div id="whiteboardModal" class="modal-overlay" onclick="closeModal(event)">
-        <div class="modal-content glass whiteboard-modal">
-            <div class="modal-header">
-                <h3>Совместная доска</h3>
-                <div class="modal-actions">
-                    <button class="ghost-btn" onclick="clearExcalidrawBoard()" title="Очистить доску">Очистить</button>
-                    <button class="close-btn" onclick="closeModal(event)" title="Закрыть">&times;</button>
+    <!-- Модальное окно доски для рисования -->
+        <div id="whiteboardModal" class="modal-overlay whiteboard-overlay" onclick="closeModal(event)">
+        <div class="modal-content glass whiteboard-modal" onclick="event.stopPropagation()" role="dialog" aria-modal="true" aria-labelledby="whiteboardTitle">
+            <div class="whiteboard-modal-header">
+                <div class="whiteboard-modal-title">
+                    <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
+                        <use href="#ui-whiteboard"></use>
+                    </svg>
+                    <div>
+                        <h3 id="whiteboardTitle">Совместная доска Excalidraw</h3>
+                        <p id="whiteboardSubtitle" class="whiteboard-subtitle">Создайте визуальные заметки вместе с командой в режиме реального времени.</p>
+                    </div>
+                </div>
+                <div class="whiteboard-modal-actions">
+                    <button class="ghost-btn" id="whiteboardOpenNewTab" onclick="openWhiteboardInNewTab()">
+                        <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
+                            <use href="#ui-external"></use>
+                        </svg>
+                        Открыть в новой вкладке
+                    </button>
+                    <button class="ghost-btn danger" onclick="closeWhiteboardModal()" aria-label="Закрыть доску">
+                        <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
+                            <use href="#ui-xmark"></use>
+                        </svg>
+                    </button>
                 </div>
             </div>
-            <div class="whiteboard-stage">
-                <div id="excalidrawContainer" class="excalidraw-wrapper"></div>
+            <div class="whiteboard-share-bar" id="whiteboardShareBar">
+                <div class="whiteboard-share-text">
+                    <span>Ссылка для команды</span>
+                    <small>Поделитесь ею, чтобы участники мгновенно подключились к доске.</small>
+                </div>
+                <div class="whiteboard-share-controls">
+                    <input id="whiteboardShareInput" type="text" readonly value="" aria-label="Ссылка на доску">
+                    <button class="primary-btn" onclick="copyWhiteboardLink()">
+                        <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
+                            <use href="#ui-copy"></use>
+                        </svg>
+                        Скопировать
+                    </button>
+                </div>
             </div>
-            <div class="whiteboard-hint">Изменения синхронизируются для всех участников комнаты</div>
+            <div class="whiteboard-frame-wrapper">
+                <div id="whiteboardEmptyState" class="whiteboard-empty">
+                    <svg class="whiteboard-empty-illustration" viewBox="0 0 160 120" role="presentation" aria-hidden="true">
+                        <rect x="20" y="20" width="120" height="80" rx="12" fill="none" opacity="0.35"></rect>
+                        <path d="M40 70 L70 45 L95 65 L120 40" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round"></path>
+                        <circle cx="50" cy="50" r="6" opacity="0.75"></circle>
+                        <circle cx="80" cy="70" r="5" opacity="0.6"></circle>
+                    </svg>
+                    <h4>Здесь появится доска</h4>
+                    <p>Создайте новую сессию или дождитесь приглашения от коллег.</p>
+                </div>
+                <iframe id="whiteboardFrame" title="Доска Excalidraw" allow="clipboard-write; camera; microphone" loading="lazy"></iframe>
+            </div>
         </div>
     </div>
 
@@ -2548,20 +2583,26 @@
     </div>
 
 
-    <!-- Telegram-style мобильная навигация -->
-    <div id="whiteboardInviteToast" class="whiteboard-invite-toast">
-        <div class="whiteboard-invite-content">
-            <div class="whiteboard-invite-text">
-                <span class="material-icons-round">draw</span>
-                <span id="whiteboardInviteMessage">Совместная доска открыта</span>
+    <!-- Приглашения на доску -->
+    <div id="whiteboardInviteToast" class="whiteboard-toast" role="status" aria-live="polite">
+        <div class="whiteboard-toast-body">
+            <div class="whiteboard-toast-icon">
+                <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
+                    <use href="#ui-whiteboard"></use>
+                </svg>
             </div>
-            <div class="whiteboard-invite-actions">
-                <button class="primary-btn" id="whiteboardInviteJoinBtn">Присоединиться</button>
-                <button class="ghost-btn" id="whiteboardInviteDismissBtn">Скрыть</button>
+            <div class="whiteboard-toast-text">
+                <strong id="whiteboardToastTitle">Новая доска</strong>
+                <span id="whiteboardToastDescription">Участник пригласил вас присоединиться.</span>
+            </div>
+            <div class="whiteboard-toast-actions">
+                <button class="primary-btn" id="whiteboardToastJoin" onclick="acceptWhiteboardInvite()">Присоединиться</button>
+                <button class="ghost-btn" id="whiteboardToastDismiss" onclick="dismissWhiteboardInvite()">Позже</button>
             </div>
         </div>
     </div>
 
+    <!-- Telegram-style мобильная навигация -->
     <nav class="telegram-mobile-nav" id="telegram-mobile-nav">
         <div class="telegram-nav-container">
             <button class="telegram-nav-item active" data-nav="chats" onclick="switchMobileNav('chats', this)">
