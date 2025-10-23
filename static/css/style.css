@@ -4973,9 +4973,16 @@ html {
 
 /* Presentation workspace */
 .presentation-modal {
-    max-width: 1100px;
-    width: 95%;
-    max-height: 95%;
+    width: 100%;
+    max-width: none;
+    height: 100%;
+    max-height: none;
+    margin: 0;
+    border-radius: 0;
+    padding: clamp(16px, 4vw, 36px);
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
 }
 
 .presentation-header-controls {
@@ -5509,9 +5516,13 @@ html {
 }
 
 .documents-modal {
-    max-width: 900px;
-    width: 95%;
-    max-height: 90%;
+    width: 100%;
+    max-width: none;
+    height: 100%;
+    max-height: none;
+    margin: 0;
+    border-radius: 0;
+    padding: clamp(16px, 4vw, 36px);
     display: flex;
     flex-direction: column;
     gap: 16px;
@@ -5563,6 +5574,7 @@ html {
     font-family: 'Inter', sans-serif;
     font-size: 16px;
     line-height: 1.6;
+    flex: 1 1 auto;
 }
 
 .document-editor:focus {

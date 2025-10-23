@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>Совместная доска</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://esm.sh/@excalidraw/excalidraw@0.18.2/dist/excalidraw.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/whiteboard.css') }}">
+    <script>
+        window.EXCALIDRAW_ASSET_PATH = "https://esm.sh/@excalidraw/excalidraw@0.18.2/dist/prod/";
+        window.WHITEBOARD_BOOTSTRAP = {
+            boardId: {{ board_id|tojson }},
+            roomId: {{ room_id|tojson }},
+            embed: {{ embed|tojson }},
+            shareUrl: {{ share_url|tojson }},
+            initialScene: {{ initial_scene|tojson }},
+            currentUser: {
+                id: {{ user.id|tojson }},
+                name: {{ user.username|tojson }}
+            }
+        };
+    </script>
+</head>
+<body class="whiteboard-page {{ 'embed-mode' if embed else 'standalone-mode' }}">
+    <div id="whiteboard-root" class="whiteboard-root">
+        <div class="whiteboard-loading" role="status">Загрузка редактора…</div>
+    </div>
+    <script type="module" src="{{ url_for('static', filename='js/whiteboard.js') }}"></script>
+</body>
+</html>

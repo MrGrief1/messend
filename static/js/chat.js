@@ -6686,16 +6686,24 @@ function ensureWhiteboardElements() {
     }
 }
 
-function buildExcalidrawEmbedUrl(boardUrl) {
+function buildLocalWhiteboardUrls(boardId) {
+    const origin = window.location.origin.replace(/\/$/, '');
+    const shareUrl = `${origin}/whiteboard/${boardId}`;
+    return {
+        shareUrl,
+        embedUrl: `${shareUrl}?embed=1`
+    };
+}
+
+function extractBoardIdFromUrl(boardUrl) {
+    if (!boardUrl) return '';
     try {
-        const url = new URL(boardUrl);
-        url.searchParams.set('embed', '1');
-        url.searchParams.set('collab', '1');
-        url.searchParams.set('theme', 'dark');
-        return url.toString();
+        const url = new URL(boardUrl, window.location.origin);
+        const parts = url.pathname.split('/').filter(Boolean);
+        return parts[parts.length - 1] || '';
     } catch (error) {
-        console.warn('Не удалось подготовить ссылку встраивания Excalidraw:', error);
-        return boardUrl;
+        console.warn('Не удалось определить идентификатор доски:', error);
+        return '';
     }
 }
 
@@ -6718,13 +6726,13 @@ function generateExcalidrawToken(length) {
 }
 
 function createWhiteboardSession(roomId) {
-    const boardRoomId = generateExcalidrawToken(20);
-    const boardRoomKey = generateExcalidrawToken(22);
-    const boardUrl = `https://excalidraw.com/#room=${boardRoomId},${boardRoomKey}`;
+    const boardId = generateExcalidrawToken(26);
+    const urls = buildLocalWhiteboardUrls(boardId);
     return normalizeWhiteboardSession({
         room_id: roomId,
-        board_url: boardUrl,
-        embed_url: buildExcalidrawEmbedUrl(boardUrl),
+        board_id: boardId,
+        board_url: urls.shareUrl,
+        embed_url: urls.embedUrl,
         created_by: CURRENT_USER_ID,
         created_by_name: 'Вы',
         created_at: Date.now()
@@ -6733,10 +6741,17 @@ function createWhiteboardSession(roomId) {
 
 function normalizeWhiteboardSession(data) {
     const boardUrl = String(data.board_url || '');
+    const boardId = data.board_id || extractBoardIdFromUrl(boardUrl);
+    const embedUrl = data.embed_url
+        ? String(data.embed_url)
+        : boardId
+            ? buildLocalWhiteboardUrls(boardId).embedUrl
+            : boardUrl;
     return {
         roomId: String(data.room_id),
+        boardId,
         boardUrl,
-        embedUrl: data.embed_url ? String(data.embed_url) : buildExcalidrawEmbedUrl(boardUrl),
+        embedUrl,
         createdBy: data.created_by ?? null,
         createdByName: data.created_by_name || data.creator_name || 'Участник',
         createdAt: data.created_at ? Number(data.created_at) : Date.now()
@@ -6754,10 +6769,11 @@ function setWhiteboardSessionUI(session) {
             const author = session.createdBy && Number(session.createdBy) === Number(CURRENT_USER_ID)
                 ? 'Создано вами'
                 : `Создал ${session.createdByName || 'участник'}`;
-            whiteboardSubtitleEl.textContent = `${author}. Все изменения синхронизируются через Excalidraw.`;
+            whiteboardSubtitleEl.textContent = `${author}. Все изменения синхронизируются автоматически.`;
         }
         whiteboardFrameEl.src = session.embedUrl;
         whiteboardFrameEl.dataset.boardUrl = session.boardUrl;
+        whiteboardFrameEl.dataset.boardId = session.boardId || '';
         whiteboardShareInputEl.value = session.boardUrl;
         whiteboardShareBarEl.style.display = 'flex';
         if (whiteboardEmptyStateEl) {
@@ -6770,6 +6786,7 @@ function setWhiteboardSessionUI(session) {
         }
         whiteboardFrameEl.removeAttribute('src');
         whiteboardFrameEl.dataset.boardUrl = '';
+        whiteboardFrameEl.dataset.boardId = '';
         whiteboardShareInputEl.value = '';
         whiteboardShareBarEl.style.display = 'none';
         if (whiteboardEmptyStateEl) {
@@ -6783,7 +6800,7 @@ function announceWhiteboardSession(session) {
     if (!socket || !currentRoomId || !session) return;
     socket.emit('system_message', {
         room_id: parseInt(currentRoomId, 10),
-        content: `Открыта новая доска Excalidraw: ${session.boardUrl}`,
+        content: `Открыта новая совместная доска: ${session.boardUrl}`,
         type: 'system'
     });
 }
@@ -6794,6 +6811,7 @@ function broadcastWhiteboardSession(session) {
         room_id: parseInt(currentRoomId, 10),
         board_url: session.boardUrl,
         embed_url: session.embedUrl,
+        board_id: session.boardId,
         created_by: session.createdBy,
         created_by_name: session.createdByName,
         created_at: session.createdAt

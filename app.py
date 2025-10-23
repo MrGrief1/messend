@@ -94,6 +94,10 @@ s = URLSafeTimedSerializer(app.config['SECRET_KEY'])
 mail = Mail(app)
 IS_MAIL_CONFIGURED = bool(app.config.get('MAIL_SERVER') and app.config.get('MAIL_USERNAME'))
 
+# --- Состояние для встроенной совместной доски ---
+whiteboard_states = {}
+whiteboard_room_map = {}
+
 # --- Модели Базы Данных ---
 class Contact(db.Model):
     __tablename__ = 'contact'
@@ -471,9 +475,40 @@ def index():
                     active_rooms.append(room_dict)
             
             sfu_url = os.environ.get('SFU_URL')
-            return render_template('index.html', user=user, contacts=user_contacts_data, 
+            return render_template('index.html', user=user, contacts=user_contacts_data,
                                  rooms=active_rooms, archived_rooms=archived_rooms, sfu_url=sfu_url)
     return redirect(url_for('auth'))
+
+
+@app.route('/whiteboard/<board_id>')
+def embedded_whiteboard(board_id):
+    if 'user_id' not in session:
+        return redirect(url_for('auth'))
+
+    user = db.session.get(User, session['user_id'])
+    if not user or not user.is_verified:
+        return redirect(url_for('auth'))
+
+    associated_room_id = whiteboard_room_map.get(board_id)
+    if associated_room_id:
+        participant = RoomParticipant.query.filter_by(
+            user_id=user.id,
+            room_id=associated_room_id
+        ).first()
+        if not participant:
+            return redirect(url_for('index'))
+
+    initial_scene = whiteboard_states.get(board_id)
+
+    return render_template(
+        'whiteboard.html',
+        board_id=board_id,
+        user=user,
+        initial_scene=initial_scene,
+        embed=request.args.get('embed') == '1',
+        share_url=url_for('embedded_whiteboard', board_id=board_id, _external=True),
+        room_id=associated_room_id
+    )
 # ... (Auth, Logout, Confirm, Register, Login API)
 @app.route('/auth')
 def auth():
@@ -1878,18 +1913,22 @@ def handle_system_message(data):
 
 @socketio.on('whiteboard_session')
 def handle_whiteboard_session(data):
-    """Создание или обновление ссылки на совместную доску Excalidraw"""
+    """Создание или обновление ссылки на встроенную совместную доску"""
     if 'user_id' not in session:
         return
 
     room_id = data.get('room_id')
     board_url = data.get('board_url')
+    board_id = data.get('board_id')
     if not room_id or not board_url:
         return
 
     participant = RoomParticipant.query.filter_by(user_id=session['user_id'], room_id=room_id).first()
     if not participant:
         return
+
+    if not board_id and isinstance(board_url, str):
+        board_id = board_url.rstrip('/').split('/')[-1]
 
     user = User.query.get(session['user_id'])
     payload = {
@@ -1898,10 +1937,56 @@ def handle_whiteboard_session(data):
         'embed_url': data.get('embed_url'),
         'created_by': session['user_id'],
         'created_by_name': user.username if user else 'Участник',
-        'created_at': data.get('created_at') or int(time.time() * 1000)
+        'created_at': data.get('created_at') or int(time.time() * 1000),
+        'board_id': board_id
     }
 
+    if board_id:
+        whiteboard_room_map[board_id] = room_id
+
     emit('whiteboard_session', payload, room=str(room_id), include_self=False)
+
+
+@socketio.on('whiteboard_join')
+def handle_whiteboard_join(data):
+    if 'user_id' not in session:
+        return
+
+    board_id = data.get('board_id')
+    if not board_id:
+        return
+
+    room_id = whiteboard_room_map.get(board_id)
+    if room_id:
+        participant = RoomParticipant.query.filter_by(user_id=session['user_id'], room_id=room_id).first()
+        if not participant:
+            return
+
+    join_room(f'whiteboard:{board_id}')
+    current_scene = whiteboard_states.get(board_id)
+    if current_scene:
+        emit('whiteboard_sync', current_scene)
+
+
+@socketio.on('whiteboard_broadcast')
+def handle_whiteboard_broadcast(data):
+    if 'user_id' not in session:
+        return
+
+    board_id = data.get('board_id')
+    scene = data.get('scene')
+    if not board_id or not isinstance(scene, dict):
+        return
+
+    room_id = whiteboard_room_map.get(board_id)
+    if room_id:
+        participant = RoomParticipant.query.filter_by(user_id=session['user_id'], room_id=room_id).first()
+        if not participant:
+            return
+
+    whiteboard_states[board_id] = scene
+    emit('whiteboard_sync', scene, room=f'whiteboard:{board_id}', include_self=False)
+
 
 @socketio.on('document_update')
 def handle_document_update(data):
