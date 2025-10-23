@@ -2418,7 +2418,7 @@
         <div id="presentationModal" class="modal-overlay" onclick="closeModal(event)">
         <div class="modal-content glass presentation-modal">
             <div class="modal-header">
-                <h3>Доска презентаций</h3>
+                <h3>Презентации (на основе PPTist)</h3>
                 <div class="presentation-header-controls">
                     <button onclick="prevSlide()" class="icon-btn" title="Предыдущий слайд">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -2494,8 +2494,8 @@
                         <use href="#ui-whiteboard"></use>
                     </svg>
                     <div>
-                        <h3 id="whiteboardTitle">Совместная доска Excalidraw</h3>
-                        <p id="whiteboardSubtitle" class="whiteboard-subtitle">Создайте визуальные заметки вместе с командой в режиме реального времени.</p>
+                        <h3 id="whiteboardTitle">Совместная доска</h3>
+                        <p id="whiteboardSubtitle" class="whiteboard-subtitle">Работайте вместе на встроенной доске Excalidraw без ссылок и сторонних приглашений.</p>
                     </div>
                 </div>
                 <div class="whiteboard-modal-actions">
@@ -2512,21 +2512,6 @@
                     </button>
                 </div>
             </div>
-            <div class="whiteboard-share-bar" id="whiteboardShareBar">
-                <div class="whiteboard-share-text">
-                    <span>Ссылка для команды</span>
-                    <small>Поделитесь ею, чтобы участники мгновенно подключились к доске.</small>
-                </div>
-                <div class="whiteboard-share-controls">
-                    <input id="whiteboardShareInput" type="text" readonly value="" aria-label="Ссылка на доску">
-                    <button class="primary-btn" onclick="copyWhiteboardLink()">
-                        <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
-                            <use href="#ui-copy"></use>
-                        </svg>
-                        Скопировать
-                    </button>
-                </div>
-            </div>
             <div class="whiteboard-frame-wrapper">
                 <div id="whiteboardEmptyState" class="whiteboard-empty">
                     <svg class="whiteboard-empty-illustration" viewBox="0 0 160 120" role="presentation" aria-hidden="true">
@@ -2536,9 +2521,9 @@
                         <circle cx="80" cy="70" r="5" opacity="0.6"></circle>
                     </svg>
                     <h4>Здесь появится доска</h4>
-                    <p>Создайте новую сессию или дождитесь приглашения от коллег.</p>
+                    <p>Создайте новую сессию или откройте существующую — остальные увидят приглашение автоматически.</p>
                 </div>
-                <iframe id="whiteboardFrame" title="Доска Excalidraw" allow="clipboard-write; camera; microphone" loading="lazy"></iframe>
+                <iframe id="whiteboardFrame" title="Совместная доска" allow="clipboard-write; camera; microphone" loading="lazy"></iframe>
             </div>
         </div>
     </div>
@@ -2548,7 +2533,7 @@
         <div id="documentsModal" class="modal-overlay" onclick="closeModal(event)">
         <div class="modal-content glass documents-modal">
             <div class="modal-header">
-                <h3>Общие документы</h3>
+                <h3>Совместные документы (Etherpad Lite)</h3>
                 <button class="close-btn" onclick="closeModal(event)" title="Закрыть">&times;</button>
             </div>
             <div class="document-toolbar" id="documentToolbar">

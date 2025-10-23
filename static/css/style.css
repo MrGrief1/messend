@@ -4973,9 +4973,12 @@ html {
 
 /* Presentation workspace */
 .presentation-modal {
-    max-width: 1100px;
-    width: 95%;
-    max-height: 95%;
+    width: min(1280px, 96vw);
+    height: calc(100vh - 80px);
+    max-height: none;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
 }
 
 .presentation-header-controls {
@@ -5051,6 +5054,8 @@ html {
     display: flex;
     align-items: stretch;
     gap: 16px;
+    flex: 1 1 auto;
+    min-height: 0;
 }
 
 .presentation-canvas {
@@ -5058,7 +5063,8 @@ html {
     flex: 1 1 auto;
     background: #ffffff;
     border-radius: var(--radius-lg);
-    min-height: 600px;
+    min-height: 0;
+    height: 100%;
     box-shadow: 0 22px 44px rgba(0, 0, 0, 0.22);
     overflow: hidden;
 }
@@ -5208,7 +5214,7 @@ html {
 }
 
 .presentation-footer {
-    margin-top: 20px;
+    margin-top: auto;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -5282,60 +5288,6 @@ html {
     display: flex;
     align-items: center;
     gap: 12px;
-}
-
-.whiteboard-share-bar {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: space-between;
-    gap: 18px;
-    padding: 18px 22px;
-    border-radius: var(--radius-lg);
-    border: 1px solid color-mix(in srgb, var(--surface-muted) 35%, transparent);
-    background: color-mix(in srgb, var(--surface-muted) 45%, transparent);
-}
-
-.whiteboard-share-text {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    min-width: 200px;
-}
-
-.whiteboard-share-text span {
-    font-weight: 600;
-    font-size: 0.95rem;
-}
-
-.whiteboard-share-text small {
-    color: var(--text-color-muted);
-    font-size: 0.8rem;
-}
-
-.whiteboard-share-controls {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    flex: 1;
-    min-width: 220px;
-}
-
-#whiteboardShareInput {
-    flex: 1;
-    min-width: 180px;
-    background: color-mix(in srgb, var(--surface-elevated) 80%, transparent);
-    border: 1px solid var(--input-border);
-    border-radius: var(--radius-md);
-    padding: 10px 14px;
-    color: inherit;
-    font-size: 0.95rem;
-    letter-spacing: 0.01em;
-}
-
-#whiteboardShareInput:focus {
-    outline: 2px solid color-mix(in srgb, var(--color-primary) 55%, transparent);
-    outline-offset: 2px;
 }
 
 .whiteboard-frame-wrapper {
@@ -5478,19 +5430,6 @@ html {
         border-radius: 0;
     }
 
-    .whiteboard-share-bar {
-        flex-direction: column;
-        align-items: stretch;
-    }
-
-    .whiteboard-share-controls {
-        width: 100%;
-    }
-
-    #whiteboardShareInput {
-        width: 100%;
-    }
-
     .whiteboard-toast {
         left: 16px;
         right: 16px;
@@ -5509,9 +5448,9 @@ html {
 }
 
 .documents-modal {
-    max-width: 900px;
-    width: 95%;
-    max-height: 90%;
+    width: min(1100px, 96vw);
+    height: calc(100vh - 80px);
+    max-height: none;
     display: flex;
     flex-direction: column;
     gap: 16px;
@@ -5554,7 +5493,8 @@ html {
 
 .document-editor {
     width: 100%;
-    min-height: 500px;
+    flex: 1 1 auto;
+    min-height: 0;
     padding: 20px;
     background: rgba(255, 255, 255, 0.08);
     border-radius: var(--radius-lg);
@@ -5580,7 +5520,8 @@ html {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-top: 8px;
+    margin-top: auto;
+    padding-top: 12px;
 }
 
 .document-hint {

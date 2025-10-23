@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Совместная доска</title>
+    <link rel="stylesheet" href="https://unpkg.com/@excalidraw/excalidraw@0.17.6/dist/excalidraw.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/whiteboard.css') }}">
+</head>
+<body>
+    <div class="whiteboard-shell" data-room="{{ context.roomId }}">
+        <header class="whiteboard-header">
+            <div class="whiteboard-header-titles">
+                <span class="whiteboard-label">Совместная доска</span>
+                <h1 class="whiteboard-room">{{ context.roomName }}</h1>
+            </div>
+            <div class="whiteboard-header-meta">
+                <span class="whiteboard-user">Вы вошли как <strong>{{ context.username }}</strong></span>
+                <span id="whiteboardPresence" class="whiteboard-presence">Подключение...</span>
+            </div>
+        </header>
+        <main class="whiteboard-main" role="main">
+            <div id="whiteboardApp" class="whiteboard-canvas" role="application" aria-label="Совместная доска Excalidraw"></div>
+        </main>
+        <footer class="whiteboard-footer">
+            <span>Инструменты Excalidraw встроены в GlassChat. Работайте вместе без ссылок и лишних приглашений.</span>
+        </footer>
+    </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.5/socket.io.min.js"></script>
+    <script id="whiteboard-context" type="application/json">{{ context|tojson }}</script>
+    <script type="module" src="{{ url_for('static', filename='excalidraw/app.js') }}"></script>
+</body>
+</html>

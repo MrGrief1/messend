@@ -1,0 +1,128 @@
+:root {
+    color-scheme: dark light;
+    font-family: 'Inter', 'Segoe UI', sans-serif;
+}
+
+body {
+    margin: 0;
+    min-height: 100vh;
+    background: radial-gradient(circle at top, rgba(86, 120, 255, 0.18), transparent 55%),
+                radial-gradient(circle at bottom, rgba(0, 183, 255, 0.14), transparent 60%),
+                #0f172a;
+    color: #f8fafc;
+}
+
+.whiteboard-shell {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    backdrop-filter: blur(12px);
+    background: rgba(15, 23, 42, 0.82);
+}
+
+.whiteboard-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: 24px clamp(20px, 4vw, 40px) 16px;
+    gap: 24px;
+}
+
+.whiteboard-header-titles {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.whiteboard-label {
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    opacity: 0.75;
+}
+
+.whiteboard-room {
+    margin: 0;
+    font-size: clamp(26px, 5vw, 36px);
+    font-weight: 600;
+}
+
+.whiteboard-header-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    font-size: 14px;
+    text-align: right;
+    opacity: 0.85;
+}
+
+.whiteboard-header-meta strong {
+    color: #60a5fa;
+    font-weight: 600;
+}
+
+.whiteboard-presence {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    border-radius: 999px;
+    background: rgba(96, 165, 250, 0.16);
+    color: #bfdbfe;
+    font-weight: 500;
+}
+
+.whiteboard-main {
+    flex: 1;
+    padding: 0 clamp(16px, 3vw, 32px) clamp(20px, 3vw, 32px);
+}
+
+.whiteboard-canvas {
+    height: 100%;
+    border-radius: 24px;
+    overflow: hidden;
+    box-shadow: 0 24px 60px rgba(15, 23, 42, 0.5);
+    background: rgba(15, 23, 42, 0.66);
+}
+
+.whiteboard-footer {
+    padding: 14px clamp(18px, 3vw, 40px) 28px;
+    font-size: 13px;
+    text-align: center;
+    opacity: 0.7;
+}
+
+/* Скрываем ненужные элементы оригинального интерфейса */
+.whiteboard-canvas .layer-ui__wrapper__top-right,
+.whiteboard-canvas .welcome-screen__socials,
+.whiteboard-canvas .App-toolbar__collab,
+.whiteboard-canvas .App-toolbar__extra-tools button[data-testid="collab-button"],
+.whiteboard-canvas .tippy-box[data-testid="welcomeScreenHint"],
+.whiteboard-canvas .layer-ui__wrapper__footer-right {
+    display: none !important;
+}
+
+.whiteboard-canvas .App-toolbar,
+.whiteboard-canvas .layer-ui__wrapper__footer-left {
+    background: rgba(15, 23, 42, 0.8);
+    border-radius: 14px;
+}
+
+.whiteboard-canvas .layer-ui__wrapper__footer-left {
+    padding: 8px 16px;
+}
+
+@media (max-width: 768px) {
+    .whiteboard-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .whiteboard-header-meta {
+        text-align: left;
+    }
+
+    .whiteboard-canvas {
+        border-radius: 18px;
+    }
+}

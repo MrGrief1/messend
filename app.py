@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, jsonify, redirect, url_for, session
+from flask import Flask, render_template, request, jsonify, redirect, url_for, session, abort
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_socketio import SocketIO, emit, join_room, leave_room
@@ -77,6 +77,12 @@ else:
 
 app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME')
 app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD')
+
+# --- Совместные пространства ---
+WHITEBOARD_STATE = {}
+WHITEBOARD_SESSION_USERS = {}
+WHITEBOARD_CLIENTS = {}
+WHITEBOARD_ROOM_SESSIONS = {}
 
 if app.config['MAIL_USERNAME']:
     app.config['MAIL_DEFAULT_SENDER'] = ('GlassChat Team', app.config['MAIL_USERNAME'])
@@ -471,9 +477,42 @@ def index():
                     active_rooms.append(room_dict)
             
             sfu_url = os.environ.get('SFU_URL')
-            return render_template('index.html', user=user, contacts=user_contacts_data, 
+            return render_template('index.html', user=user, contacts=user_contacts_data,
                                  rooms=active_rooms, archived_rooms=archived_rooms, sfu_url=sfu_url)
     return redirect(url_for('auth'))
+
+
+@app.route('/whiteboard/<string:board_session_id>')
+def whiteboard_view(board_session_id):
+    """Встроенная страница совместной доски Excalidraw."""
+    if 'user_id' not in session:
+        return redirect(url_for('auth'))
+
+    room_id = request.args.get('room', type=int)
+    if not room_id:
+        abort(400)
+
+    participant = RoomParticipant.query.filter_by(user_id=session['user_id'], room_id=room_id).first()
+    if not participant:
+        abort(403)
+
+    expected_session = WHITEBOARD_ROOM_SESSIONS.get(room_id)
+    if expected_session and expected_session != board_session_id:
+        abort(404)
+
+    room = db.session.get(Room, room_id)
+    user = db.session.get(User, session['user_id'])
+
+    room_name = room.name if room and room.name else f"Чат #{room_id}"
+    context = {
+        'sessionId': board_session_id,
+        'roomId': room_id,
+        'roomName': room_name,
+        'username': user.username if user else 'Участник',
+        'initialScene': WHITEBOARD_STATE.get(board_session_id)
+    }
+
+    return render_template('whiteboard.html', context=context)
 # ... (Auth, Logout, Confirm, Register, Login API)
 @app.route('/auth')
 def auth():
@@ -1876,6 +1915,53 @@ def handle_system_message(data):
     
     return message_dict
 
+def _whiteboard_room_name(session_id: str) -> str:
+    return f"whiteboard:{session_id}"
+
+
+def _whiteboard_participant_count(session_users: dict) -> int:
+    return sum(1 for sids in session_users.values() if sids)
+
+
+def _add_whiteboard_participant(session_id: str, user_id: int, sid: str) -> int:
+    session_users = WHITEBOARD_SESSION_USERS.setdefault(session_id, {})
+    user_sids = session_users.setdefault(user_id, set())
+    user_sids.add(sid)
+    WHITEBOARD_CLIENTS.setdefault(sid, set()).add(session_id)
+    return _whiteboard_participant_count(session_users)
+
+
+def _remove_whiteboard_participant(session_id: str, user_id: int, sid: str):
+    session_users = WHITEBOARD_SESSION_USERS.get(session_id)
+    if session_users is None:
+        if sid in WHITEBOARD_CLIENTS:
+            WHITEBOARD_CLIENTS[sid].discard(session_id)
+            if not WHITEBOARD_CLIENTS[sid]:
+                WHITEBOARD_CLIENTS.pop(sid)
+        return 0, False
+
+    user_sids = session_users.get(user_id)
+    removed = False
+    if user_sids and sid in user_sids:
+        user_sids.remove(sid)
+        removed = True
+        if not user_sids:
+            session_users.pop(user_id, None)
+
+    if not session_users:
+        WHITEBOARD_SESSION_USERS.pop(session_id, None)
+
+    if sid in WHITEBOARD_CLIENTS:
+        WHITEBOARD_CLIENTS[sid].discard(session_id)
+        if not WHITEBOARD_CLIENTS[sid]:
+            WHITEBOARD_CLIENTS.pop(sid)
+
+    participants = _whiteboard_participant_count(session_users) if session_users else 0
+    if removed:
+        leave_room(_whiteboard_room_name(session_id), sid=sid)
+    return participants, removed
+
+
 @socketio.on('whiteboard_session')
 def handle_whiteboard_session(data):
     """Создание или обновление ссылки на совместную доску Excalidraw"""
@@ -1884,24 +1970,119 @@ def handle_whiteboard_session(data):
 
     room_id = data.get('room_id')
     board_url = data.get('board_url')
-    if not room_id or not board_url:
+    session_id = data.get('session_id')
+    if not room_id or not board_url or not session_id:
         return
 
     participant = RoomParticipant.query.filter_by(user_id=session['user_id'], room_id=room_id).first()
     if not participant:
         return
 
+    WHITEBOARD_ROOM_SESSIONS[room_id] = session_id
+    WHITEBOARD_STATE.setdefault(session_id, WHITEBOARD_STATE.get(session_id) or {
+        'elements': [],
+        'appState': {},
+        'files': {}
+    })
+
     user = User.query.get(session['user_id'])
     payload = {
         'room_id': room_id,
         'board_url': board_url,
         'embed_url': data.get('embed_url'),
+        'session_id': session_id,
         'created_by': session['user_id'],
         'created_by_name': user.username if user else 'Участник',
         'created_at': data.get('created_at') or int(time.time() * 1000)
     }
 
     emit('whiteboard_session', payload, room=str(room_id), include_self=False)
+
+
+@socketio.on('join_whiteboard')
+def handle_join_whiteboard(data):
+    if 'user_id' not in session:
+        return
+
+    session_id = data.get('session_id')
+    room_id = data.get('room_id')
+    if not session_id or not room_id:
+        return
+
+    participant = RoomParticipant.query.filter_by(user_id=session['user_id'], room_id=room_id).first()
+    if not participant:
+        return
+
+    expected_session = WHITEBOARD_ROOM_SESSIONS.get(room_id)
+    if expected_session and expected_session != session_id:
+        return
+
+    room_name = _whiteboard_room_name(session_id)
+    join_room(room_name)
+    participants = _add_whiteboard_participant(session_id, session['user_id'], flask_request.sid)
+
+    emit('whiteboard_presence', {
+        'session_id': session_id,
+        'participants': participants
+    }, room=room_name)
+
+    state = WHITEBOARD_STATE.get(session_id)
+    if state:
+        emit('whiteboard_scene', {
+            'session_id': session_id,
+            'scene': state,
+            'sync': True
+        }, room=flask_request.sid)
+
+
+@socketio.on('leave_whiteboard')
+def handle_leave_whiteboard(data):
+    if 'user_id' not in session:
+        return
+
+    session_id = data.get('session_id')
+    room_id = data.get('room_id')
+    if not session_id:
+        return
+
+    if room_id:
+        participant = RoomParticipant.query.filter_by(user_id=session['user_id'], room_id=room_id).first()
+        if not participant:
+            return
+
+    participants, removed = _remove_whiteboard_participant(session_id, session['user_id'], flask_request.sid)
+    if removed:
+        emit('whiteboard_presence', {
+            'session_id': session_id,
+            'participants': participants
+        }, room=_whiteboard_room_name(session_id))
+
+
+@socketio.on('whiteboard_scene')
+def handle_whiteboard_scene(data):
+    if 'user_id' not in session:
+        return
+
+    session_id = data.get('session_id')
+    room_id = data.get('room_id')
+    scene = data.get('scene')
+    if not session_id or not room_id or not isinstance(scene, dict):
+        return
+
+    participant = RoomParticipant.query.filter_by(user_id=session['user_id'], room_id=room_id).first()
+    if not participant:
+        return
+
+    expected_session = WHITEBOARD_ROOM_SESSIONS.get(room_id)
+    if expected_session and expected_session != session_id:
+        return
+
+    WHITEBOARD_STATE[session_id] = scene
+
+    emit('whiteboard_scene', {
+        'session_id': session_id,
+        'scene': scene
+    }, room=_whiteboard_room_name(session_id), include_self=False)
 
 @socketio.on('document_update')
 def handle_document_update(data):
@@ -1971,6 +2152,17 @@ def handle_update_call_card(data):
 def on_disconnect():
     sid = flask_request.sid
     user_id = SID_TO_USER.pop(sid, None)
+    board_sessions = list(WHITEBOARD_CLIENTS.get(sid, set()))
+    if sid in WHITEBOARD_CLIENTS:
+        WHITEBOARD_CLIENTS.pop(sid, None)
+    if user_id:
+        for board_session_id in board_sessions:
+            participants, removed = _remove_whiteboard_participant(board_session_id, user_id, sid)
+            if removed:
+                emit('whiteboard_presence', {
+                    'session_id': board_session_id,
+                    'participants': participants
+                }, room=_whiteboard_room_name(board_session_id), include_self=False)
     if user_id and user_id in ONLINE_USERS:
         ONLINE_USERS.discard(user_id)
         # Уведомляем участников его комнат

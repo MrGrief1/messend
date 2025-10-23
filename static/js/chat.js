@@ -6649,8 +6649,6 @@ function applyVideoEffect(effectType) {
 
 const whiteboardSessions = new Map();
 let whiteboardFrameEl = null;
-let whiteboardShareInputEl = null;
-let whiteboardShareBarEl = null;
 let whiteboardEmptyStateEl = null;
 let whiteboardInviteToastEl = null;
 let whiteboardToastTitleEl = null;
@@ -6662,9 +6660,6 @@ let activeWhiteboardSession = null;
 
 function initializeWhiteboardUI() {
     ensureWhiteboardElements();
-    if (whiteboardShareBarEl) {
-        whiteboardShareBarEl.style.display = 'none';
-    }
     if (whiteboardEmptyStateEl) {
         whiteboardEmptyStateEl.style.display = '';
     }
@@ -6672,8 +6667,6 @@ function initializeWhiteboardUI() {
 
 function ensureWhiteboardElements() {
     if (!whiteboardFrameEl) whiteboardFrameEl = document.getElementById('whiteboardFrame');
-    if (!whiteboardShareInputEl) whiteboardShareInputEl = document.getElementById('whiteboardShareInput');
-    if (!whiteboardShareBarEl) whiteboardShareBarEl = document.getElementById('whiteboardShareBar');
     if (!whiteboardEmptyStateEl) whiteboardEmptyStateEl = document.getElementById('whiteboardEmptyState');
     if (!whiteboardInviteToastEl) whiteboardInviteToastEl = document.getElementById('whiteboardInviteToast');
     if (!whiteboardToastTitleEl) whiteboardToastTitleEl = document.getElementById('whiteboardToastTitle');
@@ -6686,20 +6679,7 @@ function ensureWhiteboardElements() {
     }
 }
 
-function buildExcalidrawEmbedUrl(boardUrl) {
-    try {
-        const url = new URL(boardUrl);
-        url.searchParams.set('embed', '1');
-        url.searchParams.set('collab', '1');
-        url.searchParams.set('theme', 'dark');
-        return url.toString();
-    } catch (error) {
-        console.warn('Не удалось подготовить ссылку встраивания Excalidraw:', error);
-        return boardUrl;
-    }
-}
-
-function generateExcalidrawToken(length) {
+function generateWhiteboardToken(length = 24) {
     const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_';
     const characters = [];
     if (window.crypto && window.crypto.getRandomValues) {
@@ -6717,14 +6697,18 @@ function generateExcalidrawToken(length) {
     return characters.join('');
 }
 
+function buildInternalWhiteboardUrl(roomId, sessionId) {
+    return `/whiteboard/${sessionId}?room=${roomId}`;
+}
+
 function createWhiteboardSession(roomId) {
-    const boardRoomId = generateExcalidrawToken(20);
-    const boardRoomKey = generateExcalidrawToken(22);
-    const boardUrl = `https://excalidraw.com/#room=${boardRoomId},${boardRoomKey}`;
+    const sessionId = generateWhiteboardToken(28);
+    const boardUrl = buildInternalWhiteboardUrl(roomId, sessionId);
     return normalizeWhiteboardSession({
         room_id: roomId,
+        session_id: sessionId,
         board_url: boardUrl,
-        embed_url: buildExcalidrawEmbedUrl(boardUrl),
+        embed_url: boardUrl,
         created_by: CURRENT_USER_ID,
         created_by_name: 'Вы',
         created_at: Date.now()
@@ -6736,7 +6720,8 @@ function normalizeWhiteboardSession(data) {
     return {
         roomId: String(data.room_id),
         boardUrl,
-        embedUrl: data.embed_url ? String(data.embed_url) : buildExcalidrawEmbedUrl(boardUrl),
+        embedUrl: data.embed_url ? String(data.embed_url) : boardUrl,
+        sessionId: data.session_id ? String(data.session_id) : null,
         createdBy: data.created_by ?? null,
         createdByName: data.created_by_name || data.creator_name || 'Участник',
         createdAt: data.created_at ? Number(data.created_at) : Date.now()
@@ -6745,7 +6730,7 @@ function normalizeWhiteboardSession(data) {
 
 function setWhiteboardSessionUI(session) {
     ensureWhiteboardElements();
-    if (!whiteboardFrameEl || !whiteboardShareInputEl || !whiteboardShareBarEl) return;
+    if (!whiteboardFrameEl) return;
 
     activeWhiteboardSession = session || null;
 
@@ -6753,13 +6738,17 @@ function setWhiteboardSessionUI(session) {
         if (whiteboardSubtitleEl) {
             const author = session.createdBy && Number(session.createdBy) === Number(CURRENT_USER_ID)
                 ? 'Создано вами'
-                : `Создал ${session.createdByName || 'участник'}`;
-            whiteboardSubtitleEl.textContent = `${author}. Все изменения синхронизируются через Excalidraw.`;
+                : `Открыл ${session.createdByName || 'участник'}`;
+            whiteboardSubtitleEl.textContent = `${author}. Подключайтесь без ссылки — просто оставайтесь в чате.`;
         }
-        whiteboardFrameEl.src = session.embedUrl;
+        const currentUrl = whiteboardFrameEl.dataset.boardUrl || '';
+        if (currentUrl !== session.boardUrl) {
+            whiteboardFrameEl.src = session.boardUrl;
+        }
         whiteboardFrameEl.dataset.boardUrl = session.boardUrl;
-        whiteboardShareInputEl.value = session.boardUrl;
-        whiteboardShareBarEl.style.display = 'flex';
+        if (session.sessionId) {
+            whiteboardFrameEl.dataset.sessionId = session.sessionId;
+        }
         if (whiteboardEmptyStateEl) {
             whiteboardEmptyStateEl.style.display = 'none';
         }
@@ -6769,9 +6758,8 @@ function setWhiteboardSessionUI(session) {
             whiteboardSubtitleEl.textContent = whiteboardDefaultSubtitle;
         }
         whiteboardFrameEl.removeAttribute('src');
-        whiteboardFrameEl.dataset.boardUrl = '';
-        whiteboardShareInputEl.value = '';
-        whiteboardShareBarEl.style.display = 'none';
+        delete whiteboardFrameEl.dataset.boardUrl;
+        delete whiteboardFrameEl.dataset.sessionId;
         if (whiteboardEmptyStateEl) {
             whiteboardEmptyStateEl.style.display = '';
         }
@@ -6783,7 +6771,7 @@ function announceWhiteboardSession(session) {
     if (!socket || !currentRoomId || !session) return;
     socket.emit('system_message', {
         room_id: parseInt(currentRoomId, 10),
-        content: `Открыта новая доска Excalidraw: ${session.boardUrl}`,
+        content: 'Открыта новая доска для совместной работы. Используйте кнопку «Совместная доска», чтобы присоединиться.',
         type: 'system'
     });
 }
@@ -6794,6 +6782,7 @@ function broadcastWhiteboardSession(session) {
         room_id: parseInt(currentRoomId, 10),
         board_url: session.boardUrl,
         embed_url: session.embedUrl,
+        session_id: session.sessionId,
         created_by: session.createdBy,
         created_by_name: session.createdByName,
         created_at: session.createdAt
@@ -6820,7 +6809,7 @@ function updateWhiteboardInvite(session) {
         whiteboardToastTitleEl.textContent = 'Совместная доска открыта';
     }
     if (whiteboardToastDescriptionEl) {
-        whiteboardToastDescriptionEl.textContent = `${session.createdByName || 'Участник'} приглашает вас рисовать вместе.`;
+        whiteboardToastDescriptionEl.textContent = `${session.createdByName || 'Участник'} приглашает вас подключиться. Ссылка больше не нужна — просто откройте доску.`;
     }
     whiteboardInviteToastEl.classList.add('show');
 }
@@ -6859,38 +6848,6 @@ function openWhiteboard(session) {
 
     openModal('whiteboardModal');
     dismissWhiteboardInvite();
-}
-
-function copyWhiteboardLink() {
-    ensureWhiteboardElements();
-    if (!whiteboardShareInputEl || !whiteboardShareInputEl.value) return;
-    const text = whiteboardShareInputEl.value;
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(text).then(() => {
-            showInlineBanner('Ссылка на доску скопирована.');
-        }).catch(() => {
-            fallbackCopyWhiteboardLink(text);
-        });
-    } else {
-        fallbackCopyWhiteboardLink(text);
-    }
-}
-
-function fallbackCopyWhiteboardLink(text) {
-    try {
-        const tempInput = document.createElement('textarea');
-        tempInput.value = text;
-        tempInput.setAttribute('readonly', 'readonly');
-        tempInput.style.position = 'absolute';
-        tempInput.style.left = '-9999px';
-        document.body.appendChild(tempInput);
-        tempInput.select();
-        document.execCommand('copy');
-        document.body.removeChild(tempInput);
-        showInlineBanner('Ссылка на доску скопирована.');
-    } catch (error) {
-        alert('Не удалось скопировать ссылку. Скопируйте её вручную.');
-    }
 }
 
 function showInlineBanner(message) {
