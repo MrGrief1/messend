@@ -2512,19 +2512,13 @@
                     </button>
                 </div>
             </div>
-            <div class="whiteboard-share-bar" id="whiteboardShareBar">
-                <div class="whiteboard-share-text">
-                    <span>Ссылка для команды</span>
-                    <small>Поделитесь ею, чтобы участники мгновенно подключились к доске.</small>
-                </div>
-                <div class="whiteboard-share-controls">
-                    <input id="whiteboardShareInput" type="text" readonly value="" aria-label="Ссылка на доску">
-                    <button class="primary-btn" onclick="copyWhiteboardLink()">
-                        <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
-                            <use href="#ui-copy"></use>
-                        </svg>
-                        Скопировать
-                    </button>
+            <div class="whiteboard-info" id="whiteboardInfo">
+                <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
+                    <use href="#ui-sparkles"></use>
+                </svg>
+                <div>
+                    <strong>Доска запускается мгновенно</strong>
+                    <p>Когда участник откроет доску, мы автоматически пригласим остальных из чата. Никаких ссылок и лишних действий.</p>
                 </div>
             </div>
             <div class="whiteboard-frame-wrapper">
@@ -2536,7 +2530,7 @@
                         <circle cx="80" cy="70" r="5" opacity="0.6"></circle>
                     </svg>
                     <h4>Здесь появится доска</h4>
-                    <p>Создайте новую сессию или дождитесь приглашения от коллег.</p>
+                    <p>Создайте новую сессию — остальные участники увидят приглашение автоматически.</p>
                 </div>
                 <iframe id="whiteboardFrame" title="Доска Excalidraw" allow="clipboard-write; camera; microphone" loading="lazy"></iframe>
             </div>
@@ -2546,34 +2540,27 @@
 
     <!-- Модальное окно совместных документов -->
         <div id="documentsModal" class="modal-overlay" onclick="closeModal(event)">
-        <div class="modal-content glass documents-modal">
-            <div class="modal-header">
-                <h3>Общие документы</h3>
-                <button class="close-btn" onclick="closeModal(event)" title="Закрыть">&times;</button>
+        <div class="modal-content glass documents-modal" onclick="event.stopPropagation()">
+            <div class="documents-header">
+                <div class="documents-title">
+                    <h3>Совместные документы</h3>
+                    <p class="documents-subtitle">Редактор на базе Etherpad Lite. Каждый участник видит изменения сразу.</p>
+                </div>
+                <div class="documents-controls">
+                    <button class="ghost-btn" onclick="openDocumentInNewTab()">
+                        <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
+                            <use href="#ui-external"></use>
+                        </svg>
+                        В отдельном окне
+                    </button>
+                    <button class="close-btn" onclick="closeModal(event)" title="Закрыть">&times;</button>
+                </div>
             </div>
-            <div class="document-toolbar" id="documentToolbar">
-                <button onclick="formatText('bold')" class="tool-btn" title="Жирный"><strong>B</strong></button>
-                <button onclick="formatText('italic')" class="tool-btn" title="Курсив"><em>I</em></button>
-                <button onclick="formatText('underline')" class="tool-btn" title="Подчёркнутый"><u>U</u></button>
-                <button onclick="formatText('strikeThrough')" class="tool-btn" title="Зачёркнутый"><span class="material-icons-round">strikethrough_s</span></button>
-                <div class="toolbar-divider"></div>
-                <button onclick="formatText('insertUnorderedList')" class="tool-btn" title="Маркированный список"><span class="material-icons-round">format_list_bulleted</span></button>
-                <button onclick="formatText('insertOrderedList')" class="tool-btn" title="Нумерованный список"><span class="material-icons-round">format_list_numbered</span></button>
-                <div class="toolbar-divider"></div>
-                <button onclick="setDocumentBlock('P')" class="tool-btn" title="Обычный текст">¶</button>
-                <button onclick="setDocumentBlock('H2')" class="tool-btn" title="Заголовок 2">H2</button>
-                <button onclick="setDocumentBlock('H3')" class="tool-btn" title="Заголовок 3">H3</button>
-                <div class="toolbar-divider"></div>
-                <button onclick="setDocumentAlignment('left')" class="tool-btn" title="По левому краю"><span class="material-icons-round">format_align_left</span></button>
-                <button onclick="setDocumentAlignment('center')" class="tool-btn" title="По центру"><span class="material-icons-round">format_align_center</span></button>
-                <button onclick="setDocumentAlignment('right')" class="tool-btn" title="По правому краю"><span class="material-icons-round">format_align_right</span></button>
-                <div class="toolbar-divider"></div>
-                <button onclick="applyDocumentHighlight()" class="tool-btn" title="Маркер"><span class="material-icons-round">highlight</span></button>
-                <button onclick="toggleDocumentCode()" class="tool-btn" title="Код"><span class="material-icons-round">code</span></button>
+            <div class="documents-body">
+                <iframe id="documentsFrame" class="documents-frame" title="Совместный документ" allow="clipboard-write" loading="lazy"></iframe>
             </div>
-            <div id="documentEditor" class="document-editor" contenteditable="true" data-placeholder="Начните писать..." spellcheck="true"></div>
-            <div class="document-footer">
-                <span class="document-hint">Изменения синхронизируются автоматически</span>
+            <div class="documents-footer">
+                <span class="documents-hint">Текст синхронизируется автоматически и не требует ссылок.</span>
                 <div class="document-actions">
                     <button class="ghost-btn" onclick="shareDocument()">Скопировать текст</button>
                     <button class="primary-btn" onclick="sendDocumentToChat()">Отправить в чат</button>

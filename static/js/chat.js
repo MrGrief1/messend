@@ -896,19 +896,34 @@ document.addEventListener('DOMContentLoaded', (event) => {
             updateWhiteboardInvite(session);
         }
     });
+
+    socket.on('whiteboard_scene_update', (data = {}) => {
+        if (!data.room_id || !data.scene) return;
+        const roomKey = String(data.room_id);
+        const session = whiteboardSessions.get(roomKey);
+        if (!session) return;
+        session.scene = data.scene;
+        session.sceneVersion = data.scene_version ?? (data.scene?.appState?.versionNonce ?? Date.now());
+        whiteboardSessions.set(roomKey, session);
+
+        if (String(currentRoomId) === roomKey && activeWhiteboardSession && String(activeWhiteboardSession.roomId) === roomKey) {
+            activeWhiteboardSession = session;
+            if (whiteboardFrameReady) {
+                sendSceneToWhiteboard(session.scene);
+            } else {
+                whiteboardPendingScene = session.scene;
+            }
+        }
+    });
     
     // Совместные документы
-    socket.on('document_update', (data) => {
-        if (!data.content) return;
-        
+    socket.on('document_update', (data = {}) => {
+        if (typeof data.content !== 'string') return;
         documentContent = data.content;
-        const editor = document.getElementById('documentEditor');
-        
-        // Обновляем только если документ открыт и пользователь не редактирует
-        if (editor && document.activeElement !== editor) {
-            const scrollPos = editor.scrollTop;
-            editor.innerHTML = data.content;
-            editor.scrollTop = scrollPos;
+        if (documentsFrameReady) {
+            sendDocumentContentToFrame(documentContent);
+        } else {
+            documentsPendingContent = documentContent;
         }
     });
     
@@ -6649,8 +6664,6 @@ function applyVideoEffect(effectType) {
 
 const whiteboardSessions = new Map();
 let whiteboardFrameEl = null;
-let whiteboardShareInputEl = null;
-let whiteboardShareBarEl = null;
 let whiteboardEmptyStateEl = null;
 let whiteboardInviteToastEl = null;
 let whiteboardToastTitleEl = null;
@@ -6659,21 +6672,27 @@ let whiteboardSubtitleEl = null;
 let whiteboardDefaultSubtitle = '';
 let pendingWhiteboardInvite = null;
 let activeWhiteboardSession = null;
+let whiteboardFrameReady = false;
+let whiteboardPendingScene = null;
+
+window.addEventListener('message', handleWhiteboardFrameMessage, false);
 
 function initializeWhiteboardUI() {
     ensureWhiteboardElements();
-    if (whiteboardShareBarEl) {
-        whiteboardShareBarEl.style.display = 'none';
-    }
     if (whiteboardEmptyStateEl) {
         whiteboardEmptyStateEl.style.display = '';
     }
 }
 
 function ensureWhiteboardElements() {
-    if (!whiteboardFrameEl) whiteboardFrameEl = document.getElementById('whiteboardFrame');
-    if (!whiteboardShareInputEl) whiteboardShareInputEl = document.getElementById('whiteboardShareInput');
-    if (!whiteboardShareBarEl) whiteboardShareBarEl = document.getElementById('whiteboardShareBar');
+    if (!whiteboardFrameEl) {
+        whiteboardFrameEl = document.getElementById('whiteboardFrame');
+        if (whiteboardFrameEl) {
+            whiteboardFrameEl.addEventListener('load', () => {
+                whiteboardFrameReady = false;
+            });
+        }
+    }
     if (!whiteboardEmptyStateEl) whiteboardEmptyStateEl = document.getElementById('whiteboardEmptyState');
     if (!whiteboardInviteToastEl) whiteboardInviteToastEl = document.getElementById('whiteboardInviteToast');
     if (!whiteboardToastTitleEl) whiteboardToastTitleEl = document.getElementById('whiteboardToastTitle');
@@ -6683,19 +6702,6 @@ function ensureWhiteboardElements() {
         if (whiteboardSubtitleEl) {
             whiteboardDefaultSubtitle = whiteboardSubtitleEl.textContent;
         }
-    }
-}
-
-function buildExcalidrawEmbedUrl(boardUrl) {
-    try {
-        const url = new URL(boardUrl);
-        url.searchParams.set('embed', '1');
-        url.searchParams.set('collab', '1');
-        url.searchParams.set('theme', 'dark');
-        return url.toString();
-    } catch (error) {
-        console.warn('Не удалось подготовить ссылку встраивания Excalidraw:', error);
-        return boardUrl;
     }
 }
 
@@ -6718,34 +6724,39 @@ function generateExcalidrawToken(length) {
 }
 
 function createWhiteboardSession(roomId) {
-    const boardRoomId = generateExcalidrawToken(20);
-    const boardRoomKey = generateExcalidrawToken(22);
-    const boardUrl = `https://excalidraw.com/#room=${boardRoomId},${boardRoomKey}`;
+    const sessionToken = generateExcalidrawToken(26);
+    const boardUrl = `/static/apps/whiteboard/index.html?room=${encodeURIComponent(roomId)}&token=${sessionToken}`;
     return normalizeWhiteboardSession({
         room_id: roomId,
         board_url: boardUrl,
-        embed_url: buildExcalidrawEmbedUrl(boardUrl),
+        embed_url: boardUrl,
         created_by: CURRENT_USER_ID,
         created_by_name: 'Вы',
-        created_at: Date.now()
+        created_at: Date.now(),
+        scene: null
     });
 }
 
 function normalizeWhiteboardSession(data) {
-    const boardUrl = String(data.board_url || '');
+    const boardUrl = String(data.board_url || '/static/apps/whiteboard/index.html');
+    const embedUrl = data.embed_url ? String(data.embed_url) : boardUrl;
+    const scene = data.scene || null;
+    const sceneVersion = data.scene_version ?? (scene?.appState?.versionNonce ?? null);
     return {
         roomId: String(data.room_id),
         boardUrl,
-        embedUrl: data.embed_url ? String(data.embed_url) : buildExcalidrawEmbedUrl(boardUrl),
+        embedUrl,
         createdBy: data.created_by ?? null,
         createdByName: data.created_by_name || data.creator_name || 'Участник',
-        createdAt: data.created_at ? Number(data.created_at) : Date.now()
+        createdAt: data.created_at ? Number(data.created_at) : Date.now(),
+        scene,
+        sceneVersion
     };
 }
 
 function setWhiteboardSessionUI(session) {
     ensureWhiteboardElements();
-    if (!whiteboardFrameEl || !whiteboardShareInputEl || !whiteboardShareBarEl) return;
+    if (!whiteboardFrameEl) return;
 
     activeWhiteboardSession = session || null;
 
@@ -6753,13 +6764,23 @@ function setWhiteboardSessionUI(session) {
         if (whiteboardSubtitleEl) {
             const author = session.createdBy && Number(session.createdBy) === Number(CURRENT_USER_ID)
                 ? 'Создано вами'
-                : `Создал ${session.createdByName || 'участник'}`;
-            whiteboardSubtitleEl.textContent = `${author}. Все изменения синхронизируются через Excalidraw.`;
+                : `Открыл ${session.createdByName || 'участник'}`;
+            whiteboardSubtitleEl.textContent = `${author}. Все изменения видны команде мгновенно.`;
         }
-        whiteboardFrameEl.src = session.embedUrl;
-        whiteboardFrameEl.dataset.boardUrl = session.boardUrl;
-        whiteboardShareInputEl.value = session.boardUrl;
-        whiteboardShareBarEl.style.display = 'flex';
+
+        const currentUrl = whiteboardFrameEl.dataset.boardUrl || '';
+        const needsReload = currentUrl !== session.embedUrl;
+        if (needsReload) {
+            whiteboardFrameReady = false;
+            whiteboardPendingScene = session.scene || null;
+            whiteboardFrameEl.src = session.embedUrl;
+        } else if (whiteboardFrameReady && session.scene) {
+            sendSceneToWhiteboard(session.scene);
+        } else if (session.scene) {
+            whiteboardPendingScene = session.scene;
+        }
+
+        whiteboardFrameEl.dataset.boardUrl = session.embedUrl;
         if (whiteboardEmptyStateEl) {
             whiteboardEmptyStateEl.style.display = 'none';
         }
@@ -6768,10 +6789,10 @@ function setWhiteboardSessionUI(session) {
         if (whiteboardSubtitleEl) {
             whiteboardSubtitleEl.textContent = whiteboardDefaultSubtitle;
         }
+        whiteboardFrameReady = false;
+        whiteboardPendingScene = null;
         whiteboardFrameEl.removeAttribute('src');
         whiteboardFrameEl.dataset.boardUrl = '';
-        whiteboardShareInputEl.value = '';
-        whiteboardShareBarEl.style.display = 'none';
         if (whiteboardEmptyStateEl) {
             whiteboardEmptyStateEl.style.display = '';
         }
@@ -6783,7 +6804,7 @@ function announceWhiteboardSession(session) {
     if (!socket || !currentRoomId || !session) return;
     socket.emit('system_message', {
         room_id: parseInt(currentRoomId, 10),
-        content: `Открыта новая доска Excalidraw: ${session.boardUrl}`,
+        content: 'Открыта новая доска Excalidraw. Присоединяйтесь из панели инструментов.',
         type: 'system'
     });
 }
@@ -6796,8 +6817,51 @@ function broadcastWhiteboardSession(session) {
         embed_url: session.embedUrl,
         created_by: session.createdBy,
         created_by_name: session.createdByName,
-        created_at: session.createdAt
+        created_at: session.createdAt,
+        scene: session.scene,
+        scene_version: session.sceneVersion
     });
+}
+
+function sendSceneToWhiteboard(scene) {
+    if (!scene || !whiteboardFrameEl || !whiteboardFrameEl.contentWindow) return;
+    whiteboardFrameEl.contentWindow.postMessage({ type: 'whiteboard:load', payload: scene }, '*');
+}
+
+function focusWhiteboard() {
+    if (!whiteboardFrameEl || !whiteboardFrameEl.contentWindow) return;
+    whiteboardFrameEl.contentWindow.postMessage({ type: 'whiteboard:focus' }, '*');
+}
+
+function handleWhiteboardFrameMessage(event) {
+    if (!whiteboardFrameEl || event.source !== whiteboardFrameEl.contentWindow) return;
+    if (!event.data || typeof event.data !== 'object') return;
+    const { type, payload } = event.data;
+    if (type === 'whiteboard:ready') {
+        whiteboardFrameReady = true;
+        const sceneToSend = whiteboardPendingScene || activeWhiteboardSession?.scene;
+        if (sceneToSend) {
+            sendSceneToWhiteboard(sceneToSend);
+        }
+        whiteboardPendingScene = null;
+        focusWhiteboard();
+    } else if (type === 'whiteboard:scene') {
+        if (!activeWhiteboardSession || !payload) return;
+        const roomKey = String(activeWhiteboardSession.roomId);
+        const session = whiteboardSessions.get(roomKey) || { ...activeWhiteboardSession };
+        session.scene = payload;
+        session.sceneVersion = payload?.appState?.versionNonce ?? Date.now();
+        whiteboardSessions.set(roomKey, session);
+        activeWhiteboardSession = session;
+        whiteboardPendingScene = null;
+        if (currentRoomId && socket) {
+            socket.emit('whiteboard_scene_update', {
+                room_id: parseInt(currentRoomId, 10),
+                scene: payload,
+                scene_version: session.sceneVersion
+            });
+        }
+    }
 }
 
 function updateWhiteboardInvite(session) {
@@ -6820,7 +6884,7 @@ function updateWhiteboardInvite(session) {
         whiteboardToastTitleEl.textContent = 'Совместная доска открыта';
     }
     if (whiteboardToastDescriptionEl) {
-        whiteboardToastDescriptionEl.textContent = `${session.createdByName || 'Участник'} приглашает вас рисовать вместе.`;
+        whiteboardToastDescriptionEl.textContent = `${session.createdByName || 'Участник'} открыл общую доску. Присоединяйтесь одним нажатием.`;
     }
     whiteboardInviteToastEl.classList.add('show');
 }
@@ -6855,56 +6919,18 @@ function openWhiteboard(session) {
         broadcastWhiteboardSession(targetSession);
     } else {
         setWhiteboardSessionUI(targetSession);
+        whiteboardSessions.set(String(currentRoomId), targetSession);
     }
 
     openModal('whiteboardModal');
     dismissWhiteboardInvite();
-}
-
-function copyWhiteboardLink() {
-    ensureWhiteboardElements();
-    if (!whiteboardShareInputEl || !whiteboardShareInputEl.value) return;
-    const text = whiteboardShareInputEl.value;
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(text).then(() => {
-            showInlineBanner('Ссылка на доску скопирована.');
-        }).catch(() => {
-            fallbackCopyWhiteboardLink(text);
-        });
-    } else {
-        fallbackCopyWhiteboardLink(text);
-    }
-}
-
-function fallbackCopyWhiteboardLink(text) {
-    try {
-        const tempInput = document.createElement('textarea');
-        tempInput.value = text;
-        tempInput.setAttribute('readonly', 'readonly');
-        tempInput.style.position = 'absolute';
-        tempInput.style.left = '-9999px';
-        document.body.appendChild(tempInput);
-        tempInput.select();
-        document.execCommand('copy');
-        document.body.removeChild(tempInput);
-        showInlineBanner('Ссылка на доску скопирована.');
-    } catch (error) {
-        alert('Не удалось скопировать ссылку. Скопируйте её вручную.');
-    }
-}
-
-function showInlineBanner(message) {
-    try {
-        const banner = document.getElementById('poll-comment-banner');
-        const bannerText = document.getElementById('poll-comment-text');
-        if (banner && bannerText) {
-            bannerText.textContent = message;
-            banner.classList.add('visible');
-            setTimeout(() => banner.classList.remove('visible'), 2200);
+    setTimeout(() => {
+        if (!whiteboardFrameReady) return;
+        if (activeWhiteboardSession?.scene) {
+            sendSceneToWhiteboard(activeWhiteboardSession.scene);
         }
-    } catch (error) {
-        console.warn('Не удалось показать уведомление о копировании ссылки:', error);
-    }
+        focusWhiteboard();
+    }, 150);
 }
 
 function openWhiteboardInNewTab() {
@@ -6925,39 +6951,74 @@ function closeWhiteboardModal() {
 // ========== СОВМЕСТНЫЕ ДОКУМЕНТЫ ==========
 
 let documentContent = '';
-
 let documentSyncTimeout = null;
+let documentsFrameEl = null;
+let documentsFrameReady = false;
+let documentsPendingContent = null;
 
-function openDocuments() {
-    openModal('documentsModal');
-    const editor = document.getElementById('documentEditor');
+window.addEventListener('message', handleDocumentsFrameMessage, false);
 
-    if (documentContent) {
-        editor.innerHTML = documentContent;
-    }
-
-    if (!editor.dataset.bound) {
-        editor.addEventListener('input', () => {
-            documentContent = editor.innerHTML;
-
-            if (documentSyncTimeout) clearTimeout(documentSyncTimeout);
-
-            documentSyncTimeout = setTimeout(() => {
-                if (currentRoomId && socket) {
-                    socket.emit('document_update', {
-                        room_id: currentRoomId,
-                        content: documentContent
-                    });
-                }
-            }, 500);
-        });
-        editor.dataset.bound = 'true';
+function ensureDocumentsFrame() {
+    if (!documentsFrameEl) {
+        documentsFrameEl = document.getElementById('documentsFrame');
+        if (documentsFrameEl) {
+            documentsFrameEl.addEventListener('load', () => {
+                documentsFrameReady = false;
+            });
+        }
     }
 }
 
-function formatText(command) {
-    document.execCommand(command, false, null);
-    document.getElementById('documentEditor').focus();
+function openDocuments() {
+    openModal('documentsModal');
+    ensureDocumentsFrame();
+    if (!documentsFrameEl) return;
+    if (!documentsFrameEl.src) {
+        documentsFrameEl.src = '/static/apps/etherpad/index.html';
+        documentsFrameReady = false;
+        documentsPendingContent = documentContent;
+    } else if (documentsFrameReady && documentContent) {
+        sendDocumentContentToFrame(documentContent);
+    }
+    focusDocumentsEditor();
+}
+
+function handleDocumentsFrameMessage(event) {
+    ensureDocumentsFrame();
+    if (!documentsFrameEl || event.source !== documentsFrameEl.contentWindow) return;
+    if (!event.data || typeof event.data !== 'object') return;
+    const { type, payload } = event.data;
+    if (type === 'document:ready') {
+        documentsFrameReady = true;
+        const initialContent = documentsPendingContent ?? documentContent;
+        if (initialContent) {
+            sendDocumentContentToFrame(initialContent);
+        }
+        documentsPendingContent = null;
+        focusDocumentsEditor();
+    } else if (type === 'document:content') {
+        const html = (payload && typeof payload.html === 'string') ? payload.html : '';
+        documentContent = html;
+        if (documentSyncTimeout) clearTimeout(documentSyncTimeout);
+        documentSyncTimeout = setTimeout(() => {
+            if (currentRoomId && socket) {
+                socket.emit('document_update', {
+                    room_id: parseInt(currentRoomId, 10),
+                    content: documentContent
+                });
+            }
+        }, 320);
+    }
+}
+
+function sendDocumentContentToFrame(content) {
+    if (!documentsFrameEl || !documentsFrameEl.contentWindow) return;
+    documentsFrameEl.contentWindow.postMessage({ type: 'document:set', payload: { html: content || '' } }, '*');
+}
+
+function focusDocumentsEditor() {
+    if (!documentsFrameReady || !documentsFrameEl || !documentsFrameEl.contentWindow) return;
+    documentsFrameEl.contentWindow.postMessage({ type: 'document:focus' }, '*');
 }
 
 function shareDocument() {
@@ -6965,68 +7026,50 @@ function shareDocument() {
         alert('Документ пуст!');
         return;
     }
-    
-    // Копируем контент в буфер обмена
     const tempDiv = document.createElement('div');
     tempDiv.innerHTML = documentContent;
-    const textContent = tempDiv.textContent || tempDiv.innerText;
-    
-    navigator.clipboard.writeText(textContent).then(() => {
-        alert('Текст документа скопирован в буфер обмена!');
-    }).catch(() => {
-        alert('Не удалось скопировать текст');
-    });
-
-function setDocumentBlock(block) {
-    const editor = document.getElementById('documentEditor');
-    if (!editor) return;
-    document.execCommand('formatBlock', false, block);
-    editor.focus();
-}
-
-function setDocumentAlignment(direction) {
-    const editor = document.getElementById('documentEditor');
-    if (!editor) return;
-    const commandMap = { left: 'justifyLeft', center: 'justifyCenter', right: 'justifyRight' };
-    const command = commandMap[direction];
-    if (command) {
-        document.execCommand(command, false, null);
-        editor.focus();
+    const textContent = (tempDiv.textContent || tempDiv.innerText || '').trim();
+    if (!textContent) {
+        alert('Документ пуст!');
+        return;
     }
-}
-
-function applyDocumentHighlight() {
-    const editor = document.getElementById('documentEditor');
-    if (!editor) return;
-    document.execCommand('hiliteColor', false, '#fff4a3');
-    editor.focus();
-}
-
-function toggleDocumentCode() {
-    const editor = document.getElementById('documentEditor');
-    if (!editor) return;
-    document.execCommand('formatBlock', false, 'pre');
-    editor.focus();
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(textContent).then(() => {
+            alert('Текст документа скопирован в буфер обмена!');
+        }).catch(() => {
+            alert('Не удалось скопировать текст');
+        });
+    } else {
+        alert('Браузер не поддерживает автоматическое копирование.');
+    }
 }
 
 function sendDocumentToChat() {
-    const editor = document.getElementById('documentEditor');
-    if (!editor) return;
-    const content = (editor.innerText || '').trim();
-    if (!content) {
-        alert('Добавьте текст, прежде чем отправлять.');
-        return;
-    }
     if (!currentRoomId) {
         alert('Выберите чат, чтобы отправить документ.');
         return;
     }
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = documentContent || '';
+    const content = (tempDiv.textContent || tempDiv.innerText || '').trim();
+    if (!content) {
+        alert('Добавьте текст, прежде чем отправлять.');
+        return;
+    }
     socket.emit('send_message', {
-        room_id: parseInt(currentRoomId),
-        content: `?? ${content}`
+        room_id: parseInt(currentRoomId, 10),
+        content: `📄 ${content}`
     });
     alert('Документ отправлен в чат.');
 }
+
+function openDocumentInNewTab() {
+    ensureDocumentsFrame();
+    if (!documentsFrameEl || !documentsFrameEl.src) {
+        alert('Сначала откройте документ.');
+        return;
+    }
+    window.open(documentsFrameEl.src, '_blank', 'noopener');
 }
 
 // ========== ПРЕЗЕНТАЦИЯ ==========

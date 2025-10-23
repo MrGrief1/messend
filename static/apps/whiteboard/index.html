@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Совместная доска</title>
+    <link rel="stylesheet" href="https://unpkg.com/@excalidraw/excalidraw@0.17.0/dist/excalidraw.min.css">
+    <style>
+        :root {
+            color-scheme: dark;
+        }
+        html, body {
+            height: 100%;
+            margin: 0;
+            background: #0f111a;
+            color: #f9fafb;
+            font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        }
+        .app-shell {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+        header {
+            padding: 12px 20px;
+            background: rgba(17, 21, 34, 0.95);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+        header h1 {
+            font-size: 16px;
+            font-weight: 600;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        header h1 svg {
+            width: 20px;
+            height: 20px;
+        }
+        header p {
+            margin: 0;
+            font-size: 13px;
+            opacity: 0.75;
+        }
+        .status-indicator {
+            font-size: 12px;
+            padding: 6px 12px;
+            border-radius: 999px;
+            background: rgba(56, 189, 248, 0.16);
+            color: #38bdf8;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .status-indicator .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #38bdf8;
+            box-shadow: 0 0 12px rgba(56, 189, 248, 0.45);
+        }
+        #excalidraw {
+            flex: 1;
+            min-height: 0;
+        }
+        .excalidraw {
+            border-radius: 0 !important;
+        }
+        .excalidraw .LayerUI__wrapper {
+            backdrop-filter: blur(10px);
+        }
+        @media (max-width: 768px) {
+            header {
+                padding: 10px 16px;
+                gap: 8px;
+            }
+            header h1 {
+                width: 100%;
+            }
+            header p {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-shell">
+        <header>
+            <h1>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                    <path d="M5 3h9l5 5v13H5z" stroke-linecap="round" stroke-linejoin="round"></path>
+                    <path d="M9 9h6" stroke-linecap="round"></path>
+                    <path d="M9 13h6" stroke-linecap="round"></path>
+                </svg>
+                Совместная доска Excalidraw
+            </h1>
+            <p id="sessionLabel">Готово к совместной работе. Изменения синхронизируются автоматически.</p>
+            <span class="status-indicator" id="syncStatus">
+                <span class="dot"></span>
+                Подключение
+            </span>
+        </header>
+        <div id="excalidraw"></div>
+    </div>
+
+    <script>
+        window.EXCALIDRAW_ASSET_PATH = "https://unpkg.com/@excalidraw/excalidraw@0.17.0/dist/";
+    </script>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@excalidraw/excalidraw@0.17.0/dist/excalidraw.production.min.js"></script>
+    <script>
+        const { useRef, useEffect, useState } = React;
+        const { Excalidraw } = ExcalidrawLib;
+
+        const READY_EVENT = "whiteboard:ready";
+        const SCENE_EVENT = "whiteboard:scene";
+        const LOAD_EVENT = "whiteboard:load";
+        const FOCUS_EVENT = "whiteboard:focus";
+
+        const App = () => {
+            const excalidrawRef = useRef(null);
+            const lastAppliedNonce = useRef(null);
+            const lastSentNonce = useRef(null);
+            const [connectionLabel, setConnectionLabel] = useState("Подключение");
+            const [syncActive, setSyncActive] = useState(false);
+            const syncStatusRef = useRef(null);
+            const pendingTimer = useRef(null);
+            const pendingPayload = useRef(null);
+
+            useEffect(() => {
+                syncStatusRef.current = document.getElementById('syncStatus');
+            }, []);
+
+            useEffect(() => {
+                const handleMessage = (event) => {
+                    if (!event.data || typeof event.data !== 'object') return;
+                    const { type, payload } = event.data;
+                    if (type === LOAD_EVENT) {
+                        applyScene(payload);
+                    } else if (type === FOCUS_EVENT) {
+                        if (excalidrawRef.current) {
+                            excalidrawRef.current.focusContainer();
+                        }
+                    }
+                };
+                window.addEventListener('message', handleMessage);
+                return () => window.removeEventListener('message', handleMessage);
+            }, []);
+
+            useEffect(() => {
+                window.parent?.postMessage({ type: READY_EVENT }, '*');
+            }, []);
+
+            useEffect(() => {
+                const labelEl = document.getElementById('sessionLabel');
+                if (!labelEl) return;
+                labelEl.textContent = syncActive
+                    ? 'Синхронизация активна. Все участники видят изменения в реальном времени.'
+                    : 'Готово к совместной работе. Изменения синхронизируются автоматически.';
+            }, [syncActive]);
+
+            const scheduleSceneSend = (payload) => {
+                pendingPayload.current = payload;
+                if (pendingTimer.current) return;
+                pendingTimer.current = window.setTimeout(() => {
+                    pendingTimer.current = null;
+                    if (pendingPayload.current) {
+                        window.parent?.postMessage({ type: SCENE_EVENT, payload: pendingPayload.current }, '*');
+                        pendingPayload.current = null;
+                    }
+                }, 180);
+            };
+
+            const handleChange = (elements, appState, files) => {
+                if (!elements || !appState) return;
+                const sanitizedAppState = { ...appState };
+                delete sanitizedAppState.collaborators;
+                const payload = {
+                    elements,
+                    appState: sanitizedAppState,
+                    files
+                };
+                if (appState.versionNonce === lastSentNonce.current) {
+                    return;
+                }
+                lastSentNonce.current = appState.versionNonce;
+                scheduleSceneSend(payload);
+                setSyncActive(true);
+                updateStatus('Синхронизация');
+            };
+
+            const applyScene = (scene) => {
+                if (!scene || !excalidrawRef.current) return;
+                try {
+                    if (scene.appState && scene.appState.versionNonce && scene.appState.versionNonce === lastAppliedNonce.current) {
+                        return;
+                    }
+                    excalidrawRef.current.updateScene(scene);
+                    lastAppliedNonce.current = scene.appState ? scene.appState.versionNonce : null;
+                    if (scene.appState && typeof scene.appState.scrollX === 'number') {
+                        setSyncActive(true);
+                        updateStatus('Подключено');
+                    }
+                } catch (error) {
+                    console.error('Не удалось применить сцену Excalidraw', error);
+                }
+            };
+
+            const updateStatus = (text) => {
+                const statusEl = syncStatusRef.current;
+                if (!statusEl) return;
+                statusEl.textContent = text;
+            };
+
+            const renderFooter = () => null;
+
+            return React.createElement(
+                Excalidraw,
+                {
+                    ref: excalidrawRef,
+                    langCode: 'ru-RU',
+                    theme: 'dark',
+                    initialData: {
+                        appState: {
+                            theme: 'dark',
+                            viewBackgroundColor: '#0f111a'
+                        }
+                    },
+                    UIOptions: {
+                        canvasActions: {
+                            changeViewBackgroundColor: true,
+                            export: false,
+                            loadScene: false,
+                            saveAsImage: true,
+                            theme: false,
+                            saveToActiveFile: false
+                        },
+                        dockedToolbar: true
+                    },
+                    detectScroll: true,
+                    renderTopRightUI: () => null,
+                    renderFooter,
+                    onChange: handleChange,
+                    onPointerUpdate: (_payload) => {
+                        if (!syncActive) {
+                            setSyncActive(true);
+                            updateStatus('Подключено');
+                        }
+                    }
+                }
+            );
+        };
+
+        ReactDOM.createRoot(document.getElementById('excalidraw')).render(React.createElement(App));
+    </script>
+</body>
+</html>
