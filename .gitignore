@@ -9,3 +9,14 @@
 *.png
 *.jpg
 *.pdf
+
+# build artifacts
+/dist/
+/build/
+*.map
+*.min.js
+*.zip
+*.mp4
+*.png
+*.jpg
+*.pdf
