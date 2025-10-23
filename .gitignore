@@ -24,3 +24,7 @@
 # deps
 /node_modules/
 /sfu_server/node_modules/
+
+# deps
+/node_modules/
+/sfu_server/node_modules/
