@@ -40,6 +40,10 @@
         [data-theme="amoled"] .liquid-bg {
             background: linear-gradient(45deg, #000000, #0b0b0b);
         }
+
+        [data-theme="matrix"] .liquid-bg {
+            background: linear-gradient(45deg, #07111d, #0b2c2c);
+        }
         
         .blob {
             position: absolute;
@@ -110,8 +114,18 @@
         [data-theme="ocean"] .blob-2 { 
             background: linear-gradient(135deg, #0984e3, #74b9ff); 
         }
-        [data-theme="ocean"] .blob-3 { 
-            background: linear-gradient(135deg, #00b894, #00cec9); 
+        [data-theme="ocean"] .blob-3 {
+            background: linear-gradient(135deg, #00b894, #00cec9);
+        }
+
+        [data-theme="matrix"] .blob-1 {
+            background: linear-gradient(135deg, #0dbd8b, #119dce);
+        }
+        [data-theme="matrix"] .blob-2 {
+            background: linear-gradient(135deg, #0a4a5c, #0dbd8b);
+        }
+        [data-theme="matrix"] .blob-3 {
+            background: linear-gradient(135deg, #13e6a4, #0b859e);
         }
         
         /* Плавающая (левитирующая) навигация в стиле Telegram */
@@ -1409,7 +1423,44 @@
                         <button class="call-indicator-btn danger" onclick="event.stopPropagation(); endCall();">Завершить</button>
                     </div>
                 </div>
-                
+
+                <div class="call-dock" id="call-dock" hidden>
+                    <div class="call-dock-main">
+                        <div class="call-dock-participant-stack" id="call-dock-participants" aria-hidden="true" data-empty-text="Ожидаем участников…"></div>
+                        <div class="call-dock-info">
+                            <div class="call-dock-title" id="call-dock-title">Активный звонок</div>
+                            <div class="call-dock-meta call-dock-meta-primary">
+                                <span id="call-dock-subtitle-text">Видеозвонок</span>
+                                <span class="call-dock-separator" aria-hidden="true">•</span>
+                                <span class="call-dock-duration" id="call-dock-duration">00:00</span>
+                            </div>
+                            <div class="call-dock-meta call-dock-meta-secondary">
+                                <span id="call-dock-count">0 участников</span>
+                                <span class="call-dock-separator" aria-hidden="true">•</span>
+                                <span id="call-dock-status-text">Ждём соединения…</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="call-dock-controls">
+                        <button type="button" class="dock-btn" id="call-dock-expand" onclick="openModal('callModal')" title="Развернуть звонок">
+                            <span class="material-icons-round" aria-hidden="true">open_in_full</span>
+                            <span class="visually-hidden">Развернуть звонок</span>
+                        </button>
+                        <button type="button" class="dock-btn" id="call-dock-mic" onclick="toggleMic()" aria-pressed="false" title="Выключить микрофон">
+                            <span class="material-icons-round" id="call-dock-mic-icon" aria-hidden="true">mic</span>
+                            <span class="visually-hidden">Переключить микрофон</span>
+                        </button>
+                        <button type="button" class="dock-btn" id="call-dock-cam" onclick="toggleCam()" aria-pressed="false" title="Выключить камеру">
+                            <span class="material-icons-round" id="call-dock-cam-icon" aria-hidden="true">videocam</span>
+                            <span class="visually-hidden">Переключить камеру</span>
+                        </button>
+                        <button type="button" class="dock-btn dock-btn-danger" id="call-dock-end" onclick="endCall()" title="Завершить звонок">
+                            <span class="material-icons-round" aria-hidden="true">call_end</span>
+                            <span class="visually-hidden">Завершить звонок</span>
+                        </button>
+                    </div>
+                </div>
+
                 <div class="placeholder-text" id="placeholder-text">
                     Выберите чат слева, чтобы начать общение.
                 </div>
@@ -1676,6 +1727,17 @@
                                 </div>
                                 <span class="theme-label">AMOLED</span>
                             </div>
+
+                            <div class="theme-option {% if user.theme=='matrix' %}active{% endif %}" data-theme="matrix" onclick="selectTheme('matrix')">
+                                <div class="theme-preview" style="background:linear-gradient(135deg,#0f1b2b,#07111d);">
+                                    <div class="theme-preview-header" style="background:rgba(13,189,139,0.3);"></div>
+                                    <div class="theme-preview-content">
+                                        <div class="theme-preview-sidebar" style="background:rgba(6,41,55,0.8);"></div>
+                                        <div class="theme-preview-main" style="background:rgba(10,31,45,0.7);"></div>
+                                    </div>
+                                </div>
+                                <span class="theme-label">Matrix Glass</span>
+                            </div>
                         </div>
                     </div>
 
@@ -1763,28 +1825,40 @@
 
     <!-- Видеозвонок -->
     <div id="callModal" class="modal-overlay" onclick="closeModal(event)">
-        <div class="modal-content enhanced-glass" style="max-width: 900px; width: 90%;">
-            <div class="modal-header">
-                <h3 id="callTitle">Вызов</h3>
+        <div class="modal-content enhanced-glass call-modal" style="max-width: 1060px; width: 95%;">
+            <div class="modal-header call-modal-header">
+                <div>
+                    <h3 id="callTitle">Вызов</h3>
+                    <p class="call-subtitle" id="callSubtitle">Готовы к подключению</p>
+                </div>
                 <button class="close-btn" onclick="closeModal(event); endCall()">&times;</button>
             </div>
             <div class="input-group" id="callInfo" style="display:none;"></div>
-            <div class="call-videos">
-                <div style="position: relative; width: 100%; height: 100%;">
-                    <video id="localVideo" autoplay playsinline muted webkit-playsinline="true"></video>
-                    <div id="localVideoPlaceholder" class="video-placeholder">
-                        <div class="video-placeholder-avatar">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                                <circle cx="12" cy="7" r="4"></circle>
-                            </svg>
+            <div class="call-layout">
+                <section class="call-stage">
+                    <div class="call-videos">
+                        <div class="call-local-stage">
+                            <video id="localVideo" autoplay playsinline muted webkit-playsinline="true"></video>
+                            <div id="localVideoPlaceholder" class="video-placeholder">
+                                <div class="video-placeholder-avatar">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                        <circle cx="12" cy="7" r="4"></circle>
+                                    </svg>
+                                </div>
+                                <div class="video-placeholder-text">Камера выключена</div>
+                            </div>
+                            <div class="call-video-label" id="callLocalLabel">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                                    <circle cx="12" cy="8" r="4"></circle>
+                                    <path d="M4 20v-1a6 6 0 0 1 12 0v1"></path>
+                                </svg>
+                                <span>Вы</span>
+                            </div>
                         </div>
-                        <div class="video-placeholder-text">Камера выключена</div>
+                        <div id="remoteVideos" class="remote-videos call-remote-grid"></div>
                     </div>
-                </div>
-                <div id="remoteVideos" class="remote-videos"></div>
-            </div>
-            <div class="call-controls">
+                    <div class="call-controls">
                 <!-- Микрофон с встроенной стрелкой -->
                 <div class="control-btn-wrapper control-btn-with-settings">
                     <button id="toggleMicBtn" class="control-btn" onclick="toggleMic()" title="Микрофон">
@@ -1873,6 +1947,63 @@
                     </svg>
                     <span class="control-label">Пригласить</span>
                 </button>
+            </div>
+                </section>
+                <aside class="call-sidebar" aria-live="polite">
+                    <div class="call-sidebar-header">
+                        <h4>Участники</h4>
+                        <span id="callParticipantCount">0 участников</span>
+                    </div>
+                    <div class="call-participants-list" id="callParticipantsList">
+                        <div class="call-participants-empty">Ожидание подключения участников…</div>
+                    </div>
+                    <div class="call-sidebar-card">
+                        <h5>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="4" y="12" width="2" height="8" rx="1"></rect>
+                                <rect x="10" y="8" width="2" height="12" rx="1"></rect>
+                                <rect x="16" y="4" width="2" height="16" rx="1"></rect>
+                            </svg>
+                            Качество связи
+                        </h5>
+                        <div class="call-quality-meter level-connecting" id="callQualityMeter">
+                            <span class="call-quality-dot"></span>
+                            <span class="call-quality-dot"></span>
+                            <span class="call-quality-dot"></span>
+                            <span class="call-quality-dot"></span>
+                        </div>
+                        <div class="call-quality-state" id="callQualityState">Подключаемся…</div>
+                    </div>
+                    <div class="call-sidebar-card">
+                        <h5>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="12" r="9"></circle>
+                                <path d="M12 7v5l3 2"></path>
+                            </svg>
+                            Хронология
+                        </h5>
+                        <div class="call-timeline" id="callTimeline">
+                            <div class="call-participants-empty">Здесь будут события звонка</div>
+                        </div>
+                    </div>
+                    <div class="call-sidebar-footer">
+                        <span>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="12" r="9"></circle>
+                                <path d="M12 6v6l3 2"></path>
+                            </svg>
+                            <time id="callDurationLive">00:00</time>
+                        </span>
+                        <span>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M5 12.55a11 11 0 0 1 14 0"></path>
+                                <path d="M8.5 16a5.5 5.5 0 0 1 7 0"></path>
+                                <circle cx="12" cy="19" r="1"></circle>
+                            </svg>
+                            <span id="callConnectionHint">Ждём соединения…</span>
+                        </span>
+                    </div>
+                </aside>
             </div>
         </div>
     </div>
