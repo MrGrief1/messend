@@ -44,6 +44,29 @@ const mediaPreviewDownload = document.getElementById('media-preview-download');
 const mediaPreviewOpen = document.getElementById('media-preview-open');
 const mediaPreviewClose = document.getElementById('media-preview-close');
 const callButtonSplit = document.querySelector('.call-button-split');
+const workspaceShell = document.querySelector('.workspace-shell');
+const spaceRail = document.getElementById('space-rail');
+const spaceNewRoomBtn = document.getElementById('space-new-room-btn');
+const spaceItems = spaceRail ? Array.from(spaceRail.querySelectorAll('.space-item')) : [];
+const callSidePanel = document.getElementById('call-side-panel');
+const callPanelStatusText = document.getElementById('call-panel-status-text');
+const callPanelStatusMeta = document.getElementById('call-panel-status-meta');
+const callPanelStatusDot = document.getElementById('call-panel-status-dot');
+const callPanelSubtitle = document.getElementById('call-panel-subtitle');
+const callPanelCloseButton = document.getElementById('call-panel-close');
+const callParticipantList = document.getElementById('call-participants');
+const callParticipantCount = document.getElementById('call-participant-count');
+const callParticipantEmptyState = document.getElementById('call-participants-empty');
+const callPanelInsight = document.getElementById('call-panel-insight');
+let callPanelTimelineEmpty = document.getElementById('call-panel-timeline-empty');
+const callPanelTimeline = document.getElementById('call-panel-timeline');
+const callMetricBitrate = document.getElementById('call-metric-bitrate');
+const callMetricLatency = document.getElementById('call-metric-latency');
+const callMetricLoss = document.getElementById('call-metric-loss');
+const callMetricBitrateTrend = document.getElementById('call-metric-bitrate-trend');
+const callMetricLatencyTrend = document.getElementById('call-metric-latency-trend');
+const callMetricLossTrend = document.getElementById('call-metric-loss-trend');
+const spaceConnectionStatus = document.getElementById('space-connection-status');
 // Вызовы
 let localStream = null;
 let isMicEnabled = true;
@@ -53,7 +76,7 @@ let screenStream = null;     // текущий поток экрана (если
 let peerConnections = {}; // key: userId, value: RTCPeerConnection
 let pendingIceByPeer = {}; // key: userId, value: array of ICE candidates, буфер до готовности PC
 // RTCConfig с расширенными STUN серверами для P2P соединений
-let rtcConfig = { 
+let rtcConfig = {
     iceServers: [
         // Множество STUN серверов для лучшего определения публичных IP
         { urls: 'stun:stun.l.google.com:19302' },
@@ -73,6 +96,13 @@ let rtcConfig = {
 let isDialModalOpen = false;
 let isCallModalOpen = false;
 
+let activeSpaceTarget = 'messages';
+let callPanelActiveContext = null;
+let callPanelInsightTimeout = null;
+let callMetricsInterval = null;
+let callMetricsState = { bitrate: 0, latency: 0, loss: 0 };
+const callParticipantsState = new Map();
+
 let reactionTargetMessageId = null; // ID сообщения, на которое мы реагируем
 let activePreviewCleanup = null;
 let activePreviewMediaElement = null;
@@ -87,6 +117,481 @@ function handleCallButtonClick(event) {
 
     setCallDropdownVisibility(false);
     startCall();
+}
+
+// --- Matrix inspired space navigation & call panel helpers ---
+function initializeSpaceRail() {
+    if (!spaceRail || !spaceItems.length) {
+        return;
+    }
+    spaceItems.forEach((item) => {
+        item.addEventListener('click', (event) => {
+            event.preventDefault();
+            const target = item.dataset.target || 'messages';
+            setActiveSpaceNav(target);
+        });
+    });
+    if (spaceNewRoomBtn) {
+        spaceNewRoomBtn.addEventListener('click', (event) => {
+            event.preventDefault();
+            openModal('createRoomModal');
+        });
+    }
+    setActiveSpaceNav('messages', { triggerAction: false });
+}
+
+function initializeCallPanel() {
+    if (!callSidePanel) {
+        return;
+    }
+    callSidePanel.dataset.forceOpen = '';
+    callSidePanel.setAttribute('aria-hidden', 'true');
+    if (callPanelCloseButton) {
+        callPanelCloseButton.addEventListener('click', () => {
+            callSidePanel.dataset.forceOpen = '';
+            hideCallPanel();
+        });
+    }
+    const actionButtons = callSidePanel.querySelectorAll('.call-panel-btn');
+    actionButtons.forEach((btn) => {
+        btn.addEventListener('click', (event) => {
+            const action = btn.getAttribute('data-action');
+            handleCallPanelAction(action, event);
+        });
+    });
+}
+
+function setActiveSpaceNav(target, options = {}) {
+    activeSpaceTarget = target;
+    if (spaceItems.length) {
+        spaceItems.forEach((item) => {
+            const isActive = item.dataset.target === target;
+            item.classList.toggle('active', isActive);
+            item.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+        });
+    }
+    if (options.triggerAction !== false) {
+        handleSpaceNavigation(target);
+    }
+}
+
+function handleSpaceNavigation(target) {
+    switch (target) {
+        case 'archive':
+            switchToTab('archive');
+            hideCallPanel(false);
+            break;
+        case 'calls':
+            showCallPanel(true);
+            break;
+        case 'people':
+            openModal('searchModal');
+            break;
+        case 'settings':
+            openInlineSettings();
+            break;
+        default:
+            switchToTab('chats');
+            hideCallPanel(false);
+            break;
+    }
+}
+
+function showCallPanel(forceFocus = false) {
+    if (!callSidePanel) return;
+    callSidePanel.classList.add('call-side-panel--visible');
+    callSidePanel.setAttribute('aria-hidden', 'false');
+    document.body.classList.add('call-open');
+    if (forceFocus && callPanelCloseButton) {
+        try {
+            callPanelCloseButton.focus({ preventScroll: true });
+        } catch (error) {
+            // ignore focus errors (e.g. Safari)
+        }
+    }
+    if (activeSpaceTarget !== 'calls') {
+        setActiveSpaceNav('calls', { triggerAction: false });
+    }
+}
+
+function hideCallPanel(updateNav = true) {
+    if (!callSidePanel) return;
+    if (callSidePanel.dataset.forceOpen === '1') {
+        return;
+    }
+    callSidePanel.classList.remove('call-side-panel--visible');
+    callSidePanel.setAttribute('aria-hidden', 'true');
+    document.body.classList.remove('call-open');
+    if (updateNav && activeSpaceTarget === 'calls') {
+        setActiveSpaceNav('messages', { triggerAction: false });
+    }
+}
+
+function setCallPanelState(state, options = {}) {
+    if (!callSidePanel) return;
+    callSidePanel.dataset.state = state;
+    if (callPanelStatusDot) {
+        callPanelStatusDot.dataset.state = state;
+    }
+    if (callPanelStatusText) {
+        callPanelStatusText.textContent = options.statusText || (state === 'active' ? 'Активный звонок' : state === 'ringing' ? 'Входящий звонок' : 'Нет активных звонков');
+    }
+    if (callPanelStatusMeta) {
+        callPanelStatusMeta.textContent = options.metaText || (state === 'active' ? 'Соединение установлено' : state === 'ringing' ? 'Ожидание ответа' : 'Готовы к моментальному подключению');
+    }
+    if (state === 'active' || state === 'ringing') {
+        callSidePanel.dataset.forceOpen = '1';
+        showCallPanel(options.forceFocus || false);
+    } else {
+        callSidePanel.dataset.forceOpen = options.keepOpen ? '1' : '';
+        if (!options.keepOpen) {
+            document.body.classList.remove('call-open');
+        }
+    }
+}
+
+function updateCallPanelContext(roomName) {
+    if (!callPanelSubtitle) return;
+    if (!roomName) {
+        callPanelSubtitle.textContent = 'Выберите чат, чтобы начать разговор или создать встречу.';
+        return;
+    }
+    if (currentRoomType === 'dm') {
+        callPanelSubtitle.textContent = `Личное общение с ${roomName}`;
+    } else {
+        callPanelSubtitle.textContent = `Пространство: ${roomName}`;
+    }
+    callPanelActiveContext = roomName;
+}
+
+function prepareCallParticipantsForCurrentRoom(options = {}) {
+    const { includeSelf = true, otherState = 'ringing' } = options;
+    resetCallParticipants();
+    if (includeSelf && CURRENT_USER_ID) {
+        addOrUpdateCallParticipant(CURRENT_USER_ID, {
+            name: 'Вы',
+            role: 'Организатор',
+            state: 'active',
+            statusLabel: 'В сети'
+        });
+    }
+    if (currentRoomType === 'dm' && currentDMotherUserId) {
+        addOrUpdateCallParticipant(currentDMotherUserId, {
+            name: chatWithName ? chatWithName.textContent : 'Собеседник',
+            role: 'Контакт',
+            state: otherState,
+            statusLabel: otherState === 'ringing' ? 'Ожидаем ответ' : statusLabelFromState(otherState)
+        });
+    } else if ((currentRoomType === 'group' || currentRoomType === 'channel') && chatWithName) {
+        addOrUpdateCallParticipant(`room-${currentRoomId || Date.now()}`, {
+            name: chatWithName.textContent,
+            role: 'Комната',
+            state: otherState,
+            statusLabel: otherState === 'ringing' ? 'Лобби активно' : statusLabelFromState(otherState)
+        });
+    }
+}
+
+function prepareCallParticipantsForIncoming(callerId, callerName) {
+    resetCallParticipants();
+    if (callerId) {
+        addOrUpdateCallParticipant(callerId, {
+            name: callerName || 'Пользователь',
+            role: 'Инициатор',
+            state: 'ringing',
+            statusLabel: 'Звонит'
+        });
+    }
+    if (CURRENT_USER_ID) {
+        addOrUpdateCallParticipant(CURRENT_USER_ID, {
+            name: 'Вы',
+            role: 'Вы',
+            state: 'ringing',
+            statusLabel: 'Ожидаете решение'
+        });
+    }
+}
+
+function resetCallParticipants() {
+    callParticipantsState.clear();
+    if (callParticipantList) {
+        callParticipantList.innerHTML = '';
+    }
+    updateCallParticipantEmptyState();
+}
+
+function addOrUpdateCallParticipant(userId, payload = {}) {
+    if (!callParticipantList) return;
+    const key = String(userId);
+    const existing = callParticipantsState.get(key) || {};
+    const data = {
+        ...existing,
+        ...payload,
+        id: key
+    };
+    if (!data.initials && data.name) {
+        data.initials = data.name.trim().split(/\s+/).slice(0, 2).map(part => part[0] || '').join('').toUpperCase();
+    }
+    callParticipantsState.set(key, data);
+    renderCallParticipant(key);
+    updateCallParticipantEmptyState();
+}
+
+function updateCallParticipantState(userId, state, statusLabel) {
+    const key = String(userId);
+    const existing = callParticipantsState.get(key);
+    if (!existing) {
+        addOrUpdateCallParticipant(key, { state, statusLabel: statusLabel || statusLabelFromState(state) });
+        return;
+    }
+    addOrUpdateCallParticipant(key, {
+        ...existing,
+        state,
+        statusLabel: statusLabel || statusLabelFromState(state)
+    });
+}
+
+function removeCallParticipant(userId) {
+    const key = String(userId);
+    callParticipantsState.delete(key);
+    if (callParticipantList) {
+        const row = callParticipantList.querySelector(`[data-participant-id="${key}"]`);
+        if (row) row.remove();
+    }
+    updateCallParticipantEmptyState();
+}
+
+function renderCallParticipant(key) {
+    if (!callParticipantList) return;
+    const data = callParticipantsState.get(key);
+    if (!data) return;
+    let row = callParticipantList.querySelector(`[data-participant-id="${key}"]`);
+    if (!row) {
+        row = document.createElement('div');
+        row.className = 'call-participant';
+        row.dataset.participantId = key;
+        row.innerHTML = `
+            <div class="call-participant-avatar"></div>
+            <div class="call-participant-info">
+                <strong></strong>
+                <span></span>
+            </div>
+            <span class="call-participant-status" data-state="active"></span>
+        `;
+        callParticipantList.appendChild(row);
+    }
+    const avatar = row.querySelector('.call-participant-avatar');
+    const nameEl = row.querySelector('.call-participant-info strong');
+    const roleEl = row.querySelector('.call-participant-info span');
+    const statusEl = row.querySelector('.call-participant-status');
+    if (avatar) {
+        if (data.avatarUrl) {
+            avatar.innerHTML = `<img src="${data.avatarUrl}" alt="${data.name || ''}">`;
+        } else {
+            avatar.textContent = data.initials || (data.name ? data.name.slice(0, 2).toUpperCase() : '•');
+        }
+    }
+    if (nameEl) nameEl.textContent = data.name || 'Участник';
+    if (roleEl) roleEl.textContent = data.role || '';
+    if (statusEl) {
+        const state = data.state || 'active';
+        statusEl.dataset.state = state;
+        statusEl.textContent = data.statusLabel || statusLabelFromState(state);
+    }
+}
+
+function updateCallParticipantEmptyState() {
+    const hasParticipants = callParticipantsState.size > 0;
+    if (callParticipantEmptyState) {
+        callParticipantEmptyState.style.display = hasParticipants ? 'none' : 'block';
+    }
+    if (callParticipantCount) {
+        callParticipantCount.textContent = String(callParticipantsState.size);
+    }
+}
+
+function statusLabelFromState(state) {
+    switch (state) {
+        case 'ringing':
+            return 'Ожидаем ответ';
+        case 'disconnected':
+            return 'Отключен';
+        case 'muted':
+            return 'Без звука';
+        default:
+            return 'В сети';
+    }
+}
+
+function startCallMetricsLoop() {
+    if (!callSidePanel) return;
+    stopCallMetricsLoop();
+    callMetricsState = {
+        bitrate: 1100 + Math.round(Math.random() * 320),
+        latency: 30 + Math.round(Math.random() * 14),
+        loss: (Math.random() * 1.2).toFixed(1)
+    };
+    updateCallMetricsUI(callMetricsState);
+    callMetricsInterval = setInterval(() => {
+        const next = {
+            bitrate: Math.max(280, Math.round(callMetricsState.bitrate + (Math.random() * 160 - 80))),
+            latency: Math.max(16, Math.round(callMetricsState.latency + (Math.random() * 10 - 5))),
+            loss: Math.max(0, (parseFloat(callMetricsState.loss) + (Math.random() * 0.6 - 0.3))).toFixed(1)
+        };
+        updateCallMetricsUI(next, callMetricsState);
+        callMetricsState = next;
+    }, 2500);
+}
+
+function stopCallMetricsLoop() {
+    if (callMetricsInterval) {
+        clearInterval(callMetricsInterval);
+        callMetricsInterval = null;
+    }
+    callMetricsState = { bitrate: 0, latency: 0, loss: 0 };
+    updateCallMetricsUI(null);
+}
+
+function updateCallMetricsUI(current, previous) {
+    if (!callMetricBitrate || !callMetricLatency || !callMetricLoss) return;
+    if (!current) {
+        callMetricBitrate.textContent = '—';
+        callMetricLatency.textContent = '—';
+        callMetricLoss.textContent = '—';
+        if (callMetricBitrateTrend) callMetricBitrateTrend.textContent = '';
+        if (callMetricLatencyTrend) callMetricLatencyTrend.textContent = '';
+        if (callMetricLossTrend) callMetricLossTrend.textContent = '';
+        return;
+    }
+    callMetricBitrate.textContent = `${current.bitrate} кбит/с`;
+    callMetricLatency.textContent = `${current.latency} мс`;
+    callMetricLoss.textContent = `${current.loss}%`;
+    if (previous) {
+        const bitrateDelta = current.bitrate - previous.bitrate;
+        const latencyDelta = current.latency - previous.latency;
+        const lossDelta = parseFloat(current.loss) - parseFloat(previous.loss);
+        if (callMetricBitrateTrend) {
+            callMetricBitrateTrend.textContent = bitrateDelta >= 0 ? `↑ +${Math.abs(bitrateDelta)}` : `↓ -${Math.abs(bitrateDelta)}`;
+            callMetricBitrateTrend.style.color = bitrateDelta >= 0 ? 'rgba(76, 217, 100, 0.85)' : 'rgba(255, 149, 0, 0.9)';
+        }
+        if (callMetricLatencyTrend) {
+            callMetricLatencyTrend.textContent = latencyDelta <= 0 ? `↓ ${Math.abs(latencyDelta)}` : `↑ ${Math.abs(latencyDelta)}`;
+            callMetricLatencyTrend.style.color = latencyDelta <= 0 ? 'rgba(76, 217, 100, 0.85)' : 'rgba(255, 149, 0, 0.9)';
+        }
+        if (callMetricLossTrend) {
+            callMetricLossTrend.textContent = lossDelta <= 0 ? `↓ ${Math.abs(lossDelta).toFixed(1)}` : `↑ ${Math.abs(lossDelta).toFixed(1)}`;
+            callMetricLossTrend.style.color = lossDelta <= 0 ? 'rgba(76, 217, 100, 0.85)' : 'rgba(255, 149, 0, 0.9)';
+        }
+    } else {
+        if (callMetricBitrateTrend) callMetricBitrateTrend.textContent = '';
+        if (callMetricLatencyTrend) callMetricLatencyTrend.textContent = '';
+        if (callMetricLossTrend) callMetricLossTrend.textContent = '';
+    }
+}
+
+function handleCallPanelAction(action) {
+    if (!action) return;
+    switch (action) {
+        case 'share-link':
+            copyCurrentCallLink();
+            break;
+        case 'invite-members':
+            if (currentRoomType === 'group' || currentRoomType === 'channel') {
+                if (typeof openInviteToCallModal === 'function') {
+                    openInviteToCallModal();
+                } else {
+                    showTransientInsight('Приглашение', 'Используйте настройки комнаты, чтобы добавить участников.');
+                }
+            } else {
+                showTransientInsight('Добавьте собеседника', 'Откройте поиск, чтобы пригласить других участников.');
+                openModal('searchModal');
+            }
+            break;
+        default:
+            break;
+    }
+}
+
+function generateCallInviteLink() {
+    try {
+        const url = new URL(window.location.href);
+        url.hash = '';
+        url.searchParams.set('room', currentRoomId || '');
+        url.searchParams.set('call', Date.now());
+        return url.toString();
+    } catch (error) {
+        return window.location.href;
+    }
+}
+
+async function copyCurrentCallLink() {
+    const link = generateCallInviteLink();
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        try {
+            await navigator.clipboard.writeText(link);
+            showTransientInsight('Ссылка скопирована', 'Отправьте её участникам, чтобы они присоединились.');
+            return;
+        } catch (error) {
+            console.warn('Clipboard write failed', error);
+        }
+    }
+    try {
+        const textarea = document.createElement('textarea');
+        textarea.value = link;
+        textarea.setAttribute('readonly', '');
+        textarea.style.position = 'absolute';
+        textarea.style.opacity = '0';
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textarea);
+        showTransientInsight('Ссылка скопирована', 'Отправьте её участникам, чтобы они присоединились.');
+    } catch (error) {
+        showTransientInsight('Не удалось скопировать', `Скопируйте вручную: ${link}`);
+    }
+}
+
+function showTransientInsight(title, message) {
+    if (!callPanelInsight) return;
+    callPanelInsight.innerHTML = `<strong>${title}</strong><p>${message}</p>`;
+    callPanelInsight.classList.add('pulse');
+    if (callPanelInsightTimeout) {
+        clearTimeout(callPanelInsightTimeout);
+    }
+    callPanelInsightTimeout = setTimeout(() => {
+        callPanelInsight.classList.remove('pulse');
+    }, 2200);
+}
+
+function appendCallTimelineEntry({ context, result, duration, timestamp }) {
+    if (!callPanelTimeline) return;
+    if (callPanelTimelineEmpty) {
+        const placeholder = callPanelTimelineEmpty.closest('li');
+        if (placeholder) placeholder.remove();
+        callPanelTimelineEmpty = null;
+    }
+    const entry = document.createElement('li');
+    const dot = document.createElement('span');
+    dot.className = 'timeline-dot';
+    const timeEl = document.createElement('time');
+    const summary = document.createElement('span');
+    const ts = timestamp || Date.now();
+    timeEl.dateTime = new Date(ts).toISOString();
+    timeEl.textContent = new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    summary.innerHTML = `<strong>${context || 'Звонок'}</strong> · ${result}${duration ? ` · ${duration}` : ''}`;
+    entry.appendChild(dot);
+    entry.appendChild(timeEl);
+    entry.appendChild(summary);
+    callPanelTimeline.appendChild(entry);
+    while (callPanelTimeline.childElementCount > 6) {
+        callPanelTimeline.removeChild(callPanelTimeline.firstElementChild);
+    }
+}
+
+function updateSpaceConnectionStatus(isOnline) {
+    if (!spaceConnectionStatus) return;
+    spaceConnectionStatus.textContent = isOnline ? 'Онлайн' : 'Офлайн';
+    spaceConnectionStatus.classList.toggle('offline', !isOnline);
 }
 
 const reactionIconTemplates = {
@@ -516,8 +1021,15 @@ document.addEventListener('DOMContentLoaded', (event) => {
     socket = io({ transports: ['polling'], upgrade: false });
 
     initializeReactionPicker();
+    initializeSpaceRail();
+    initializeCallPanel();
+    updateSpaceConnectionStatus(typeof navigator !== 'undefined' ? navigator.onLine : true);
+    window.addEventListener('online', () => updateSpaceConnectionStatus(true));
+    window.addEventListener('offline', () => updateSpaceConnectionStatus(false));
 
     socket.on('connect', () => console.log('WebSocket подключен!'));
+    socket.on('connect', () => updateSpaceConnectionStatus(true));
+    socket.on('disconnect', () => updateSpaceConnectionStatus(false));
 
     socket.on('receive_message', (data) => {
         console.log('Получено сообщение:', data);
@@ -690,6 +1202,14 @@ document.addEventListener('DOMContentLoaded', (event) => {
             // Входящий вызов
             showIncomingPopup(data.sender_id, data.sender_name);
             playRingtone();
+            callPanelActiveContext = data.sender_name || (chatWithName ? chatWithName.textContent : 'Звонок');
+            setCallPanelState('ringing', {
+                statusText: 'Входящий звонок',
+                metaText: data.sender_name ? `Звонит ${data.sender_name}` : 'Ожидание подключения',
+                forceFocus: true
+            });
+            prepareCallParticipantsForIncoming(data.sender_id, data.sender_name);
+            setActiveSpaceNav('calls', { triggerAction: false });
         }
         if (data.action === 'accept') {
             // Собеседник принял — снимаем окно набора у звонящего и открываем основное окно звонка
@@ -702,6 +1222,15 @@ document.addEventListener('DOMContentLoaded', (event) => {
                 openCallModal();
             }
             // НЕ закрываем callModal если он уже открыт!
+            setCallPanelState('active', {
+                statusText: 'Соединение установлено',
+                metaText: data.sender_name ? `В разговоре с ${data.sender_name}` : 'Связь активна'
+            });
+            startCallMetricsLoop();
+            updateCallParticipantState(data.sender_id || incomingFromUserId, 'active', 'В сети');
+            updateCallParticipantState(CURRENT_USER_ID, 'active', 'Вы в звонке');
+            callPanelActiveContext = data.sender_name || callPanelActiveContext;
+            setActiveSpaceNav('calls', { triggerAction: false });
         }
         if (data.action === 'hangup' || data.action === 'end') {
             stopRingtone();
@@ -722,32 +1251,70 @@ document.addEventListener('DOMContentLoaded', (event) => {
             // Но НЕ показываем приглашение (оно придет только при invite)
             if (data.room_id == currentRoomId && data.initiator_id !== CURRENT_USER_ID) {
                 showCallLobbyIndicator(data.room_id);
+                callPanelActiveContext = chatWithName ? chatWithName.textContent : callPanelActiveContext;
+                updateCallPanelContext(callPanelActiveContext);
+                prepareCallParticipantsForCurrentRoom({ includeSelf: true, otherState: 'ringing' });
+                setCallPanelState('ringing', {
+                    statusText: 'Групповой звонок',
+                    metaText: data.sender_name ? `Инициатор: ${data.sender_name}` : 'Лобби открыто',
+                    forceFocus: true
+                });
+                setActiveSpaceNav('calls', { triggerAction: false });
             }
         }
         if (data.action === 'invite') {
             // Конкретное приглашение для этого пользователя
             if (data.target_user_id === CURRENT_USER_ID) {
                 showGroupCallInvite(data.sender_name, data.room_id);
+                callPanelActiveContext = chatWithName ? chatWithName.textContent : callPanelActiveContext;
+                setCallPanelState('ringing', {
+                    statusText: 'Приглашение в звонок',
+                    metaText: data.sender_name ? `Приглашает ${data.sender_name}` : 'Лобби доступно',
+                    forceFocus: true
+                });
+                prepareCallParticipantsForCurrentRoom({ includeSelf: true, otherState: 'ringing' });
+                setActiveSpaceNav('calls', { triggerAction: false });
             }
         }
         if (data.action === 'end') {
             // Закрываем приглашение если оно открыто
             const inviteModal = document.getElementById('groupCallInviteModal');
             if (inviteModal) inviteModal.style.display = 'none';
-            
+
             // Скрываем индикатор лобби
             hideCallLobbyIndicator();
-            
+
             // Если мы уже в звонке - завершаем его
             if (isCallModalOpen || callStartTime) {
-            endCall();
+                endCall();
             }
+            if (!callStartTime) {
+                appendCallTimelineEntry({
+                    context: chatWithName ? chatWithName.textContent : 'Групповой звонок',
+                    result: 'Лобби закрыто',
+                    timestamp: Date.now()
+                });
+            }
+            stopCallMetricsLoop();
+            if (callSidePanel) {
+                callSidePanel.dataset.forceOpen = '';
+            }
+            resetCallParticipants();
+            setCallPanelState('idle', {
+                statusText: 'Звонок завершен',
+                metaText: 'Комната свободна'
+            });
+            hideCallPanel(false);
+            setActiveSpaceNav('messages', { triggerAction: false });
         }
         if (data.action === 'update_participants') {
             // Обновляем количество участников в приглашении
             const countEl = document.getElementById('groupCallParticipantsCount');
             if (countEl && data.participants_count) {
                 countEl.textContent = data.participants_count;
+            }
+            if (callParticipantCount && typeof data.participants_count !== 'undefined') {
+                callParticipantCount.textContent = String(data.participants_count);
             }
         }
     });
@@ -3889,7 +4456,20 @@ async function openCall() {
         };
         console.log('Добавление карточки звонка:', callCardData);
         addCallCard(callCardData);
-        
+        callPanelActiveContext = chatWithName ? chatWithName.textContent : null;
+        updateCallPanelContext(callPanelActiveContext);
+        prepareCallParticipantsForCurrentRoom({
+            includeSelf: true,
+            otherState: currentRoomType === 'dm' ? 'ringing' : 'active'
+        });
+        setCallPanelState('active', {
+            statusText: 'Идёт подключение',
+            metaText: isAudioOnly ? 'Аудиозвонок Matrix' : 'Видеозвонок Matrix',
+            forceFocus: true
+        });
+        startCallMetricsLoop();
+        setActiveSpaceNav('calls', { triggerAction: false });
+
     if (currentRoomType === 'dm') {
         await startP2PCall(parseInt(currentDMotherUserId), false);
         socket.emit('call_action', { target_user_id: parseInt(currentDMotherUserId), action: 'start' });
@@ -4862,14 +5442,14 @@ function hideIncomingPopup() {
 async function acceptIncomingCall() {
     stopRingtone();
     hideIncomingPopup();
-    
+
     // Открываем основное окно звонка сразу
     openCallModal();
-    
+
     // Показываем индикатор звонка
     showCallIndicator();
     updateCallIndicatorInfo('Входящий звонок', 'Подключение...');
-    
+
     // Добавляем карточку входящего звонка в чат
     const callCardData = {
         id: Date.now(),
@@ -4878,7 +5458,19 @@ async function acceptIncomingCall() {
         status: 'active'
     };
     addCallCard(callCardData);
-    
+    if (!callParticipantsState.size) {
+        prepareCallParticipantsForIncoming(incomingFromUserId, chatWithName ? chatWithName.textContent : null);
+    }
+    callPanelActiveContext = callPanelActiveContext || (chatWithName ? chatWithName.textContent : 'Звонок');
+    setCallPanelState('active', {
+        statusText: 'Вы приняли звонок',
+        metaText: 'Соединение устанавливается'
+    });
+    updateCallParticipantState(incomingFromUserId, 'active', 'В сети');
+    updateCallParticipantState(CURRENT_USER_ID, 'active', 'Вы в звонке');
+    startCallMetricsLoop();
+    setActiveSpaceNav('calls', { triggerAction: false });
+
     try {
         await ensureLocalMediaWithMode();
         await startP2PCall(incomingFromUserId, true);
@@ -4896,6 +5488,22 @@ function rejectIncomingCall() {
         socket.emit('call_action', { target_user_id: incomingFromUserId, action: 'reject' });
     }
     hideIncomingPopup();
+    if (callSidePanel) {
+        callSidePanel.dataset.forceOpen = '';
+    }
+    resetCallParticipants();
+    stopCallMetricsLoop();
+    setCallPanelState('idle', {
+        statusText: 'Вызов отклонен',
+        metaText: 'Вы свободны'
+    });
+    appendCallTimelineEntry({
+        context: callPanelActiveContext || 'Вызов',
+        result: 'Отклонен',
+        timestamp: Date.now()
+    });
+    callPanelActiveContext = null;
+    hideCallPanel(false);
 }
 
 function createPeerConnection(remoteUserId) {
@@ -5511,13 +6119,42 @@ function endCall() {
     
     // Скрываем индикатор лобби если он есть
     hideCallLobbyIndicator();
-    
+
     // Скрываем кнопку приглашения
     hideInviteButton();
-    
+
+    stopCallMetricsLoop();
+    if (callSidePanel) {
+        callSidePanel.dataset.forceOpen = '';
+    }
+    const contextLabel = callPanelActiveContext || (chatWithName ? chatWithName.textContent : 'Звонок');
+    setCallPanelState('idle', {
+        statusText: 'Звонок завершен',
+        metaText: duration !== '00:00' ? `Длительность ${duration}` : 'Разговор завершён',
+        keepOpen: false
+    });
+    if (duration && duration !== '00:00') {
+        appendCallTimelineEntry({
+            context: contextLabel,
+            result: 'Завершен',
+            duration,
+            timestamp: Date.now()
+        });
+    } else {
+        appendCallTimelineEntry({
+            context: contextLabel,
+            result: 'Не состоялся',
+            timestamp: Date.now()
+        });
+    }
+    callPanelActiveContext = null;
+    resetCallParticipants();
+    hideCallPanel(false);
+    setActiveSpaceNav('messages', { triggerAction: false });
+
     // Сбрасываем режим звонка
     isAudioOnly = false;
-    
+
     // Очищаем состояние группового звонка
     activeGroupCallRoomId = null;
     groupCallParticipantsSet.clear();
@@ -6419,7 +7056,8 @@ function selectRoom(element) {
     chatHeader.style.display = 'flex';
     placeholderText.style.display = 'none';
     chatWithName.textContent = roomName;
-    
+    updateCallPanelContext(roomName);
+
     clearChatWindow();
 
     // C. Устанавливаем новую комнату
