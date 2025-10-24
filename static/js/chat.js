@@ -53,7 +53,7 @@ let screenStream = null;     // текущий поток экрана (если
 let peerConnections = {}; // key: userId, value: RTCPeerConnection
 let pendingIceByPeer = {}; // key: userId, value: array of ICE candidates, буфер до готовности PC
 // RTCConfig с расширенными STUN серверами для P2P соединений
-let rtcConfig = { 
+let rtcConfig = {
     iceServers: [
         // Множество STUN серверов для лучшего определения публичных IP
         { urls: 'stun:stun.l.google.com:19302' },
@@ -72,6 +72,23 @@ let rtcConfig = {
 };
 let isDialModalOpen = false;
 let isCallModalOpen = false;
+
+let callLayoutMode = 'grid';
+try {
+    const savedLayoutMode = localStorage.getItem('callLayoutMode');
+    if (savedLayoutMode === 'speaker' || savedLayoutMode === 'grid') {
+        callLayoutMode = savedLayoutMode;
+    }
+} catch (error) {
+    console.warn('Не удалось прочитать сохранённый режим звонка:', error);
+}
+
+let callTelemetryInterval = null;
+let callTelemetryPending = false;
+const callTelemetryCache = {
+    lastStats: new Map(),
+    lastCollectedAt: null
+};
 
 let reactionTargetMessageId = null; // ID сообщения, на которое мы реагируем
 let activePreviewCleanup = null;
@@ -507,7 +524,12 @@ document.addEventListener('DOMContentLoaded', (event) => {
             document.body.setAttribute('data-theme', savedTheme);
         }
     } catch {}
-    
+
+    refreshCallParticipantSummary();
+    updateCallQualityIndicator();
+    applyCallLayoutMode();
+    resetCallTelemetryDisplay();
+
     // Запрашиваем разрешение на уведомления
     requestNotificationPermission();
     scheduleAudioUnlock();
@@ -973,24 +995,26 @@ function switchToTab(tab) {
     }
 
     if (tab === 'chats') {
-        // Показываем обычные чаты
-        chatsTab.classList.add('active');
-        archiveTab.classList.remove('active');
-        chatsTab.style.background = 'var(--color-primary)';
-        chatsTab.style.color = 'white';
-        archiveTab.style.background = 'var(--input-bg)';
-        archiveTab.style.color = 'var(--text-color)';
+        if (chatsTab) {
+            chatsTab.classList.add('active');
+            chatsTab.setAttribute('aria-pressed', 'true');
+        }
+        if (archiveTab) {
+            archiveTab.classList.remove('active');
+            archiveTab.setAttribute('aria-pressed', 'false');
+        }
         roomList.style.display = 'block';
         archiveList.style.display = 'none';
         if (sidebarContent) sidebarContent.classList.remove('showing-archive');
     } else {
-        // Показываем архив
-        chatsTab.classList.remove('active');
-        archiveTab.classList.add('active');
-        chatsTab.style.background = 'var(--input-bg)';
-        chatsTab.style.color = 'var(--text-color)';
-        archiveTab.style.background = 'var(--color-primary)';
-        archiveTab.style.color = 'white';
+        if (chatsTab) {
+            chatsTab.classList.remove('active');
+            chatsTab.setAttribute('aria-pressed', 'false');
+        }
+        if (archiveTab) {
+            archiveTab.classList.add('active');
+            archiveTab.setAttribute('aria-pressed', 'true');
+        }
         roomList.style.display = 'none';
         archiveList.style.display = 'block';
         if (sidebarContent) sidebarContent.classList.add('showing-archive');
@@ -3781,7 +3805,16 @@ function openCallModal() {
     openModal('callModal');
     document.getElementById('callTitle').textContent = currentRoomType === 'dm' ? `Звонок: ${chatWithName.textContent}` : `Групповой звонок: ${chatWithName.textContent}`;
     isCallModalOpen = true;
-    
+
+    applyCallLayoutMode();
+    startCallTelemetry();
+
+    const summaryTitle = currentRoomType === 'dm'
+        ? chatWithName.textContent.trim()
+        : `Комната: ${chatWithName.textContent.trim()}`;
+    updateCallSummaryPanel(summaryTitle, isAudioOnly ? 'Аудиозвонок' : 'Видеозвонок');
+    refreshCallParticipantSummary();
+
     // Закрываем диалоговое окно набора если оно открыто
     closeDialModal();
 }
@@ -3875,10 +3908,11 @@ async function openCall() {
         showCallIndicator();
         console.log('Индикатор звонка показан');
         
-        updateCallIndicatorInfo(
-            currentRoomType === 'dm' ? chatWithName.textContent : `Групповой звонок`,
-            isAudioOnly ? 'Аудиозвонок' : 'Видеозвонок'
-        );
+        const callTitle = chatWithName ? chatWithName.textContent.trim() : 'Звонок';
+        const modeLabel = currentRoomType === 'dm'
+            ? (isAudioOnly ? 'Аудиозвонок' : 'Видеозвонок')
+            : (isAudioOnly ? 'Групповой аудиозвонок' : 'Групповой видеозвонок');
+        updateCallIndicatorInfo(callTitle, modeLabel);
         
         // Добавляем карточку звонка в чат
         const callCardData = {
@@ -4059,9 +4093,21 @@ async function loadUserAvatar(placeholderElement, userId) {
             if (avatarDiv) {
                 avatarDiv.innerHTML = `<img src="${data.user.avatar_url}" alt="Avatar">`;
             }
+            const container = placeholderElement.closest('[data-call-participant]');
+            if (container) {
+                container.dataset.avatarUrl = data.user.avatar_url;
+                container.dataset.displayName = `@${data.user.username}`;
+            }
+        } else if (data.success && data.user) {
+            const container = placeholderElement.closest('[data-call-participant]');
+            if (container) {
+                container.dataset.displayName = `@${data.user.username}`;
+            }
         }
     } catch (error) {
         console.error('Ошибка загрузки аватарки:', error);
+    } finally {
+        refreshCallParticipantSummary();
     }
 }
 
@@ -4943,32 +4989,34 @@ function createPeerConnection(remoteUserId) {
 	pc.onicegatheringstatechange = () => {
 		console.log(`[RTC ${remoteUserId}] iceGatheringState: ${pc.iceGatheringState}`);
 	};
-	pc.oniceconnectionstatechange = () => {
-		console.log(`[RTC ${remoteUserId}] iceConnectionState: ${pc.iceConnectionState}`);
-		if (pc.iceConnectionState === 'connected' || pc.iceConnectionState === 'completed') {
-			console.log(`[RTC ${remoteUserId}] ✅ ICE соединение установлено!`);
-		}
-		if (pc.iceConnectionState === 'failed') {
-			console.error(`[RTC ${remoteUserId}] ❌ ICE соединение не удалось! Попробуйте:
+        pc.oniceconnectionstatechange = () => {
+                console.log(`[RTC ${remoteUserId}] iceConnectionState: ${pc.iceConnectionState}`);
+                if (pc.iceConnectionState === 'connected' || pc.iceConnectionState === 'completed') {
+                        console.log(`[RTC ${remoteUserId}] ✅ ICE соединение установлено!`);
+                }
+                if (pc.iceConnectionState === 'failed') {
+                        console.error(`[RTC ${remoteUserId}] ❌ ICE соединение не удалось! Попробуйте:
 1. Проверить настройки брандмауэра
 2. Убедиться что UDP порты не заблокированы
 3. Проверить доступность STUN/TURN серверов`);
-		}
-	};
-	// ГЛАВНЫЙ ОБРАБОТЧИК СОСТОЯНИЯ: закрываем модалку «ожидание», когда WebRTC соединение переходит в состояние connected
-	pc.onconnectionstatechange = () => {
-		console.log(`[RTC ${remoteUserId}] connectionState: ${pc.connectionState}`);
-		if (pc.connectionState === 'connected') {
+                }
+                updateCallQualityIndicator();
+        };
+        // ГЛАВНЫЙ ОБРАБОТЧИК СОСТОЯНИЯ: закрываем модалку «ожидание», когда WebRTC соединение переходит в состояние connected
+        pc.onconnectionstatechange = () => {
+                console.log(`[RTC ${remoteUserId}] connectionState: ${pc.connectionState}`);
+                if (pc.connectionState === 'connected') {
 			console.log(`[RTC ${remoteUserId}] ✅ Соединение установлено!`);
 			if (!isCallModalOpen) {
                 openCallModal();
             }
 			closeDialModal();
 		}
-		if (pc.connectionState === 'failed') {
-			console.error(`[RTC ${remoteUserId}] ❌ Соединение не удалось!`);
-		}
-	};
+                if (pc.connectionState === 'failed') {
+                        console.error(`[RTC ${remoteUserId}] ❌ Соединение не удалось!`);
+                }
+                updateCallQualityIndicator();
+        };
 	pc.onsignalingstatechange = () => {
 		console.log(`[RTC ${remoteUserId}] signalingState: ${pc.signalingState}`);
 	};
@@ -4987,20 +5035,21 @@ function attachRemoteStream(userId, stream) {
     let container = document.getElementById(`remoteContainer-${userId}`);
     let video = document.getElementById(`remoteVideo-${userId}`);
     let placeholder = document.getElementById(`remotePlaceholder-${userId}`);
-    
+
     if (!container) {
         // Создаем контейнер для видео и placeholder
         container = document.createElement('div');
         container.id = `remoteContainer-${userId}`;
-        container.style.position = 'relative';
-        container.style.width = '100%';
-        container.style.height = '100%';
-        container.style.minHeight = '200px';
-        
+        container.classList.add('call-stream', 'call-stream-remote');
+        container.dataset.callParticipant = 'remote';
+        container.dataset.userId = userId;
+        container.dataset.displayName = '';
+        container.dataset.avatarUrl = '';
+
         // Создаем видео элемент
         video = document.createElement('video');
         video.id = `remoteVideo-${userId}`;
-        video.autoplay = true; 
+        video.autoplay = true;
         video.playsInline = true;
         video.muted = false; // ВАЖНО: не mute чтобы слышать собеседника
         video.setAttribute('playsinline', 'true');
@@ -5023,15 +5072,15 @@ function attachRemoteStream(userId, stream) {
             </div>
             <div class="video-placeholder-text">Камера выключена</div>
         `;
-        
+
         container.appendChild(video);
         container.appendChild(placeholder);
         document.getElementById('remoteVideos').appendChild(container);
-        
+
         // Загружаем аватарку пользователя
         loadUserAvatar(placeholder, userId);
     }
-    
+
     video.srcObject = stream;
     
     // Отслеживаем треки - если видеотрек заканчивается, показываем placeholder
@@ -5054,7 +5103,7 @@ function attachRemoteStream(userId, stream) {
             placeholder.classList.add('active');
         }
     }
-    
+
     // Попытка воспроизведения
     try {
         const playPromise = video.play();
@@ -5066,6 +5115,9 @@ function attachRemoteStream(userId, stream) {
     } catch (error) {
         // Autoplay заблокирован
     }
+
+    refreshCallParticipantSummary();
+    updateCallTelemetry().catch(() => {});
 }
 
 async function startP2PCall(otherUserId, isAnswerSide) {
@@ -5078,6 +5130,7 @@ async function startP2PCall(otherUserId, isAnswerSide) {
                 closeDialModal();
                 if (!isCallModalOpen) openCallModal();
             }
+            updateCallQualityIndicator();
         };
     } catch {}
 
@@ -5437,7 +5490,7 @@ async function shareScreen() {
 
 function endCall() {
     console.log('endCall() вызвана. callStartTime:', callStartTime);
-    
+
     // Рассчитываем длительность звонка
     let duration = '00:00';
     if (callStartTime) {
@@ -5508,10 +5561,10 @@ function endCall() {
     
     // Скрываем индикатор активного звонка
     hideCallIndicator();
-    
+
     // Скрываем индикатор лобби если он есть
     hideCallLobbyIndicator();
-    
+
     // Скрываем кнопку приглашения
     hideInviteButton();
     
@@ -5531,7 +5584,10 @@ function endCall() {
     if (remoteVideos) remoteVideos.innerHTML = '';
     const localVideo = document.getElementById('localVideo');
     if (localVideo) localVideo.srcObject = null;
-    
+    refreshCallParticipantSummary();
+    updateCallQualityIndicator();
+    stopCallTelemetry();
+
     // Закрываем модальные окна звонков и снимаем любые таймеры/состояния
     const callModal = document.getElementById('callModal');
     const dialModal = document.getElementById('dialModal');
@@ -8470,7 +8526,22 @@ async function ensureLocalMediaWithMode() {
         localVideo.setAttribute('webkit-playsinline', 'true');
     }
     isMicEnabled = true;
-    
+
+    const localContainer = document.querySelector('.call-stream-local');
+    if (localContainer) {
+        localContainer.dataset.callParticipant = 'local';
+        localContainer.dataset.userId = CURRENT_USER_ID;
+        localContainer.dataset.displayName = getCurrentUserDisplayName();
+        const avatarUrl = getCurrentUserAvatarUrl();
+        if (avatarUrl) {
+            localContainer.dataset.avatarUrl = avatarUrl;
+        }
+    }
+
+    refreshCallParticipantSummary();
+    updateCallQualityIndicator();
+    updateCallTelemetry().catch(() => {});
+
     // Обновляем визуальное состояние кнопок
     const micBtn = document.getElementById('toggleMicBtn');
     const camBtn = document.getElementById('toggleCamBtn');
@@ -8541,6 +8612,446 @@ function updateCallIndicatorInfo(title, subtitle) {
     const subtitleEl = document.getElementById('call-indicator-subtitle');
     if (titleEl) titleEl.textContent = title || 'Активный звонок';
     if (subtitleEl) subtitleEl.textContent = subtitle || 'Нажмите, чтобы вернуться';
+    updateCallSummaryPanel(title, subtitle);
+}
+
+function updateCallSummaryPanel(title, subtitle) {
+    const targetEl = document.getElementById('callTargetName');
+    if (targetEl) {
+        targetEl.textContent = title && title.trim() ? title.trim() : '—';
+    }
+
+    const modeEl = document.getElementById('callModePill');
+    if (modeEl) {
+        const modeText = subtitle && subtitle.trim()
+            ? subtitle.trim()
+            : (isAudioOnly ? 'Аудиозвонок' : 'Видеозвонок');
+        modeEl.textContent = modeText;
+    }
+}
+
+function getCurrentUserDisplayName() {
+    const usernameEl = document.getElementById('current-username-display');
+    if (!usernameEl) return 'Вы';
+    const raw = usernameEl.textContent.trim();
+    return raw || 'Вы';
+}
+
+function getCurrentUserAvatarUrl() {
+    const avatarEl = document.getElementById('my-avatar-img');
+    return avatarEl ? avatarEl.getAttribute('src') : null;
+}
+
+function formatParticipantsCount(count) {
+    if (count <= 0) return 'Ожидание участников';
+    if (count === 1) return 'Вы в звонке';
+
+    const lastDigit = count % 10;
+    const lastTwo = count % 100;
+    let suffix = 'участников';
+    if (lastDigit === 1 && lastTwo !== 11) {
+        suffix = 'участник';
+    } else if ([2, 3, 4].includes(lastDigit) && ![12, 13, 14].includes(lastTwo)) {
+        suffix = 'участника';
+    }
+    return `${count} ${suffix}`;
+}
+
+function createParticipantChip({ label, avatarUrl, isSelf }) {
+    const chip = document.createElement('div');
+    chip.className = 'call-participant-chip';
+    chip.title = isSelf ? `${label} (вы)` : label;
+
+    const initials = (label || '').replace('@', '').trim().charAt(0).toUpperCase() || '•';
+
+    if (avatarUrl) {
+        const img = document.createElement('img');
+        img.src = avatarUrl;
+        img.alt = label;
+        chip.appendChild(img);
+        chip.classList.add('with-avatar');
+        const overlay = document.createElement('span');
+        overlay.textContent = initials;
+        chip.appendChild(overlay);
+    } else {
+        const span = document.createElement('span');
+        span.textContent = initials;
+        chip.appendChild(span);
+    }
+
+    return chip;
+}
+
+function refreshCallParticipantSummary() {
+    const avatarsEl = document.getElementById('callParticipantAvatars');
+    const countEl = document.getElementById('callParticipantCount');
+    if (!avatarsEl || !countEl) return;
+
+    const participants = [];
+
+    const localContainer = document.querySelector('.call-stream-local');
+    if (localContainer && localStream) {
+        const label = localContainer.dataset.displayName || getCurrentUserDisplayName();
+        const avatar = localContainer.dataset.avatarUrl || getCurrentUserAvatarUrl();
+        participants.push({
+            id: CURRENT_USER_ID,
+            label,
+            avatarUrl: avatar,
+            isSelf: true
+        });
+    }
+
+    document.querySelectorAll('#remoteVideos .call-stream').forEach(container => {
+        const userId = parseInt(container.dataset.userId || '', 10);
+        let label = container.dataset.displayName || '';
+        const dmOtherId = currentDMotherUserId ? parseInt(currentDMotherUserId) : null;
+        if (currentRoomType === 'dm' && dmOtherId && userId === dmOtherId && chatWithName) {
+            label = chatWithName.textContent.trim();
+        } else if (!label && !Number.isNaN(userId)) {
+            label = `Участник ${userId}`;
+        }
+        if (!label) label = 'Участник';
+
+        participants.push({
+            id: Number.isNaN(userId) ? label : userId,
+            label,
+            avatarUrl: container.dataset.avatarUrl || '',
+            isSelf: false
+        });
+    });
+
+    const unique = [];
+    const seen = new Set();
+    participants.forEach(participant => {
+        const key = typeof participant.id === 'number' ? `id-${participant.id}` : `label-${participant.label}`;
+        if (seen.has(key)) return;
+        seen.add(key);
+        unique.push(participant);
+    });
+
+    avatarsEl.innerHTML = '';
+    const maxVisible = 5;
+    unique.slice(0, maxVisible).forEach(participant => {
+        avatarsEl.appendChild(createParticipantChip(participant));
+    });
+
+    if (unique.length > maxVisible) {
+        const extra = document.createElement('div');
+        extra.className = 'call-participant-chip';
+        const span = document.createElement('span');
+        span.textContent = `+${unique.length - maxVisible}`;
+        extra.appendChild(span);
+        avatarsEl.appendChild(extra);
+    }
+
+    let summaryText;
+    if (!unique.length) {
+        summaryText = formatParticipantsCount(0);
+    } else if (unique.length === 1 && unique[0].isSelf) {
+        summaryText = 'Вы в звонке';
+    } else {
+        summaryText = formatParticipantsCount(unique.length);
+    }
+    countEl.textContent = summaryText;
+    updateCallQualityIndicator();
+}
+
+function computeCallQuality() {
+    const pcs = Object.values(peerConnections || {});
+    if (!pcs.length) {
+        const remoteStreams = document.querySelectorAll('#remoteVideos .call-stream').length;
+        if (remoteStreams > 0) {
+            return { level: 'good', label: 'Соединение установлено' };
+        }
+        if (localStream) {
+            return { level: 'warn', label: 'Ожидаем участников…' };
+        }
+        return { level: 'idle', label: 'Подготовка соединения…' };
+    }
+
+    if (pcs.some(pc => ['failed', 'closed'].includes(pc.iceConnectionState) || pc.connectionState === 'failed')) {
+        return { level: 'bad', label: 'Нет соединения' };
+    }
+
+    if (pcs.some(pc => ['disconnected', 'checking', 'new'].includes(pc.iceConnectionState) || pc.connectionState === 'connecting')) {
+        return { level: 'warn', label: 'Нестабильное соединение' };
+    }
+
+    return { level: 'good', label: 'Отличное соединение' };
+}
+
+function updateCallQualityIndicator() {
+    const container = document.getElementById('callConnectionQuality');
+    if (!container) return;
+
+    const { level, label } = computeCallQuality();
+    const indicator = container.querySelector('.quality-indicator');
+    const labelEl = container.querySelector('.quality-label');
+
+    if (indicator) {
+        indicator.classList.remove('is-good', 'is-warn', 'is-bad', 'is-idle');
+        indicator.classList.add(`is-${level}`);
+    }
+
+    if (labelEl) {
+        labelEl.textContent = label;
+    }
+}
+
+// ========== Макет звонка и телеметрия ==========
+
+function applyCallLayoutMode() {
+    const container = document.getElementById('callVideos');
+    if (container) {
+        const normalized = callLayoutMode === 'speaker' ? 'speaker' : 'grid';
+        container.setAttribute('data-layout', normalized);
+    }
+
+    document.querySelectorAll('.call-layout-toggle').forEach(button => {
+        const mode = button.getAttribute('data-mode');
+        if (!mode) return;
+        const isActive = mode === callLayoutMode;
+        button.classList.toggle('is-active', isActive);
+        button.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+    });
+}
+
+function setCallLayout(mode) {
+    const normalized = mode === 'speaker' ? 'speaker' : 'grid';
+    if (callLayoutMode === normalized) {
+        applyCallLayoutMode();
+        return;
+    }
+    callLayoutMode = normalized;
+    try {
+        localStorage.setItem('callLayoutMode', normalized);
+    } catch (error) {
+        console.warn('Не удалось сохранить режим звонка:', error);
+    }
+    applyCallLayoutMode();
+}
+
+function resetCallTelemetryDisplay() {
+    const fields = [
+        ['callMetricResolution', '—'],
+        ['callMetricBandwidth', '—'],
+        ['callMetricLatency', '—'],
+        ['callMetricLoss', '—']
+    ];
+    fields.forEach(([id, text]) => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = text;
+    });
+}
+
+function stopCallTelemetry() {
+    if (callTelemetryInterval) {
+        clearInterval(callTelemetryInterval);
+        callTelemetryInterval = null;
+    }
+    if (callTelemetryCache.lastStats) {
+        callTelemetryCache.lastStats.clear();
+    }
+    callTelemetryCache.lastCollectedAt = null;
+    callTelemetryPending = false;
+    resetCallTelemetryDisplay();
+}
+
+function startCallTelemetry() {
+    stopCallTelemetry();
+    if (callTelemetryCache.lastStats) {
+        callTelemetryCache.lastStats.clear();
+    }
+    callTelemetryCache.lastCollectedAt = null;
+    resetCallTelemetryDisplay();
+
+    updateCallTelemetry().catch(error => console.warn('Не удалось обновить телеметрию звонка:', error));
+    callTelemetryInterval = setInterval(() => {
+        updateCallTelemetry().catch(error => console.warn('Ошибка телеметрии звонка:', error));
+    }, 3000);
+}
+
+async function updateCallTelemetry() {
+    if (callTelemetryPending) return;
+    callTelemetryPending = true;
+    try {
+        const telemetryPanel = document.getElementById('callTelemetryPanel');
+        if (!telemetryPanel) {
+            return;
+        }
+
+        const resolutionEl = document.getElementById('callMetricResolution');
+        const bandwidthEl = document.getElementById('callMetricBandwidth');
+        const latencyEl = document.getElementById('callMetricLatency');
+        const lossEl = document.getElementById('callMetricLoss');
+
+        const now = Date.now();
+        const prevTimestamp = callTelemetryCache.lastCollectedAt;
+        const timeDelta = prevTimestamp ? Math.max((now - prevTimestamp) / 1000, 0.001) : null;
+
+        const pcs = Object.values(peerConnections || {}).filter(pc => pc && typeof pc.getStats === 'function');
+        if (!pcs.length) {
+            if (localStream && typeof localStream.getVideoTracks === 'function') {
+                const [videoTrack] = localStream.getVideoTracks();
+                if (videoTrack && typeof videoTrack.getSettings === 'function') {
+                    const settings = videoTrack.getSettings();
+                    if (settings.width && settings.height && resolutionEl) {
+                        resolutionEl.textContent = `${settings.width}×${settings.height}`;
+                    }
+                } else if (resolutionEl) {
+                    resolutionEl.textContent = isAudioOnly ? 'Аудио' : '—';
+                }
+            } else if (resolutionEl) {
+                resolutionEl.textContent = '—';
+            }
+
+            if (bandwidthEl) bandwidthEl.textContent = '—';
+            if (latencyEl) latencyEl.textContent = '—';
+            if (lossEl) lossEl.textContent = '—';
+
+            if (callTelemetryCache.lastStats) {
+                callTelemetryCache.lastStats.clear();
+            }
+            callTelemetryCache.lastCollectedAt = now;
+            return;
+        }
+
+        let statsResults;
+        try {
+            statsResults = await Promise.allSettled(pcs.map(pc => pc.getStats()));
+        } catch (error) {
+            console.warn('Не удалось получить статистику звонка:', error);
+            statsResults = [];
+        }
+
+        const newStats = new Map();
+        let totalBitrate = 0;
+        let packetsLost = 0;
+        let packetsTotal = 0;
+        let jitterSum = 0;
+        let jitterCount = 0;
+        let maxWidth = 0;
+        let maxHeight = 0;
+        let bestRtt = null;
+
+        statsResults.forEach(result => {
+            if (!result || result.status !== 'fulfilled') return;
+
+            result.value.forEach(report => {
+                if ((report.type === 'outbound-rtp' || report.type === 'inbound-rtp') && !report.isRemote) {
+                    const bytes = typeof report.bytesSent === 'number'
+                        ? report.bytesSent
+                        : (typeof report.bytesReceived === 'number' ? report.bytesReceived : null);
+
+                    const prev = callTelemetryCache.lastStats.get(report.id);
+                    if (bytes !== null && prev && typeof prev.bytes === 'number' && timeDelta) {
+                        const delta = bytes - prev.bytes;
+                        if (delta >= 0) {
+                            totalBitrate += (delta * 8) / timeDelta;
+                        }
+                    }
+
+                    if (report.kind === 'video') {
+                        if (report.frameWidth && report.frameHeight) {
+                            maxWidth = Math.max(maxWidth, report.frameWidth);
+                            maxHeight = Math.max(maxHeight, report.frameHeight);
+                        }
+                    }
+
+                    if (typeof report.jitter === 'number') {
+                        jitterSum += report.jitter;
+                        jitterCount += 1;
+                    }
+
+                    if (report.type === 'inbound-rtp') {
+                        const lost = typeof report.packetsLost === 'number' ? report.packetsLost : 0;
+                        const received = typeof report.packetsReceived === 'number' ? report.packetsReceived : 0;
+                        packetsLost += lost;
+                        packetsTotal += lost + received;
+                    }
+
+                    newStats.set(report.id, {
+                        bytes: bytes !== null ? bytes : (prev ? prev.bytes : 0)
+                    });
+                } else if (report.type === 'remote-inbound-rtp' && report.kind === 'video') {
+                    if (report.frameWidth && report.frameHeight) {
+                        maxWidth = Math.max(maxWidth, report.frameWidth);
+                        maxHeight = Math.max(maxHeight, report.frameHeight);
+                    }
+                } else if (report.type === 'track' && report.kind === 'video') {
+                    if (report.frameWidth && report.frameHeight) {
+                        maxWidth = Math.max(maxWidth, report.frameWidth);
+                        maxHeight = Math.max(maxHeight, report.frameHeight);
+                    }
+                } else if (report.type === 'candidate-pair' && report.state === 'succeeded' && typeof report.currentRoundTripTime === 'number') {
+                    const currentRttMs = report.currentRoundTripTime * 1000;
+                    if (!bestRtt || currentRttMs < bestRtt) {
+                        bestRtt = currentRttMs;
+                    }
+                }
+            });
+        });
+
+        callTelemetryCache.lastStats = newStats;
+        callTelemetryCache.lastCollectedAt = now;
+
+        if (resolutionEl) {
+            if (maxWidth && maxHeight) {
+                resolutionEl.textContent = `${maxWidth}×${maxHeight}`;
+            } else if (localStream && typeof localStream.getVideoTracks === 'function') {
+                const [videoTrack] = localStream.getVideoTracks();
+                if (videoTrack && typeof videoTrack.getSettings === 'function') {
+                    const settings = videoTrack.getSettings();
+                    if (settings.width && settings.height) {
+                        resolutionEl.textContent = `${settings.width}×${settings.height}`;
+                    } else {
+                        resolutionEl.textContent = isAudioOnly ? 'Аудио' : '—';
+                    }
+                } else {
+                    resolutionEl.textContent = isAudioOnly ? 'Аудио' : '—';
+                }
+            } else {
+                resolutionEl.textContent = isAudioOnly ? 'Аудио' : '—';
+            }
+        }
+
+        if (bandwidthEl) {
+            if (totalBitrate > 0) {
+                if (totalBitrate >= 1_000_000) {
+                    bandwidthEl.textContent = `${(totalBitrate / 1_000_000).toFixed(2)} Мбит/с`;
+                } else {
+                    bandwidthEl.textContent = `${(totalBitrate / 1000).toFixed(1)} кбит/с`;
+                }
+            } else {
+                bandwidthEl.textContent = '—';
+            }
+        }
+
+        if (latencyEl) {
+            latencyEl.textContent = bestRtt ? `${Math.round(bestRtt)} мс` : '—';
+        }
+
+        if (lossEl) {
+            let lossText = '—';
+            if (packetsTotal > 0) {
+                const lossPercent = (packetsLost / packetsTotal) * 100;
+                const formattedLoss = lossPercent >= 10 ? lossPercent.toFixed(0) : lossPercent.toFixed(1);
+                lossText = `${formattedLoss}%`;
+            }
+
+            if (jitterCount > 0) {
+                const jitterMs = (jitterSum / jitterCount) * 1000;
+                const jitterFormatted = jitterMs >= 10 ? jitterMs.toFixed(0) : jitterMs.toFixed(1);
+                lossText = lossText === '—'
+                    ? `${jitterFormatted} мс джиттер`
+                    : `${lossText} · ${jitterFormatted} мс джиттер`;
+            }
+
+            lossEl.textContent = lossText;
+        }
+    } finally {
+        callTelemetryPending = false;
+    }
 }
 
 // ========== Обновление функций блокировки ==========

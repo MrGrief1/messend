@@ -1142,7 +1142,7 @@ def update_profile():
         user.username = new_username
 
     user.bio = new_bio[:200]
-    if new_theme in ['dark', 'light', 'ocean', 'amoled']: user.theme = new_theme
+    if new_theme in ['dark', 'light', 'element', 'ocean', 'amoled']: user.theme = new_theme
 
     db.session.commit()
     return jsonify({'success': True, 'message': 'Профиль обновлен.', 'username': user.username, 'theme': user.theme, 'bio': user.bio})

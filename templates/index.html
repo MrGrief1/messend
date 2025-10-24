@@ -36,9 +36,16 @@
         [data-theme="ocean"] .liquid-bg {
             background: linear-gradient(45deg, #001f3f, #003366);
         }
-        
+
         [data-theme="amoled"] .liquid-bg {
             background: linear-gradient(45deg, #000000, #0b0b0b);
+        }
+
+        [data-theme="element"] .liquid-bg {
+            background:
+                radial-gradient(circle at 20% 20%, rgba(13, 189, 139, 0.3), transparent 60%),
+                radial-gradient(circle at 80% 15%, rgba(78, 117, 255, 0.35), transparent 60%),
+                linear-gradient(45deg, #041029, #0d1d3b);
         }
         
         .blob {
@@ -104,14 +111,24 @@
             background: linear-gradient(135deg, #c0392b, #e74c3c); 
         }
         
-        [data-theme="ocean"] .blob-1 { 
-            background: linear-gradient(135deg, #00cec9, #81ecec); 
+        [data-theme="ocean"] .blob-1 {
+            background: linear-gradient(135deg, #00cec9, #81ecec);
         }
-        [data-theme="ocean"] .blob-2 { 
-            background: linear-gradient(135deg, #0984e3, #74b9ff); 
+        [data-theme="ocean"] .blob-2 {
+            background: linear-gradient(135deg, #0984e3, #74b9ff);
         }
-        [data-theme="ocean"] .blob-3 { 
-            background: linear-gradient(135deg, #00b894, #00cec9); 
+        [data-theme="ocean"] .blob-3 {
+            background: linear-gradient(135deg, #00b894, #00cec9);
+        }
+
+        [data-theme="element"] .blob-1 {
+            background: linear-gradient(135deg, rgba(13, 189, 139, 0.9), rgba(16, 95, 160, 0.75));
+        }
+        [data-theme="element"] .blob-2 {
+            background: linear-gradient(135deg, rgba(78, 117, 255, 0.8), rgba(13, 189, 139, 0.6));
+        }
+        [data-theme="element"] .blob-3 {
+            background: linear-gradient(135deg, rgba(27, 51, 94, 0.85), rgba(13, 189, 139, 0.5));
         }
         
         /* Плавающая (левитирующая) навигация в стиле Telegram */
@@ -1197,19 +1214,19 @@
         <div class="sidebar enhanced-glass">
             <div class="sidebar-header">
                 <!-- Вкладки Чаты / Архив -->
-                <div style="display: flex; gap: 6px; align-items: center;">
-                    <button class="tab-btn active" id="chats-tab" onclick="switchToTab('chats')" style="width: 38px; height: 38px; padding: 0; border: none; background: var(--color-primary); color: white; border-radius: var(--radius-full); font-weight: 600; font-size: 12px; cursor: pointer; transition: all 0.3s ease; display: flex; align-items: center; justify-content: center;">
+                <div class="sidebar-tabs">
+                    <button class="tab-btn active" id="chats-tab" onclick="switchToTab('chats')" aria-pressed="true">
                         <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
                             <use href="#ui-chat"></use>
                         </svg>
                     </button>
-                    <button class="tab-btn" id="archive-tab" onclick="switchToTab('archive')" style="width: 38px; height: 38px; padding: 0; border: none; background: var(--input-bg); color: var(--text-color); border-radius: var(--radius-full); font-weight: 600; font-size: 12px; cursor: pointer; transition: all 0.3s ease; display: flex; align-items: center; justify-content: center;">
+                    <button class="tab-btn" id="archive-tab" onclick="switchToTab('archive')" aria-pressed="false">
                         <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
                             <use href="#ui-archive"></use>
                         </svg>
                     </button>
                 </div>
-                <div style="display: flex; gap: 4px; margin-left: 8px;">
+                <div class="sidebar-actions">
                     <button class="icon-btn" onclick="openModal('createRoomModal')" title="Создать Группу/Канал">
                         <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
                             <use href="#ui-plus-circle"></use>
@@ -1654,7 +1671,18 @@
                                 </div>
                                 <span class="theme-label">Светлая</span>
                             </div>
-                            
+
+                            <div class="theme-option {% if user.theme=='element' %}active{% endif %}" data-theme="element" onclick="selectTheme('element')">
+                                <div class="theme-preview element-preview">
+                                    <div class="theme-preview-header"></div>
+                                    <div class="theme-preview-content">
+                                        <div class="theme-preview-sidebar"></div>
+                                        <div class="theme-preview-main"></div>
+                                    </div>
+                                </div>
+                                <span class="theme-label">Element</span>
+                            </div>
+
                             <div class="theme-option {% if user.theme=='ocean' %}active{% endif %}" data-theme="ocean" onclick="selectTheme('ocean')">
                                 <div class="theme-preview ocean-preview">
                                     <div class="theme-preview-header"></div>
@@ -1768,9 +1796,84 @@
                 <h3 id="callTitle">Вызов</h3>
                 <button class="close-btn" onclick="closeModal(event); endCall()">&times;</button>
             </div>
+            <div class="call-status-panel glass">
+                <div class="call-status-row">
+                    <div class="call-target">
+                        <span class="call-target-label">Разговор с</span>
+                        <span class="call-target-value" id="callTargetName">—</span>
+                    </div>
+                    <div class="call-mode-pill" id="callModePill">Видеозвонок</div>
+                    <div class="call-security-pill" title="Медиа передаются по защищённому каналу">
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M6 10V7a6 6 0 0 1 12 0v3" />
+                            <rect x="4" y="10" width="16" height="12" rx="2" />
+                            <path d="M12 16v2" />
+                        </svg>
+                        <span>Защищённый канал</span>
+                    </div>
+                </div>
+                <div class="call-status-row call-status-row--secondary">
+                    <div class="call-participants-meta">
+                        <div class="call-participant-avatars" id="callParticipantAvatars"></div>
+                        <span class="call-participant-count" id="callParticipantCount">Ожидание участников</span>
+                    </div>
+                    <div class="call-connection" id="callConnectionQuality" data-level="idle">
+                        <span class="quality-indicator is-idle"></span>
+                        <span class="quality-label">Подготовка соединения…</span>
+                    </div>
+                </div>
+            </div>
+            <div class="call-dashboard">
+                <div class="call-layout-controls glass">
+                    <div class="call-layout-header">
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <rect x="3" y="4" width="7" height="7" rx="2" />
+                            <rect x="14" y="4" width="7" height="7" rx="2" />
+                            <rect x="3" y="13" width="7" height="7" rx="2" />
+                            <rect x="14" y="13" width="7" height="7" rx="2" />
+                        </svg>
+                        <div class="call-layout-title">Режим просмотра</div>
+                    </div>
+                    <div class="call-layout-buttons" role="group" aria-label="Режим просмотра видео">
+                        <button type="button" class="call-layout-toggle" data-mode="grid" onclick="setCallLayout('grid')">
+                            <svg viewBox="0 0 24 24" aria-hidden="true">
+                                <path d="M4 5h7v7H4zM13 5h7v7h-7zM4 14h7v7H4zM13 14h7v7h-7z"></path>
+                            </svg>
+                            <span>Сетка</span>
+                        </button>
+                        <button type="button" class="call-layout-toggle" data-mode="speaker" onclick="setCallLayout('speaker')">
+                            <svg viewBox="0 0 24 24" aria-hidden="true">
+                                <path d="M4 5h16v10H4z"></path>
+                                <rect x="4" y="17" width="5.5" height="3" rx="1.5"></rect>
+                                <rect x="10.25" y="17" width="5.5" height="3" rx="1.5"></rect>
+                                <rect x="16.5" y="17" width="3.5" height="3" rx="1.5"></rect>
+                            </svg>
+                            <span>Спикер</span>
+                        </button>
+                    </div>
+                </div>
+                <div class="call-telemetry glass" id="callTelemetryPanel">
+                    <div class="call-telemetry-item">
+                        <span class="telemetry-label">Разрешение</span>
+                        <span class="telemetry-value" id="callMetricResolution">—</span>
+                    </div>
+                    <div class="call-telemetry-item">
+                        <span class="telemetry-label">Скорость</span>
+                        <span class="telemetry-value" id="callMetricBandwidth">—</span>
+                    </div>
+                    <div class="call-telemetry-item">
+                        <span class="telemetry-label">Задержка</span>
+                        <span class="telemetry-value" id="callMetricLatency">—</span>
+                    </div>
+                    <div class="call-telemetry-item">
+                        <span class="telemetry-label">Потери пакетов</span>
+                        <span class="telemetry-value" id="callMetricLoss">—</span>
+                    </div>
+                </div>
+            </div>
             <div class="input-group" id="callInfo" style="display:none;"></div>
-            <div class="call-videos">
-                <div style="position: relative; width: 100%; height: 100%;">
+            <div class="call-videos" id="callVideos" data-layout="grid">
+                <div class="call-stream call-stream-local" data-call-participant="local">
                     <video id="localVideo" autoplay playsinline muted webkit-playsinline="true"></video>
                     <div id="localVideoPlaceholder" class="video-placeholder">
                         <div class="video-placeholder-avatar">
@@ -1782,7 +1885,7 @@
                         <div class="video-placeholder-text">Камера выключена</div>
                     </div>
                 </div>
-                <div id="remoteVideos" class="remote-videos"></div>
+                <div id="remoteVideos" class="remote-videos" aria-live="polite"></div>
             </div>
             <div class="call-controls">
                 <!-- Микрофон с встроенной стрелкой -->
@@ -2012,8 +2115,9 @@
                 <select id="settingsTheme">
                     <option value="dark" {% if user.theme=='dark' %}selected{% endif %}>Тёмная</option>
                     <option value="light" {% if user.theme=='light' %}selected{% endif %}>Светлая</option>
+                    <option value="element" {% if user.theme=='element' %}selected{% endif %}>Element</option>
                     <option value="ocean" {% if user.theme=='ocean' %}selected{% endif %}>Океан</option>
-                            <option value="amoled" {% if user.theme=='amoled' %}selected{% endif %}>AMOLED</option>
+                    <option value="amoled" {% if user.theme=='amoled' %}selected{% endif %}>AMOLED</option>
                 </select>
             </div>
 
