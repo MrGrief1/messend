@@ -1194,6 +1194,54 @@
         <div class="bg-shape shape1"></div>
         <div class="bg-shape shape2"></div>
 
+        <header class="workspace-header enhanced-glass" id="workspace-header">
+            <div class="workspace-brand">
+                <span class="workspace-logo" aria-hidden="true">
+                    <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
+                        <use href="#ui-sticker-rocket"></use>
+                    </svg>
+                </span>
+                <div class="workspace-brand-meta">
+                    <span class="workspace-title">Messend Studio</span>
+                    <span class="workspace-subtitle">Звонки, группы и эффект стекла</span>
+                </div>
+            </div>
+            <nav class="workspace-nav" id="workspace-nav" aria-label="Основные разделы">
+                <button type="button" class="workspace-tab active" data-filter="all" aria-pressed="true" onclick="setWorkspaceFilter('all')">
+                    Все чаты
+                </button>
+                <button type="button" class="workspace-tab" data-filter="dm" aria-pressed="false" onclick="setWorkspaceFilter('dm')">
+                    Личные
+                </button>
+                <button type="button" class="workspace-tab" data-filter="groups" aria-pressed="false" onclick="setWorkspaceFilter('groups')">
+                    Группы и каналы
+                </button>
+            </nav>
+            <div class="workspace-actions">
+                <div class="workspace-search" role="button" tabindex="0" onclick="openModal('searchModal')" onkeypress="if(event.key==='Enter'){openModal('searchModal');}">
+                    <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
+                        <use href="#ui-search"></use>
+                    </svg>
+                    <input type="text" placeholder="Поиск контактов и комнат" readonly aria-label="Поиск по чатам">
+                </div>
+                <button class="workspace-quick-btn" type="button" onclick="openModal('createRoomModal')" title="Создать чат">
+                    <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
+                        <use href="#ui-plus-circle"></use>
+                    </svg>
+                </button>
+                <button class="workspace-quick-btn" type="button" onclick="openInlineSettings()" title="Настройки">
+                    <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
+                        <use href="#ui-cog"></use>
+                    </svg>
+                </button>
+                <div class="workspace-presence" role="status">
+                    <span class="presence-dot" aria-hidden="true"></span>
+                    <span class="presence-label">В сети</span>
+                    <span class="workspace-user">@{{ user.username }}</span>
+                </div>
+            </div>
+        </header>
+
         <div class="sidebar enhanced-glass">
             <div class="sidebar-header">
                 <!-- Вкладки Чаты / Архив -->
@@ -1341,7 +1389,57 @@
         </div>
 
         <div class="main-content" id="main-content">
-            
+
+            <div class="call-overview-panel enhanced-glass" id="call-overview-panel" aria-hidden="true" data-state="idle">
+                <div class="call-overview-header">
+                    <div class="call-overview-meta">
+                        <span class="call-overview-pill">LIVE</span>
+                        <span class="call-overview-title" id="call-overview-title">Активный звонок</span>
+                        <span class="call-overview-subtitle" id="call-overview-subtitle" aria-live="polite">Звонок не активен</span>
+                    </div>
+                    <span class="network-badge" id="call-network-badge">Нет данных</span>
+                    <span class="call-overview-timer" id="call-overview-timer">--:--</span>
+                </div>
+                <div class="call-overview-metrics">
+                    <div class="call-overview-metric">
+                        <span class="metric-label">Участники</span>
+                        <span class="metric-value" id="call-participants-count">1</span>
+                    </div>
+                    <div class="call-overview-metric">
+                        <span class="metric-label">Аудио</span>
+                        <span class="metric-value" id="call-audio-bitrate">0 кбит/с</span>
+                    </div>
+                    <div class="call-overview-metric">
+                        <span class="metric-label">Видео</span>
+                        <span class="metric-value" id="call-video-bitrate">0 кбит/с</span>
+                    </div>
+                    <div class="call-overview-metric">
+                        <span class="metric-label">Потери</span>
+                        <span class="metric-value" id="call-packet-loss">0%</span>
+                    </div>
+                </div>
+                <div class="call-overview-actions">
+                    <button type="button" class="call-overview-action" onclick="returnToCall()">
+                        <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
+                            <use href="#ui-video-camera"></use>
+                        </svg>
+                        В окно звонка
+                    </button>
+                    <button type="button" class="call-overview-action" onclick="shareScreen()">
+                        <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
+                            <use href="#ui-share"></use>
+                        </svg>
+                        Поделиться экраном
+                    </button>
+                    <button type="button" class="call-overview-action danger" onclick="endCall()">
+                        <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
+                            <use href="#ui-no-entry"></use>
+                        </svg>
+                        Завершить звонок
+                    </button>
+                </div>
+            </div>
+
             <!-- CHAT VIEW -->
             <div id="chat-view" class="content-view">
                 <div class="chat-header" id="chat-header" style="display: none;">

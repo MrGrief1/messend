@@ -44,6 +44,16 @@ const mediaPreviewDownload = document.getElementById('media-preview-download');
 const mediaPreviewOpen = document.getElementById('media-preview-open');
 const mediaPreviewClose = document.getElementById('media-preview-close');
 const callButtonSplit = document.querySelector('.call-button-split');
+const workspaceNav = document.getElementById('workspace-nav');
+const callOverviewPanel = document.getElementById('call-overview-panel');
+const callOverviewTitle = document.getElementById('call-overview-title');
+const callOverviewSubtitle = document.getElementById('call-overview-subtitle');
+const callOverviewTimer = document.getElementById('call-overview-timer');
+const callAudioBitrateEl = document.getElementById('call-audio-bitrate');
+const callVideoBitrateEl = document.getElementById('call-video-bitrate');
+const callPacketLossEl = document.getElementById('call-packet-loss');
+const callParticipantsCountEl = document.getElementById('call-participants-count');
+const callNetworkBadgeEl = document.getElementById('call-network-badge');
 // Вызовы
 let localStream = null;
 let isMicEnabled = true;
@@ -53,7 +63,7 @@ let screenStream = null;     // текущий поток экрана (если
 let peerConnections = {}; // key: userId, value: RTCPeerConnection
 let pendingIceByPeer = {}; // key: userId, value: array of ICE candidates, буфер до готовности PC
 // RTCConfig с расширенными STUN серверами для P2P соединений
-let rtcConfig = { 
+let rtcConfig = {
     iceServers: [
         // Множество STUN серверов для лучшего определения публичных IP
         { urls: 'stun:stun.l.google.com:19302' },
@@ -73,6 +83,12 @@ let rtcConfig = {
 let isDialModalOpen = false;
 let isCallModalOpen = false;
 
+let currentWorkspaceFilter = 'all';
+let workspaceRoomObservers = [];
+let callQualityInterval = null;
+let lastCallStatsSnapshot = new Map();
+let isPollingCallQuality = false;
+
 let reactionTargetMessageId = null; // ID сообщения, на которое мы реагируем
 let activePreviewCleanup = null;
 let activePreviewMediaElement = null;
@@ -87,6 +103,255 @@ function handleCallButtonClick(event) {
 
     setCallDropdownVisibility(false);
     startCall();
+}
+
+function setCallOverviewActive(isActive) {
+    if (!callOverviewPanel) return;
+    if (isActive) {
+        callOverviewPanel.classList.add('is-active');
+        callOverviewPanel.setAttribute('aria-hidden', 'false');
+        callOverviewPanel.dataset.state = 'active';
+    } else {
+        callOverviewPanel.classList.remove('is-active');
+        callOverviewPanel.setAttribute('aria-hidden', 'true');
+        callOverviewPanel.dataset.state = 'idle';
+    }
+}
+
+function resetCallOverviewMetrics() {
+    if (callOverviewTitle) callOverviewTitle.textContent = 'Активный звонок';
+    if (callAudioBitrateEl) callAudioBitrateEl.textContent = '0 кбит/с';
+    if (callVideoBitrateEl) callVideoBitrateEl.textContent = '0 кбит/с';
+    if (callPacketLossEl) callPacketLossEl.textContent = '0%';
+    if (callParticipantsCountEl) callParticipantsCountEl.textContent = '1';
+    if (callOverviewTimer) callOverviewTimer.textContent = '--:--';
+    if (callOverviewSubtitle) callOverviewSubtitle.textContent = 'Звонок не активен';
+    if (callNetworkBadgeEl) {
+        callNetworkBadgeEl.classList.remove('is-good', 'is-fair', 'is-poor');
+        callNetworkBadgeEl.textContent = 'Нет данных';
+    }
+}
+
+function formatBitrate(bitsPerSecond) {
+    if (!Number.isFinite(bitsPerSecond) || bitsPerSecond <= 0) {
+        return '0 кбит/с';
+    }
+
+    if (bitsPerSecond >= 1_000_000) {
+        return `${(bitsPerSecond / 1_000_000).toFixed(1)} Мбит/с`;
+    }
+
+    return `${Math.max(1, Math.round(bitsPerSecond / 1000))} кбит/с`;
+}
+
+function formatPacketLoss(loss) {
+    if (!Number.isFinite(loss) || loss <= 0) {
+        return '0%';
+    }
+
+    const percent = loss * 100;
+    if (percent < 1) {
+        return `${percent.toFixed(1)}%`;
+    }
+
+    if (percent < 10) {
+        return `${percent.toFixed(1)}%`;
+    }
+
+    return `${percent.toFixed(0)}%`;
+}
+
+function updateCallOverviewMetrics({ audioBitrate = 0, videoBitrate = 0, packetLoss = 0, rtt = null, participants = 1 }) {
+    if (callAudioBitrateEl) callAudioBitrateEl.textContent = formatBitrate(audioBitrate);
+    if (callVideoBitrateEl) callVideoBitrateEl.textContent = formatBitrate(videoBitrate);
+    if (callPacketLossEl) callPacketLossEl.textContent = formatPacketLoss(packetLoss);
+    if (callParticipantsCountEl) callParticipantsCountEl.textContent = String(Math.max(1, participants));
+
+    if (callNetworkBadgeEl) {
+        callNetworkBadgeEl.classList.remove('is-good', 'is-fair', 'is-poor');
+        let label = 'Нет данных';
+
+        if (Number.isFinite(rtt)) {
+            const latencyMs = Math.max(0, Math.round(rtt * 1000));
+            const lossPercent = Number.isFinite(packetLoss) ? packetLoss * 100 : 0;
+
+            let qualityClass = 'is-fair';
+            let qualityLabel = 'Норма';
+
+            if (latencyMs < 120 && lossPercent < 3) {
+                qualityClass = 'is-good';
+                qualityLabel = 'Отлично';
+            } else if (latencyMs > 260 || lossPercent > 8) {
+                qualityClass = 'is-poor';
+                qualityLabel = 'Нестабильно';
+            }
+
+            label = `${latencyMs} мс • ${qualityLabel}`;
+            callNetworkBadgeEl.classList.add(qualityClass);
+        }
+
+        callNetworkBadgeEl.textContent = label;
+    }
+}
+
+async function pollCallQualityStats() {
+    if (!callOverviewPanel || isPollingCallQuality) {
+        return;
+    }
+
+    if (!peerConnections || Object.keys(peerConnections).length === 0) {
+        updateCallOverviewMetrics({
+            audioBitrate: 0,
+            videoBitrate: 0,
+            packetLoss: 0,
+            rtt: null,
+            participants: 1
+        });
+        return;
+    }
+
+    isPollingCallQuality = true;
+
+    try {
+        const newSnapshot = new Map();
+        let audioBitrate = 0;
+        let videoBitrate = 0;
+        let packetLossSum = 0;
+        let packetLossSamples = 0;
+        let bestRtt = null;
+
+        const statsPromises = Object.entries(peerConnections).map(async ([peerId, pc]) => {
+            try {
+                const stats = await pc.getStats();
+                stats.forEach(report => {
+                    if ((report.type === 'outbound-rtp' || report.type === 'inbound-rtp') && !report.isRemote) {
+                        const mediaKind = report.kind || report.mediaType;
+                        const bytesTotal = typeof report.bytesSent === 'number'
+                            ? report.bytesSent
+                            : (typeof report.bytesReceived === 'number' ? report.bytesReceived : 0);
+
+                        const previous = lastCallStatsSnapshot.get(report.id);
+                        if (previous && report.timestamp && bytesTotal >= previous.bytes) {
+                            const deltaBytes = bytesTotal - previous.bytes;
+                            const deltaTime = (report.timestamp - previous.timestamp) / 1000;
+
+                            if (deltaTime > 0) {
+                                const bitrate = (deltaBytes * 8) / deltaTime;
+                                if (mediaKind === 'audio') {
+                                    audioBitrate += bitrate;
+                                } else if (mediaKind === 'video') {
+                                    videoBitrate += bitrate;
+                                }
+                            }
+                        }
+
+                        newSnapshot.set(report.id, { bytes: bytesTotal, timestamp: report.timestamp });
+
+                        const sent = typeof report.packetsSent === 'number' ? report.packetsSent : 0;
+                        const received = typeof report.packetsReceived === 'number' ? report.packetsReceived : 0;
+                        const lost = typeof report.packetsLost === 'number' ? report.packetsLost : 0;
+                        const totalPackets = sent + received + lost;
+
+                        if (totalPackets > 0) {
+                            packetLossSum += lost / totalPackets;
+                            packetLossSamples += 1;
+                        } else if (typeof report.fractionLost === 'number' && report.fractionLost >= 0) {
+                            packetLossSum += report.fractionLost;
+                            packetLossSamples += 1;
+                        }
+                    } else if (report.type === 'candidate-pair' && report.state === 'succeeded') {
+                        if (typeof report.currentRoundTripTime === 'number') {
+                            bestRtt = bestRtt == null
+                                ? report.currentRoundTripTime
+                                : Math.min(bestRtt, report.currentRoundTripTime);
+                        }
+                    }
+                });
+            } catch (statsError) {
+                console.debug('Не удалось получить статистику WebRTC:', statsError);
+            }
+        });
+
+        await Promise.all(statsPromises);
+        lastCallStatsSnapshot = newSnapshot;
+
+        const averageLoss = packetLossSamples > 0 ? (packetLossSum / packetLossSamples) : 0;
+
+        updateCallOverviewMetrics({
+            audioBitrate,
+            videoBitrate,
+            packetLoss: averageLoss,
+            rtt: bestRtt,
+            participants: Math.max(1, Object.keys(peerConnections).length + 1)
+        });
+    } finally {
+        isPollingCallQuality = false;
+    }
+}
+
+function startCallQualityMonitor() {
+    if (!callOverviewPanel) return;
+    stopCallQualityMonitor();
+    pollCallQualityStats();
+    callQualityInterval = setInterval(pollCallQualityStats, 4000);
+}
+
+function stopCallQualityMonitor() {
+    if (callQualityInterval) {
+        clearInterval(callQualityInterval);
+        callQualityInterval = null;
+    }
+    lastCallStatsSnapshot = new Map();
+    isPollingCallQuality = false;
+}
+
+function applyWorkspaceFilter() {
+    const archiveList = document.getElementById('archive-list');
+    const lists = [roomList, archiveList];
+
+    lists.forEach(list => {
+        if (!list) return;
+        list.querySelectorAll('.room-item').forEach(item => {
+            const type = item.getAttribute('data-room-type');
+            const matches =
+                currentWorkspaceFilter === 'all' ||
+                (currentWorkspaceFilter === 'dm' && type === 'dm') ||
+                (currentWorkspaceFilter === 'groups' && (type === 'group' || type === 'channel'));
+
+            item.classList.toggle('is-filtered-out', !matches);
+        });
+    });
+}
+
+function setWorkspaceFilter(filter) {
+    currentWorkspaceFilter = filter;
+
+    if (workspaceNav) {
+        workspaceNav.querySelectorAll('.workspace-tab').forEach(button => {
+            const isActive = button.getAttribute('data-filter') === filter;
+            button.classList.toggle('active', isActive);
+            button.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+        });
+    }
+
+    applyWorkspaceFilter();
+}
+
+function initWorkspaceFilterObservers() {
+    if (typeof MutationObserver === 'undefined') {
+        return;
+    }
+
+    workspaceRoomObservers.forEach(observer => observer.disconnect());
+    workspaceRoomObservers = [];
+
+    const archiveList = document.getElementById('archive-list');
+    [roomList, archiveList].forEach(list => {
+        if (!list) return;
+        const observer = new MutationObserver(() => applyWorkspaceFilter());
+        observer.observe(list, { childList: true });
+        workspaceRoomObservers.push(observer);
+    });
 }
 
 const reactionIconTemplates = {
@@ -516,6 +781,8 @@ document.addEventListener('DOMContentLoaded', (event) => {
     socket = io({ transports: ['polling'], upgrade: false });
 
     initializeReactionPicker();
+    initWorkspaceFilterObservers();
+    setWorkspaceFilter(currentWorkspaceFilter);
 
     socket.on('connect', () => console.log('WebSocket подключен!'));
 
@@ -996,6 +1263,7 @@ function switchToTab(tab) {
         if (sidebarContent) sidebarContent.classList.add('showing-archive');
     }
 
+    applyWorkspaceFilter();
     updateChatCounts();
 }
 
@@ -1012,6 +1280,7 @@ function updateChatCounts() {
 
 document.addEventListener('DOMContentLoaded', () => {
     switchToTab(currentTab);
+    applyWorkspaceFilter();
 });
 
 // Архивирование чата
@@ -8492,7 +8761,7 @@ function showCallIndicator() {
     const indicator = document.getElementById('active-call-indicator');
     if (indicator) {
         indicator.style.display = 'flex';
-        
+
         // Запускаем таймер (callStartTime уже должен быть установлен в openCall)
         if (!callStartTime) {
         callStartTime = Date.now();
@@ -8501,6 +8770,9 @@ function showCallIndicator() {
         updateCallTimer();
         callTimerInterval = setInterval(updateCallTimer, 1000);
     }
+
+    setCallOverviewActive(true);
+    startCallQualityMonitor();
 }
 
 function hideCallIndicator() {
@@ -8508,7 +8780,11 @@ function hideCallIndicator() {
     if (indicator) {
         indicator.style.display = 'none';
     }
-    
+
+    setCallOverviewActive(false);
+    stopCallQualityMonitor();
+    resetCallOverviewMetrics();
+
     // Останавливаем таймер
     if (callTimerInterval) {
         clearInterval(callTimerInterval);
@@ -8519,14 +8795,18 @@ function hideCallIndicator() {
 
 function updateCallTimer() {
     if (!callStartTime) return;
-    
+
     const elapsed = Math.floor((Date.now() - callStartTime) / 1000);
     const minutes = Math.floor(elapsed / 60);
     const seconds = elapsed % 60;
-    
+
     const timerEl = document.getElementById('call-indicator-timer');
     if (timerEl) {
         timerEl.textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+    }
+
+    if (callOverviewTimer) {
+        callOverviewTimer.textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
     }
 }
 
@@ -8541,6 +8821,8 @@ function updateCallIndicatorInfo(title, subtitle) {
     const subtitleEl = document.getElementById('call-indicator-subtitle');
     if (titleEl) titleEl.textContent = title || 'Активный звонок';
     if (subtitleEl) subtitleEl.textContent = subtitle || 'Нажмите, чтобы вернуться';
+    if (callOverviewTitle) callOverviewTitle.textContent = title || 'Активный звонок';
+    if (callOverviewSubtitle) callOverviewSubtitle.textContent = subtitle || 'Нажмите, чтобы вернуться';
 }
 
 // ========== Обновление функций блокировки ==========
