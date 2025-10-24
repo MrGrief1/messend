@@ -44,6 +44,20 @@ const mediaPreviewDownload = document.getElementById('media-preview-download');
 const mediaPreviewOpen = document.getElementById('media-preview-open');
 const mediaPreviewClose = document.getElementById('media-preview-close');
 const callButtonSplit = document.querySelector('.call-button-split');
+const callDock = document.getElementById('call-dock');
+const callDockParticipants = document.getElementById('call-dock-participants');
+const callDockTitleEl = document.getElementById('call-dock-title');
+const callDockSubtitleEl = document.getElementById('call-dock-subtitle-text');
+const callDockDurationEl = document.getElementById('call-dock-duration');
+const callDockCountEl = document.getElementById('call-dock-count');
+const callDockStatusEl = document.getElementById('call-dock-status-text');
+const callDockMicBtn = document.getElementById('call-dock-mic');
+const callDockMicIcon = document.getElementById('call-dock-mic-icon');
+const callDockCamBtn = document.getElementById('call-dock-cam');
+const callDockCamIcon = document.getElementById('call-dock-cam-icon');
+if (callDockParticipants) {
+    callDockParticipants.classList.add('is-empty');
+}
 // Вызовы
 let localStream = null;
 let isMicEnabled = true;
@@ -76,6 +90,55 @@ let isCallModalOpen = false;
 let reactionTargetMessageId = null; // ID сообщения, на которое мы реагируем
 let activePreviewCleanup = null;
 let activePreviewMediaElement = null;
+
+const userProfileCache = new Map();
+const callParticipants = new Map();
+let callTimelineEntries = [];
+let callQualityLevel = 'connecting';
+
+function setCallDockVisibility(shouldShow) {
+    if (!callDock) return;
+
+    if (shouldShow) {
+        if (callDock.hidden) {
+            callDock.hidden = false;
+        }
+        requestAnimationFrame(() => {
+            callDock.classList.add('visible');
+        });
+    } else {
+        callDock.classList.remove('visible');
+        const computed = getComputedStyle(callDock);
+        if (computed.transitionDuration === '0s' && computed.transitionDelay === '0s') {
+            callDock.hidden = true;
+        } else {
+            callDock.addEventListener('transitionend', (event) => {
+                if (event.propertyName === 'transform') {
+                    callDock.hidden = true;
+                }
+            }, { once: true });
+        }
+    }
+}
+
+function setCallDockControlsState() {
+    if (callDockMicBtn) {
+        callDockMicBtn.classList.toggle('is-muted', !isMicEnabled);
+        callDockMicBtn.setAttribute('aria-pressed', String(!isMicEnabled));
+        callDockMicBtn.title = isMicEnabled ? 'Выключить микрофон' : 'Включить микрофон';
+    }
+    if (callDockMicIcon) {
+        callDockMicIcon.textContent = isMicEnabled ? 'mic' : 'mic_off';
+    }
+    if (callDockCamBtn) {
+        callDockCamBtn.classList.toggle('is-muted', !isCamEnabled);
+        callDockCamBtn.setAttribute('aria-pressed', String(!isCamEnabled));
+        callDockCamBtn.title = isCamEnabled ? 'Выключить камеру' : 'Включить камеру';
+    }
+    if (callDockCamIcon) {
+        callDockCamIcon.textContent = isCamEnabled ? 'videocam' : 'videocam_off';
+    }
+}
 
 function handleCallButtonClick(event) {
     const arrowZone = event.target.closest('.call-button-split');
@@ -110,6 +173,16 @@ const reactionLabels = {
 };
 
 const reactionTemplateCache = new Map();
+
+const MIC_ICON_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg>';
+const CAM_ICON_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M23 7l-7 5 7 5V7z"></path><rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect></svg>';
+const CALL_TIMELINE_ICONS = {
+    start: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.79 19.79 0 0 1 2.08 4.18 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.12.9.37 1.77.72 2.59a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.49-1.49a2 2 0 0 1 2.11-.45 11.36 11.36 0 0 0 2.59.72A2 2 0 0 1 22 16.92Z"></path></svg>',
+    join: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"></path><path d="M5 12h14"></path></svg>',
+    leave: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"></path></svg>',
+    network: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.55a11 11 0 0 1 14 0"></path><path d="M8.5 16a5.5 5.5 0 0 1 7 0"></path><circle cx="12" cy="19" r="1"></circle></svg>',
+    info: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><line x1="12" y1="8" x2="12.01" y2="8"></line><line x1="12" y1="12" x2="12" y2="16"></line></svg>'
+};
 
 function getReactionIconTemplate(emoji) {
     return reactionIconTemplates[emoji] || null;
@@ -3780,8 +3853,10 @@ function openCallModal() {
     if (isCallModalOpen) return; // Предотвращаем повторное открытие
     openModal('callModal');
     document.getElementById('callTitle').textContent = currentRoomType === 'dm' ? `Звонок: ${chatWithName.textContent}` : `Групповой звонок: ${chatWithName.textContent}`;
+    setCallSubtitle(isAudioOnly ? 'Аудиозвонок' : 'Видеозвонок');
+    setCallConnectionHint('Подключаемся…');
     isCallModalOpen = true;
-    
+
     // Закрываем диалоговое окно набора если оно открыто
     closeDialModal();
 }
@@ -3851,7 +3926,20 @@ async function ensureLocalMedia() {
         camBtn.classList.remove('disabled');
         camBtn.classList.add(isCamEnabled ? 'enabled' : 'disabled');
     }
-    
+
+    const hadLocalParticipant = callParticipants.has(CURRENT_USER_ID);
+    const hasVideoTrack = localStream.getVideoTracks().some(track => track.readyState !== 'ended');
+    const hasAudioTrack = localStream.getAudioTracks().some(track => track.readyState !== 'ended');
+    await upsertCallParticipant(CURRENT_USER_ID, {
+        audioEnabled: hasAudioTrack && isMicEnabled,
+        videoEnabled: hasVideoTrack && isCamEnabled,
+        connected: true
+    });
+    if (!hadLocalParticipant) {
+        pushCallTimelineEvent('join', 'Вы подключились', hasVideoTrack && isCamEnabled ? 'Видео активно' : 'Только аудио');
+        setCallConnectionHint('Ожидание участников');
+    }
+
     return localStream;
 }
 
@@ -3861,7 +3949,10 @@ async function openCall() {
         // ВАЖНО: Сначала устанавливаем время начала звонка
         callStartTime = Date.now();
         console.log('callStartTime установлен:', callStartTime);
-        
+
+        resetCallExperienceUI();
+        pushCallTimelineEvent('start', 'Звонок запущен', isAudioOnly ? 'Аудиоформат' : 'Видеоформат');
+
         // Используем новую функцию с поддержкой аудио/видео режима
         console.log('Запрос доступа к медиа...');
         await ensureLocalMediaWithMode();
@@ -4045,19 +4136,282 @@ const ringtones = {
 };
 
 
+function escapeHtml(text) {
+    if (text === undefined || text === null) return '';
+    return String(text)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+
+function pluralizeParticipants(count) {
+    const mod10 = count % 10;
+    const mod100 = count % 100;
+    if (mod10 === 1 && mod100 !== 11) return `${count} участник`;
+    if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return `${count} участника`;
+    return `${count} участников`;
+}
+
+function setCallSubtitle(text) {
+    const el = document.getElementById('callSubtitle');
+    if (el) el.textContent = text || '';
+    if (callDockSubtitleEl) {
+        callDockSubtitleEl.textContent = text || '';
+    }
+}
+
+function setCallConnectionHint(text) {
+    const el = document.getElementById('callConnectionHint');
+    if (el) el.textContent = text || '';
+    if (callDockStatusEl) {
+        callDockStatusEl.textContent = text || '';
+    }
+}
+
+function setCallQualityLevel(level, label) {
+    callQualityLevel = level;
+    const meter = document.getElementById('callQualityMeter');
+    if (meter) {
+        meter.classList.remove('level-connecting', 'level-average', 'level-good', 'level-poor');
+        meter.classList.add(`level-${level}`);
+    }
+    if (label) {
+        const state = document.getElementById('callQualityState');
+        if (state) state.textContent = label;
+    }
+}
+
+function updateLocalLabel(participant) {
+    const label = document.getElementById('callLocalLabel');
+    if (!label) return;
+    const textNode = label.querySelector('span');
+    if (!textNode) return;
+    if (participant && participant.displayName) {
+        textNode.textContent = `${participant.displayName} · вы`;
+    } else {
+        textNode.textContent = 'Вы';
+    }
+}
+
+async function getUserProfile(userId) {
+    if (!userId) return null;
+    if (userProfileCache.has(userId)) {
+        return userProfileCache.get(userId);
+    }
+    try {
+        const response = await fetch(`/api/user/${userId}`);
+        const data = await response.json();
+        if (data.success && data.user) {
+            userProfileCache.set(userId, data.user);
+            return data.user;
+        }
+    } catch (error) {
+        console.error('Ошибка получения профиля пользователя:', error);
+    }
+    userProfileCache.set(userId, null);
+    return null;
+}
+
+function getProfileDisplayName(profile, fallbackId) {
+    if (!profile) return `ID ${fallbackId}`;
+    if (profile.display_name && profile.display_name.trim()) return profile.display_name.trim();
+    if (profile.username) return `@${profile.username}`;
+    return `ID ${fallbackId}`;
+}
+
+async function upsertCallParticipant(userId, updates = {}) {
+    if (!userId) return null;
+    const existing = callParticipants.get(userId) || {};
+    const profile = updates.profile || existing.profile || await getUserProfile(userId);
+    const participant = {
+        userId,
+        profile,
+        displayName: updates.displayName || existing.displayName || getProfileDisplayName(profile, userId),
+        avatarUrl: updates.avatarUrl !== undefined ? updates.avatarUrl : (existing.avatarUrl ?? profile?.avatar_url ?? null),
+        isLocal: userId === CURRENT_USER_ID,
+        audioEnabled: updates.audioEnabled ?? existing.audioEnabled ?? false,
+        videoEnabled: updates.videoEnabled ?? existing.videoEnabled ?? false,
+        connected: updates.connected ?? existing.connected ?? true,
+        joinedAt: existing.joinedAt || Date.now(),
+        lastUpdated: Date.now()
+    };
+    callParticipants.set(userId, participant);
+    if (participant.isLocal) {
+        updateLocalLabel(participant);
+    }
+    updateCallParticipantsUI();
+    return participant;
+}
+
+function removeCallParticipant(userId) {
+    if (!callParticipants.has(userId)) return;
+    const wasLocal = callParticipants.get(userId).isLocal;
+    callParticipants.delete(userId);
+    updateCallParticipantsUI();
+    if (wasLocal) {
+        updateLocalLabel(null);
+    }
+    const container = document.getElementById(`remoteContainer-${userId}`);
+    if (container && container.parentNode) {
+        container.parentNode.removeChild(container);
+    }
+}
+
+function renderCallParticipant(participant) {
+    const avatar = participant.avatarUrl
+        ? `<img src="${escapeHtml(participant.avatarUrl)}" alt="${escapeHtml(participant.displayName)}">`
+        : escapeHtml((participant.displayName || '?').charAt(0));
+
+    const audioLabel = participant.audioEnabled ? 'Микрофон включён' : 'Микрофон выключен';
+    const videoLabel = participant.videoEnabled ? 'Видео активно' : 'Видео выключено';
+    let statusText = participant.connected ? `${audioLabel} • ${videoLabel}` : 'Соединение потеряно';
+    if (participant.isLocal) {
+        statusText = `Вы • ${statusText}`;
+    }
+
+    const micClass = participant.audioEnabled ? 'active' : 'inactive';
+    const camClass = participant.videoEnabled ? 'active' : 'inactive';
+
+    return `
+        <div class="call-participant ${participant.isLocal ? 'is-local' : ''}" data-user-id="${participant.userId}">
+            <div class="call-participant-avatar">${avatar}</div>
+            <div class="call-participant-info">
+                <span class="call-participant-name">${escapeHtml(participant.displayName)}</span>
+                <span class="call-participant-status">${escapeHtml(statusText)}</span>
+            </div>
+            <div class="call-participant-media">
+                <span class="call-media-pill ${micClass}" title="${escapeHtml(audioLabel)}">${MIC_ICON_SVG}</span>
+                <span class="call-media-pill ${camClass}" title="${escapeHtml(videoLabel)}">${CAM_ICON_SVG}</span>
+            </div>
+        </div>
+    `;
+}
+
+function renderCallDockParticipant(participant) {
+    if (participant.avatarUrl) {
+        return `<div class="call-dock-avatar"><img src="${escapeHtml(participant.avatarUrl)}" alt="${escapeHtml(participant.displayName)}"></div>`;
+    }
+    const initial = (participant.displayName || '?').trim().charAt(0).toUpperCase();
+    return `<div class="call-dock-avatar" aria-hidden="true">${escapeHtml(initial || '?')}</div>`;
+}
+
+function updateCallParticipantsUI() {
+    const list = document.getElementById('callParticipantsList');
+    const counter = document.getElementById('callParticipantCount');
+
+    if (!list && !counter && !callDockParticipants && !callDockCountEl) {
+        return;
+    }
+
+    let sorted = [];
+    if (callParticipants.size === 0) {
+        if (list) {
+            list.innerHTML = '<div class="call-participants-empty">Ожидание подключения участников…</div>';
+        }
+    } else {
+        sorted = Array.from(callParticipants.values()).sort((a, b) => {
+            if (a.isLocal !== b.isLocal) return a.isLocal ? -1 : 1;
+            return a.displayName.localeCompare(b.displayName, 'ru', { sensitivity: 'base' });
+        });
+        if (list) {
+            list.innerHTML = sorted.map(renderCallParticipant).join('');
+        }
+    }
+
+    if (counter) {
+        counter.textContent = pluralizeParticipants(callParticipants.size);
+    }
+
+    if (callDockParticipants) {
+        if (!sorted.length) {
+            callDockParticipants.innerHTML = '';
+            callDockParticipants.classList.add('is-empty');
+        } else {
+            const preview = sorted.slice(0, 4).map(renderCallDockParticipant).join('');
+            const overflow = Math.max(sorted.length - 4, 0);
+            callDockParticipants.innerHTML = preview + (overflow ? `<div class="call-dock-overflow">+${overflow}</div>` : '');
+            callDockParticipants.classList.remove('is-empty');
+        }
+    }
+
+    if (callDockCountEl) {
+        callDockCountEl.textContent = pluralizeParticipants(callParticipants.size);
+    }
+}
+
+function formatTimelineTimestamp(date) {
+    if (!(date instanceof Date)) return '';
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    return `${hours}:${minutes}`;
+}
+
+function renderTimelineEntry(entry) {
+    const icon = CALL_TIMELINE_ICONS[entry.type] || CALL_TIMELINE_ICONS.info;
+    const time = formatTimelineTimestamp(entry.timestamp);
+    return `
+        <div class="call-timeline-entry">
+            <div class="call-timeline-icon">${icon}</div>
+            <div>
+                <strong>${escapeHtml(entry.title)}</strong>
+                <div>${escapeHtml(entry.subtitle || '')}</div>
+                <time>${time}</time>
+            </div>
+        </div>
+    `;
+}
+
+function updateCallTimelineUI() {
+    const container = document.getElementById('callTimeline');
+    if (!container) return;
+    if (!callTimelineEntries.length) {
+        container.innerHTML = '<div class="call-participants-empty">Здесь будут события звонка</div>';
+        return;
+    }
+    container.innerHTML = callTimelineEntries.map(renderTimelineEntry).join('');
+}
+
+function pushCallTimelineEvent(type, title, subtitle) {
+    callTimelineEntries.unshift({
+        type: type || 'info',
+        title: title || '',
+        subtitle: subtitle || '',
+        timestamp: new Date()
+    });
+    if (callTimelineEntries.length > 20) {
+        callTimelineEntries.length = 20;
+    }
+    updateCallTimelineUI();
+}
+
+function resetCallExperienceUI() {
+    callParticipants.clear();
+    callTimelineEntries = [];
+    updateCallParticipantsUI();
+    updateCallTimelineUI();
+    setCallQualityLevel('connecting', 'Подключаемся…');
+    setCallConnectionHint('Готовимся к звонку');
+    setCallSubtitle('Готовы к подключению');
+    const durationEl = document.getElementById('callDurationLive');
+    if (durationEl) durationEl.textContent = '00:00';
+    updateLocalLabel(null);
+    const remoteGrid = document.getElementById('remoteVideos');
+    if (remoteGrid) remoteGrid.innerHTML = '';
+    setCallDockControlsState();
+}
+
 // ========== Функции для работы с аватарками в placeholder ==========
 async function loadUserAvatar(placeholderElement, userId) {
     if (!placeholderElement) return;
-    
+
     try {
-        // Получаем данные пользователя
-        const response = await fetch(`/api/user/${userId}`);
-        const data = await response.json();
-        
-        if (data.success && data.user && data.user.avatar_url) {
+        const profile = await getUserProfile(userId);
+        if (profile && profile.avatar_url) {
             const avatarDiv = placeholderElement.querySelector('.video-placeholder-avatar');
             if (avatarDiv) {
-                avatarDiv.innerHTML = `<img src="${data.user.avatar_url}" alt="Avatar">`;
+                avatarDiv.innerHTML = `<img src="${escapeHtml(profile.avatar_url)}" alt="${escapeHtml(profile.username || 'Avatar')}">`;
             }
         }
     } catch (error) {
@@ -4862,10 +5216,12 @@ function hideIncomingPopup() {
 async function acceptIncomingCall() {
     stopRingtone();
     hideIncomingPopup();
-    
+
     // Открываем основное окно звонка сразу
+    resetCallExperienceUI();
+    pushCallTimelineEvent('start', 'Вы приняли звонок', isAudioOnly ? 'Аудиоформат' : 'Видеоформат');
     openCallModal();
-    
+
     // Показываем индикатор звонка
     showCallIndicator();
     updateCallIndicatorInfo('Входящий звонок', 'Подключение...');
@@ -4956,19 +5312,42 @@ function createPeerConnection(remoteUserId) {
 		}
 	};
 	// ГЛАВНЫЙ ОБРАБОТЧИК СОСТОЯНИЯ: закрываем модалку «ожидание», когда WebRTC соединение переходит в состояние connected
-	pc.onconnectionstatechange = () => {
-		console.log(`[RTC ${remoteUserId}] connectionState: ${pc.connectionState}`);
-		if (pc.connectionState === 'connected') {
-			console.log(`[RTC ${remoteUserId}] ✅ Соединение установлено!`);
-			if (!isCallModalOpen) {
+        pc.onconnectionstatechange = () => {
+                console.log(`[RTC ${remoteUserId}] connectionState: ${pc.connectionState}`);
+                if (pc.connectionState === 'connected') {
+                        console.log(`[RTC ${remoteUserId}] ✅ Соединение установлено!`);
+                        if (!isCallModalOpen) {
                 openCallModal();
             }
-			closeDialModal();
-		}
-		if (pc.connectionState === 'failed') {
-			console.error(`[RTC ${remoteUserId}] ❌ Соединение не удалось!`);
-		}
-	};
+                        closeDialModal();
+                        setCallQualityLevel('good', 'Соединение стабильно');
+                        setCallConnectionHint('Соединение установлено');
+                }
+                if (pc.connectionState === 'connecting' || pc.connectionState === 'checking') {
+                        setCallQualityLevel('average', 'Подключение…');
+                        setCallConnectionHint('Пытаемся подключиться');
+                }
+                if (pc.connectionState === 'disconnected') {
+                        setCallQualityLevel('poor', 'Связь потеряна');
+                        setCallConnectionHint('Повторное подключение…');
+                        upsertCallParticipant(remoteUserId, { connected: false });
+                        const participant = callParticipants.get(remoteUserId);
+                        const name = participant ? participant.displayName : `Участник #${remoteUserId}`;
+                        pushCallTimelineEvent('leave', `${name} отключился`, 'Связь прервалась');
+                }
+                if (pc.connectionState === 'failed') {
+                        console.error(`[RTC ${remoteUserId}] ❌ Соединение не удалось!`);
+                        setCallQualityLevel('poor', 'Ошибка соединения');
+                        setCallConnectionHint('Попробуйте позвонить снова');
+                        const participant = callParticipants.get(remoteUserId);
+                        const name = participant ? participant.displayName : `Участник #${remoteUserId}`;
+                        pushCallTimelineEvent('leave', `${name} недоступен`, 'Ошибка соединения');
+                        removeCallParticipant(remoteUserId);
+                }
+                if (pc.connectionState === 'closed') {
+                        removeCallParticipant(remoteUserId);
+                }
+        };
 	pc.onsignalingstatechange = () => {
 		console.log(`[RTC ${remoteUserId}] signalingState: ${pc.signalingState}`);
 	};
@@ -4987,30 +5366,25 @@ function attachRemoteStream(userId, stream) {
     let container = document.getElementById(`remoteContainer-${userId}`);
     let video = document.getElementById(`remoteVideo-${userId}`);
     let placeholder = document.getElementById(`remotePlaceholder-${userId}`);
-    
+    const remoteGrid = document.getElementById('remoteVideos');
+
     if (!container) {
-        // Создаем контейнер для видео и placeholder
         container = document.createElement('div');
         container.id = `remoteContainer-${userId}`;
-        container.style.position = 'relative';
-        container.style.width = '100%';
-        container.style.height = '100%';
-        container.style.minHeight = '200px';
-        
-        // Создаем видео элемент
+        container.className = 'call-remote-item';
+
         video = document.createElement('video');
         video.id = `remoteVideo-${userId}`;
-        video.autoplay = true; 
+        video.autoplay = true;
         video.playsInline = true;
-        video.muted = false; // ВАЖНО: не mute чтобы слышать собеседника
+        video.muted = false;
         video.setAttribute('playsinline', 'true');
         video.setAttribute('webkit-playsinline', 'true');
         video.style.width = '100%';
         video.style.height = '100%';
         video.style.objectFit = 'cover';
         video.style.transition = 'opacity 0.3s ease';
-        
-        // Создаем placeholder
+
         placeholder = document.createElement('div');
         placeholder.id = `remotePlaceholder-${userId}`;
         placeholder.className = 'video-placeholder';
@@ -5023,49 +5397,82 @@ function attachRemoteStream(userId, stream) {
             </div>
             <div class="video-placeholder-text">Камера выключена</div>
         `;
-        
+
         container.appendChild(video);
         container.appendChild(placeholder);
-        document.getElementById('remoteVideos').appendChild(container);
-        
-        // Загружаем аватарку пользователя
+        if (remoteGrid) {
+            remoteGrid.appendChild(container);
+        }
+
         loadUserAvatar(placeholder, userId);
     }
-    
+
     video.srcObject = stream;
-    
-    // Отслеживаем треки - если видеотрек заканчивается, показываем placeholder
+
+    let hasVideoTrack = false;
+    let hasAudioTrack = false;
+
     if (stream) {
         const videoTracks = stream.getVideoTracks();
+        hasVideoTrack = videoTracks.some(track => track.readyState !== 'ended' && !track.muted);
         if (videoTracks.length > 0) {
             video.style.opacity = '1';
             placeholder.classList.remove('active');
-            
+
             videoTracks.forEach(track => {
                 track.onended = () => {
                     console.log(`Видеотрек от ${userId} завершен`);
                     video.style.opacity = '0';
                     placeholder.classList.add('active');
+                    upsertCallParticipant(userId, { videoEnabled: false });
+                };
+                track.onmute = () => {
+                    placeholder.classList.add('active');
+                    upsertCallParticipant(userId, { videoEnabled: false });
+                };
+                track.onunmute = () => {
+                    placeholder.classList.remove('active');
+                    video.style.opacity = '1';
+                    upsertCallParticipant(userId, { videoEnabled: true });
                 };
             });
         } else {
-            // Нет видеотрека - только аудио
             video.style.opacity = '0';
             placeholder.classList.add('active');
         }
+
+        const audioTracks = stream.getAudioTracks();
+        hasAudioTrack = audioTracks.some(track => track.readyState !== 'ended' && !track.muted);
+        audioTracks.forEach(track => {
+            track.onended = () => upsertCallParticipant(userId, { audioEnabled: false });
+            track.onmute = () => upsertCallParticipant(userId, { audioEnabled: false });
+            track.onunmute = () => upsertCallParticipant(userId, { audioEnabled: true });
+        });
     }
-    
-    // Попытка воспроизведения
+
     try {
         const playPromise = video.play();
         if (playPromise !== undefined) {
             playPromise
                 .then(() => console.log(`✅ Удалённое видео ${userId} запущено`))
-                .catch((error) => console.log(`Видео ${userId} ожидает взаимодействия`));
+                .catch(() => console.log(`Видео ${userId} ожидает взаимодействия`));
         }
     } catch (error) {
         // Autoplay заблокирован
     }
+
+    const wasKnownParticipant = callParticipants.has(userId);
+    upsertCallParticipant(userId, {
+        audioEnabled: hasAudioTrack,
+        videoEnabled: hasVideoTrack,
+        connected: true
+    }).then(participant => {
+        if (!wasKnownParticipant && participant) {
+            pushCallTimelineEvent('join', `${participant.displayName} подключился`, hasVideoTrack ? 'Видео активно' : 'Только аудио');
+            setCallConnectionHint('Новый участник подключился');
+            setCallQualityLevel('good', 'Соединение стабильно');
+        }
+    }).catch(() => {});
 }
 
 async function startP2PCall(otherUserId, isAnswerSide) {
@@ -5074,6 +5481,15 @@ async function startP2PCall(otherUserId, isAnswerSide) {
     // Небольшая телеметрия состояния для отладки подключений
     try {
         pc.oniceconnectionstatechange = () => {
+            console.log(`[RTC ${otherUserId}] iceConnectionState: ${pc.iceConnectionState}`);
+            if (pc.iceConnectionState === 'checking') {
+                setCallQualityLevel('average', 'Подключение…');
+                setCallConnectionHint('Устанавливаем связь…');
+            }
+            if (pc.iceConnectionState === 'disconnected') {
+                setCallQualityLevel('poor', 'Связь потеряна');
+                setCallConnectionHint('Повторное подключение…');
+            }
             if (pc.iceConnectionState === 'connected' || pc.iceConnectionState === 'completed') {
                 closeDialModal();
                 if (!isCallModalOpen) openCallModal();
@@ -5174,19 +5590,21 @@ function toggleMic() {
         btn.classList.remove('enabled', 'disabled');
         btn.classList.add(isMicEnabled ? 'enabled' : 'disabled');
     }
+    setCallDockControlsState();
 }
 
 async function toggleCam() {
     if (!localStream) return;
-    
+
     const videoTracks = localStream.getVideoTracks();
     const localVideo = document.getElementById('localVideo');
     const localPlaceholder = document.getElementById('localVideoPlaceholder');
-    
+
     if (videoTracks.length > 0) {
         // Переключаем состояние камеры
-    isCamEnabled = !isCamEnabled;
-        
+        isCamEnabled = !isCamEnabled;
+        setCallDockControlsState();
+
         if (!isCamEnabled) {
             // ВЫКЛЮЧАЕМ камеру
             console.log('Выключение камеры - создание черного видео...');
@@ -5353,6 +5771,7 @@ async function toggleCam() {
         btn.classList.remove('enabled', 'disabled');
         btn.classList.add(isCamEnabled ? 'enabled' : 'disabled');
     }
+    setCallDockControlsState();
 }
 
 function setShareBtnState(sharing) {
@@ -5508,16 +5927,20 @@ function endCall() {
     
     // Скрываем индикатор активного звонка
     hideCallIndicator();
-    
+
     // Скрываем индикатор лобби если он есть
     hideCallLobbyIndicator();
-    
+
     // Скрываем кнопку приглашения
     hideInviteButton();
-    
+
+    resetCallExperienceUI();
+    setCallConnectionHint('Звонок завершен');
+    setCallQualityLevel('connecting', 'Ожидание нового звонка');
+
     // Сбрасываем режим звонка
     isAudioOnly = false;
-    
+
     // Очищаем состояние группового звонка
     activeGroupCallRoomId = null;
     groupCallParticipantsSet.clear();
@@ -8492,15 +8915,20 @@ function showCallIndicator() {
     const indicator = document.getElementById('active-call-indicator');
     if (indicator) {
         indicator.style.display = 'flex';
-        
+
         // Запускаем таймер (callStartTime уже должен быть установлен в openCall)
         if (!callStartTime) {
-        callStartTime = Date.now();
+            callStartTime = Date.now();
             console.log('callStartTime установлен в showCallIndicator:', callStartTime);
         }
         updateCallTimer();
         callTimerInterval = setInterval(updateCallTimer, 1000);
     }
+    setCallDockVisibility(true);
+    if (callDockDurationEl) {
+        callDockDurationEl.textContent = '00:00';
+    }
+    setCallDockControlsState();
 }
 
 function hideCallIndicator() {
@@ -8508,7 +8936,8 @@ function hideCallIndicator() {
     if (indicator) {
         indicator.style.display = 'none';
     }
-    
+    setCallDockVisibility(false);
+
     // Останавливаем таймер
     if (callTimerInterval) {
         clearInterval(callTimerInterval);
@@ -8528,6 +8957,13 @@ function updateCallTimer() {
     if (timerEl) {
         timerEl.textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
     }
+    const liveTimer = document.getElementById('callDurationLive');
+    if (liveTimer) {
+        liveTimer.textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+    }
+    if (callDockDurationEl) {
+        callDockDurationEl.textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+    }
 }
 
 function returnToCall() {
@@ -8541,6 +8977,12 @@ function updateCallIndicatorInfo(title, subtitle) {
     const subtitleEl = document.getElementById('call-indicator-subtitle');
     if (titleEl) titleEl.textContent = title || 'Активный звонок';
     if (subtitleEl) subtitleEl.textContent = subtitle || 'Нажмите, чтобы вернуться';
+    if (callDockTitleEl) {
+        callDockTitleEl.textContent = title || 'Активный звонок';
+    }
+    if (callDockSubtitleEl) {
+        callDockSubtitleEl.textContent = subtitle || 'Нажмите, чтобы вернуться';
+    }
 }
 
 // ========== Обновление функций блокировки ==========
