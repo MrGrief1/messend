@@ -16,6 +16,430 @@
     
     <style>
         /* Дополнительные стили для жидкого фона и мобильной оптимизации */
+
+        body[data-skin="element"] {
+            background: radial-gradient(140% 140% at 10% 0%, rgba(67, 161, 255, 0.18) 0%, transparent 48%),
+                        radial-gradient(120% 120% at 100% 0%, rgba(122, 97, 255, 0.16) 0%, transparent 45%),
+                        linear-gradient(160deg, #050b11 0%, #0f1621 45%, #111a27 100%);
+            color: #f5f7fa;
+            --matrix-accent: #43A1FF;
+        }
+
+        .app-layout.matrix-grid {
+            position: relative;
+            display: grid;
+            grid-template-columns: 82px minmax(0, 1fr);
+            gap: 28px;
+            height: calc(100vh - 48px);
+            padding: 32px 32px 40px;
+            box-sizing: border-box;
+        }
+
+        @media (max-width: 1480px) {
+            .app-layout.matrix-grid {
+                grid-template-columns: 74px minmax(0, 1fr);
+                gap: 22px;
+                padding: 24px;
+            }
+        }
+
+        @media (max-width: 1180px) {
+            .app-layout.matrix-grid {
+                grid-template-columns: 64px minmax(0, 1fr);
+                padding: 18px;
+            }
+        }
+
+        .matrix-rail {
+            width: 100%;
+            max-width: 96px;
+            border-radius: 24px;
+            background: rgba(12, 18, 26, 0.72);
+            backdrop-filter: blur(22px) saturate(140%);
+            -webkit-backdrop-filter: blur(22px) saturate(140%);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            padding: 20px 14px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 16px;
+            box-shadow: 0 32px 80px rgba(5, 11, 17, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+        }
+
+        .matrix-rail .rail-item {
+            width: 48px;
+            height: 48px;
+            border-radius: 16px;
+            background: transparent;
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: rgba(232, 236, 242, 0.58);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            position: relative;
+        }
+
+        .matrix-rail .rail-item.active,
+        .matrix-rail .rail-item:hover {
+            color: #f5f7fa;
+            background: rgba(67, 161, 255, 0.16);
+            box-shadow: 0 12px 32px rgba(67, 161, 255, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+        }
+
+        .matrix-rail .rail-item .rail-badge {
+            position: absolute;
+            top: 6px;
+            right: 6px;
+            min-width: 18px;
+            height: 18px;
+            padding: 0 4px;
+            border-radius: 9px;
+            background: #ff3366;
+            color: #fff;
+            font-size: 10px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 6px 16px rgba(255, 51, 102, 0.45);
+        }
+
+        .matrix-main-split {
+            display: grid;
+            grid-template-columns: minmax(260px, 340px) minmax(0, 1fr) minmax(280px, 360px);
+            gap: 20px;
+            height: 100%;
+        }
+
+        @media (max-width: 1480px) {
+            .matrix-main-split {
+                grid-template-columns: minmax(240px, 300px) minmax(0, 1fr) minmax(260px, 320px);
+            }
+        }
+
+        @media (max-width: 1280px) {
+            .matrix-main-split {
+                grid-template-columns: minmax(220px, 280px) minmax(0, 1fr);
+            }
+        }
+
+        .matrix-aux-panel {
+            background: rgba(12, 18, 26, 0.84);
+            border-radius: 28px;
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            box-shadow: 0 26px 80px rgba(7, 12, 20, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+            padding: 28px;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+            min-width: 0;
+            overflow: hidden;
+            color: rgba(235, 242, 255, 0.92);
+        }
+
+        .matrix-aux-panel.collapsed {
+            display: none;
+        }
+
+        .matrix-panel-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 12px;
+        }
+
+        .matrix-panel-header h4 {
+            font-size: 18px;
+            margin: 0;
+            color: #f5f8ff;
+        }
+
+        .matrix-panel-header p {
+            margin: 4px 0 0 0;
+            font-size: 13px;
+            color: rgba(210, 220, 235, 0.7);
+        }
+
+        .matrix-panel-scroll {
+            flex: 1;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+            padding-right: 6px;
+        }
+
+        .matrix-panel-section {
+            background: rgba(15, 23, 34, 0.78);
+            border-radius: 22px;
+            padding: 18px 20px;
+            border: 1px solid rgba(255, 255, 255, 0.03);
+        }
+
+        .matrix-panel-section h5 {
+            margin: 0 0 12px;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: rgba(132, 151, 178, 0.9);
+        }
+
+        .matrix-topic {
+            font-size: 15px;
+            line-height: 1.6;
+            color: rgba(232, 236, 242, 0.92);
+            margin: 0;
+        }
+
+        .matrix-meta-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 12px;
+            margin-top: 16px;
+        }
+
+        .matrix-meta-item {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .matrix-meta-label {
+            font-size: 11px;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: rgba(132, 151, 178, 0.72);
+        }
+
+        .matrix-meta-value {
+            font-size: 14px;
+            font-weight: 600;
+            color: #f5f7fa;
+        }
+
+        .matrix-tag-cloud {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .matrix-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            padding: 6px 10px;
+            border-radius: 999px;
+            background: color-mix(in srgb, var(--matrix-accent) 18%, transparent);
+            color: color-mix(in srgb, var(--matrix-accent) 55%, #f5f7fa);
+            border: 1px solid color-mix(in srgb, var(--matrix-accent) 38%, transparent);
+        }
+
+        .matrix-chip.success {
+            background: rgba(61, 201, 142, 0.12);
+            border-color: rgba(61, 201, 142, 0.25);
+            color: #8ff2c9;
+        }
+
+        .matrix-chip.danger {
+            background: rgba(255, 92, 120, 0.12);
+            border-color: rgba(255, 92, 120, 0.25);
+            color: #ffb4c1;
+        }
+
+        .matrix-call-chip-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .matrix-call-stage {
+            position: relative;
+            background: color-mix(in srgb, var(--matrix-accent) 12%, rgba(11, 18, 28, 0.9));
+            border-radius: 20px;
+            padding: 18px;
+            overflow: hidden;
+            border: 1px solid color-mix(in srgb, var(--matrix-accent) 28%, transparent);
+            box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--matrix-accent) 18%, transparent);
+        }
+
+        .matrix-call-stage::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(circle at 20% 20%, color-mix(in srgb, var(--matrix-accent) 30%, transparent) 0%, transparent 58%);
+            pointer-events: none;
+        }
+
+        .matrix-call-stage button {
+            margin-top: 16px;
+            width: 100%;
+            padding: 12px;
+            border-radius: 14px;
+            border: none;
+            background: linear-gradient(135deg, var(--color-primary), rgba(67, 161, 255, 0.32));
+            color: #fff;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+        }
+
+        .matrix-call-stage button:hover {
+            transform: translateY(-2px);
+        }
+
+        .matrix-member-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin: 0;
+            padding: 0;
+            list-style: none;
+        }
+
+        .matrix-member {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .matrix-member-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: rgba(67, 161, 255, 0.22);
+            color: #bcdcff;
+            font-size: 13px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .matrix-member-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 50%;
+        }
+
+        .matrix-member strong {
+            font-size: 14px;
+            color: #f5f7fa;
+        }
+
+        .matrix-member span {
+            font-size: 12px;
+            color: rgba(186, 202, 222, 0.7);
+        }
+
+        .matrix-timeline-card {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            background: rgba(11, 18, 28, 0.82);
+            border-radius: 18px;
+            padding: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.04);
+        }
+
+        .matrix-timeline-card small {
+            font-size: 11px;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            color: rgba(146, 166, 194, 0.75);
+        }
+
+        .matrix-timeline-card p {
+            margin: 0;
+            font-size: 14px;
+            line-height: 1.5;
+            color: rgba(232, 236, 242, 0.9);
+        }
+
+        .chat-header {
+            gap: 18px;
+        }
+
+        .chat-title-block {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .chat-header-main {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            min-width: 0;
+        }
+
+        .chat-title-block h3 {
+            margin: 0;
+            font-size: 20px;
+        }
+
+        .chat-subtitle {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            font-size: 12px;
+            color: rgba(186, 202, 222, 0.75);
+        }
+
+        .matrix-chat-topic {
+            padding: 3px 10px;
+            border-radius: 999px;
+            background: color-mix(in srgb, var(--matrix-accent) 12%, transparent);
+            color: color-mix(in srgb, var(--matrix-accent) 60%, #f5f7fa);
+        }
+
+        .chat-presence-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .chat-presence-indicator::before {
+            content: '';
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--color-success);
+            box-shadow: 0 0 12px rgba(52, 199, 89, 0.45);
+        }
+
+        .matrix-panel-toggle {
+            display: none;
+        }
+
+        @media (max-width: 1280px) {
+            .matrix-panel-toggle {
+                display: inline-flex;
+            }
+            .matrix-aux-panel {
+                position: fixed;
+                right: 18px;
+                top: 24px;
+                bottom: 24px;
+                max-width: 360px;
+                z-index: 1200;
+                display: flex;
+                transform: translateX(120%);
+                opacity: 0;
+                transition: transform 0.3s var(--easing-smooth), opacity 0.2s var(--easing-smooth);
+            }
+            .matrix-aux-panel.open {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
         
         /* Жидкий анимированный фон */
         .liquid-bg {
@@ -1181,7 +1605,7 @@
         }
     </style>
 </head>
-<body data-theme="{{ user.theme }}">
+<body data-theme="{{ user.theme }}" data-skin="element">
     {% include 'partials/icon-sprite.html' %}
     <!-- Жидкий анимированный фон -->
     <div class="liquid-bg">
@@ -1190,9 +1614,35 @@
         <div class="blob blob-3"></div>
     </div>
     
-    <div class="app-layout">
+    <div class="app-layout matrix-grid">
         <div class="bg-shape shape1"></div>
         <div class="bg-shape shape2"></div>
+
+        <nav class="matrix-rail" aria-label="Основная навигация">
+            <button class="rail-item active" data-rail="inbox" title="Недавние чаты">
+                <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
+                    <use href="#ui-chat"></use>
+                </svg>
+            </button>
+            <button class="rail-item" data-rail="direct" title="Личные сообщения">
+                <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
+                    <use href="#ui-users"></use>
+                </svg>
+                <span class="rail-badge" id="rail-dm-badge" style="display:none;">0</span>
+            </button>
+            <button class="rail-item" data-rail="spaces" title="Группы и пространства">
+                <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
+                    <use href="#ui-chart"></use>
+                </svg>
+            </button>
+            <button class="rail-item" data-rail="settings" title="Панель управления">
+                <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
+                    <use href="#ui-cog"></use>
+                </svg>
+            </button>
+        </nav>
+
+        <div class="matrix-main-split">
 
         <div class="sidebar enhanced-glass">
             <div class="sidebar-header">
@@ -1232,7 +1682,7 @@
                 <ul class="room-list" id="room-list">
                     {% if rooms %}
                         {% for room in rooms %}
-                            <li class="room-item" data-room-id="{{ room.id }}" data-room-type="{{ room.type }}" data-room-name="{{ room.name }}" data-user-role="{{ room.role }}" data-dm-other-id="{{ room.dm_other_user_id or '' }}" onclick="selectRoom(this)">
+                            <li class="room-item" data-room-id="{{ room.id }}" data-room-type="{{ room.type }}" data-room-name="{{ room.name }}" data-user-role="{{ room.role }}" data-dm-other-id="{{ room.dm_other_user_id or '' }}" data-room-topic="{{ room.topic|e }}" data-room-accent="{{ room.accent_color }}" data-room-member-count="{{ room.member_count }}" data-room-tags='{{ room.tags|tojson|safe }}' data-room-call='{{ room.call_features|tojson|safe }}' data-room-participants='{{ room.participant_preview|tojson|safe }}' data-room-encryption="{{ room.encryption_label|e }}" data-room-last-activity="{{ room.last_activity_at or '' }}" data-room-last-author="{{ room.last_message_author or '' }}" data-room-last-preview="{{ room.last_message_preview|e }}" data-room-presence='{{ room.presence_summary|tojson|safe }}' data-room-notify="{{ room.notification_mode }}" onclick="selectRoom(this)">
                                 <span class="room-icon">
                                     {% if room.avatar_url %}
                                         <img src="{{ room.avatar_url }}" alt="Avatar">
@@ -1265,7 +1715,7 @@
                 <ul class="room-list" id="archive-list" style="display: none;">
                     {% if archived_rooms %}
                         {% for room in archived_rooms %}
-                            <li class="room-item archived" data-room-id="{{ room.id }}" data-room-type="{{ room.type }}" data-room-name="{{ room.name }}" data-user-role="{{ room.role }}" data-dm-other-id="{{ room.dm_other_user_id or '' }}" onclick="selectRoom(this)">
+                            <li class="room-item archived" data-room-id="{{ room.id }}" data-room-type="{{ room.type }}" data-room-name="{{ room.name }}" data-user-role="{{ room.role }}" data-dm-other-id="{{ room.dm_other_user_id or '' }}" data-room-topic="{{ room.topic|e }}" data-room-accent="{{ room.accent_color }}" data-room-member-count="{{ room.member_count }}" data-room-tags='{{ room.tags|tojson|safe }}' data-room-call='{{ room.call_features|tojson|safe }}' data-room-participants='{{ room.participant_preview|tojson|safe }}' data-room-encryption="{{ room.encryption_label|e }}" data-room-last-activity="{{ room.last_activity_at or '' }}" data-room-last-author="{{ room.last_message_author or '' }}" data-room-last-preview="{{ room.last_message_preview|e }}" data-room-presence='{{ room.presence_summary|tojson|safe }}' data-room-notify="{{ room.notification_mode }}" onclick="selectRoom(this)">
                                 <span class="room-icon">
                                     {% if room.avatar_url %}
                                         <img src="{{ room.avatar_url }}" alt="Avatar">
@@ -1345,13 +1795,26 @@
             <!-- CHAT VIEW -->
             <div id="chat-view" class="content-view">
                 <div class="chat-header" id="chat-header" style="display: none;">
-                    <button class="mobile-back-btn" onclick="closeMobileChat()" style="display: none;">
-                        <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" style="--icon-size:24px; --icon-stroke:2.2;">
-                            <use href="#ui-arrow-left"></use>
-                        </svg>
-                    </button>
-                    <h3 id="chat-with-name"></h3>
+                    <div class="chat-header-main">
+                        <button class="mobile-back-btn" onclick="closeMobileChat()" style="display: none;">
+                            <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" style="--icon-size:24px; --icon-stroke:2.2;">
+                                <use href="#ui-arrow-left"></use>
+                            </svg>
+                        </button>
+                        <div class="chat-title-block">
+                            <h3 id="chat-with-name"></h3>
+                            <div class="chat-subtitle">
+                                <span class="chat-presence-indicator" id="matrix-chat-presence">Комната не выбрана</span>
+                                <span class="matrix-chat-topic" id="matrix-chat-topic">—</span>
+                            </div>
+                        </div>
+                    </div>
                     <div id="chat-header-actions">
+                        <button class="icon-btn matrix-panel-toggle" id="matrix-panel-toggle" title="Показать сведения о комнате">
+                            <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
+                                <use href="#ui-info-panel"></use>
+                            </svg>
+                        </button>
                         <!-- Объединенная кнопка звонка со стрелкой -->
                         <div class="call-button-wrapper">
                             <button class="call-button-combined" id="call-button" type="button" onclick="handleCallButtonClick(event)" aria-haspopup="menu" aria-controls="call-dropdown-menu" aria-expanded="false">
@@ -1742,6 +2205,72 @@
             </div>
 
         </div>
+
+        <aside class="matrix-aux-panel collapsed" id="matrix-aux-panel" aria-label="Сводка комнаты">
+            <div class="matrix-panel-header">
+                <div>
+                    <h4 id="matrix-panel-room">Выберите чат</h4>
+                    <p id="matrix-panel-subtitle">Подробности появятся здесь после выбора комнаты.</p>
+                </div>
+                <button class="icon-btn" id="matrix-panel-close" title="Скрыть панель">
+                    <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
+                        <use href="#ui-xmark"></use>
+                    </svg>
+                </button>
+            </div>
+            <div class="matrix-panel-scroll">
+                <section class="matrix-panel-section">
+                    <h5>Тема</h5>
+                    <p class="matrix-topic" id="matrix-room-topic">Нет активного чата</p>
+                    <div class="matrix-meta-grid">
+                        <div class="matrix-meta-item">
+                            <span class="matrix-meta-label">Участники</span>
+                            <span class="matrix-meta-value" id="matrix-member-count">0</span>
+                        </div>
+                        <div class="matrix-meta-item">
+                            <span class="matrix-meta-label">Статус</span>
+                            <span class="matrix-meta-value" id="matrix-room-status">Не выбрано</span>
+                        </div>
+                        <div class="matrix-meta-item">
+                            <span class="matrix-meta-label">Безопасность</span>
+                            <span class="matrix-meta-value" id="matrix-room-encryption">—</span>
+                        </div>
+                    </div>
+                    <div class="matrix-tag-cloud" id="matrix-room-tags"></div>
+                </section>
+
+                <section class="matrix-panel-section">
+                    <h5>Вызовы</h5>
+                    <div class="matrix-call-chip-row" id="matrix-call-chip-row"></div>
+                    <div class="matrix-call-stage" id="matrix-call-stage">
+                        <small>Быстрый старт</small>
+                        <p id="matrix-call-stage-text">Начните звонок, чтобы подключить участников.</p>
+                        <button type="button" id="matrix-start-call-btn">Начать звонок</button>
+                    </div>
+                </section>
+
+                <section class="matrix-panel-section">
+                    <h5>Последнее событие</h5>
+                    <div class="matrix-timeline-card" id="matrix-timeline-preview">
+                        <small>Таймлайн</small>
+                        <p>Сообщения ещё не отправлялись.</p>
+                    </div>
+                </section>
+
+                <section class="matrix-panel-section">
+                    <h5>Участники</h5>
+                    <ul class="matrix-member-list" id="matrix-member-list">
+                        <li class="matrix-member" data-placeholder="true">
+                            <span class="matrix-member-avatar">?</span>
+                            <div>
+                                <strong>Нет данных</strong>
+                                <span>Участники появятся после выбора комнаты</span>
+                            </div>
+                        </li>
+                    </ul>
+                </section>
+            </div>
+        </aside>
     </div>
 
     <!-- Поиск пользователей -->

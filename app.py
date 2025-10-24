@@ -183,6 +183,95 @@ class Room(db.Model):
         
     def to_dict(self, current_user):
         display_name, role, avatar, dm_other_user_id, unread_count = self.get_room_data_for_user(current_user)
+
+        # Дополнительные данные для элемент-подобного интерфейса
+        participants = RoomParticipant.query.filter_by(room_id=self.id).options(
+            db.joinedload(RoomParticipant.user)
+        ).all()
+        member_count = len(participants)
+
+        participant_preview = []
+        verified_members = 0
+        for participant in participants:
+            user = participant.user
+            if not user:
+                continue
+
+            if user.is_verified:
+                verified_members += 1
+
+            if user.id == current_user.id:
+                display_handle = 'Вы'
+            else:
+                contact_entry = current_user.get_contact(user)
+                if contact_entry and contact_entry.custom_name:
+                    display_handle = contact_entry.custom_name
+                else:
+                    display_handle = f"@{user.username}"
+
+            participant_preview.append({
+                'id': user.id,
+                'username': user.username,
+                'display': display_handle,
+                'avatar_url': user.avatar_url,
+                'role': participant.role
+            })
+
+        latest_message = self.messages.order_by(Message.timestamp.desc()).first()
+        last_activity_at = latest_message.timestamp.isoformat() if latest_message else None
+        last_message_author = latest_message.sender.username if latest_message and latest_message.sender else None
+
+        if latest_message:
+            if latest_message.message_type == 'system':
+                last_message_preview = 'Системное обновление'
+            elif latest_message.message_type == 'call':
+                duration = latest_message.call_duration or ''
+                last_message_preview = f"Звонок завершен {duration}".strip()
+            else:
+                payload = (latest_message.content or '').strip()
+                last_message_preview = payload[:140] if payload else 'Медиа вложение'
+        else:
+            last_message_preview = 'Будьте первым, кто напишет сообщение'
+
+        if self.type == 'dm':
+            topic = 'Личная переписка и быстрые реакции'
+        elif self.type == 'group':
+            topic = f'Групповой чат на {member_count} участников'
+        else:
+            topic = 'Новости и трансляции для подписчиков'
+
+        is_encrypted = self.type != 'channel'
+        encryption_label = 'Сквозное шифрование включено' if is_encrypted else 'Трансляция без end-to-end шифрования'
+
+        accent_palette = [
+            '#0DBD8B', '#43A1FF', '#FF9F1A', '#F45D7E', '#00B5D6', '#7B61FF', '#3BB273', '#FFB000'
+        ]
+        accent_color = accent_palette[self.id % len(accent_palette)]
+
+        call_features = {
+            'video': True,
+            'audio': True,
+            'screenshare': self.type != 'channel',
+            'recording': role in ('admin', 'owner')
+        }
+
+        notification_mode = 'all'
+        if self.type == 'channel' and role != 'admin':
+            notification_mode = 'mentions'
+
+        tags = []
+        if is_encrypted:
+            tags.append('E2EE')
+        if member_count > 8:
+            tags.append('Team')
+        if role in ('admin', 'owner'):
+            tags.append('Moderator')
+
+        presence_summary = {
+            'online_count': verified_members or member_count,
+            'total': member_count
+        }
+
         return {
             'id': self.id,
             'name': display_name,
@@ -190,7 +279,20 @@ class Room(db.Model):
             'role': role,
             'avatar_url': avatar,
             'dm_other_user_id': dm_other_user_id,
-            'unread_count': unread_count
+            'unread_count': unread_count,
+            'member_count': member_count,
+            'participant_preview': participant_preview,
+            'topic': topic,
+            'is_encrypted': is_encrypted,
+            'encryption_label': encryption_label,
+            'accent_color': accent_color,
+            'call_features': call_features,
+            'notification_mode': notification_mode,
+            'tags': tags,
+            'presence_summary': presence_summary,
+            'last_activity_at': last_activity_at,
+            'last_message_preview': last_message_preview,
+            'last_message_author': last_message_author
         }
 
 class RoomParticipant(db.Model):

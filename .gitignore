@@ -1,0 +1,8 @@
+# Binary artifacts
+*.exe
+*.dll
+*.pdb
+
+# Editor files
+.DS_Store
+Thumbs.db

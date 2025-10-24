@@ -44,6 +44,335 @@ const mediaPreviewDownload = document.getElementById('media-preview-download');
 const mediaPreviewOpen = document.getElementById('media-preview-open');
 const mediaPreviewClose = document.getElementById('media-preview-close');
 const callButtonSplit = document.querySelector('.call-button-split');
+const matrixPanel = document.getElementById('matrix-aux-panel');
+const matrixPanelToggle = document.getElementById('matrix-panel-toggle');
+const matrixPanelClose = document.getElementById('matrix-panel-close');
+const matrixPanelRoom = document.getElementById('matrix-panel-room');
+const matrixPanelSubtitle = document.getElementById('matrix-panel-subtitle');
+const matrixRoomTopic = document.getElementById('matrix-room-topic');
+const matrixMemberCount = document.getElementById('matrix-member-count');
+const matrixRoomStatus = document.getElementById('matrix-room-status');
+const matrixRoomEncryption = document.getElementById('matrix-room-encryption');
+const matrixRoomTags = document.getElementById('matrix-room-tags');
+const matrixCallChipRow = document.getElementById('matrix-call-chip-row');
+const matrixCallStageText = document.getElementById('matrix-call-stage-text');
+const matrixStartCallBtn = document.getElementById('matrix-start-call-btn');
+const matrixMemberList = document.getElementById('matrix-member-list');
+const matrixTimelinePreview = document.getElementById('matrix-timeline-preview');
+const matrixChatPresence = document.getElementById('matrix-chat-presence');
+const matrixChatTopic = document.getElementById('matrix-chat-topic');
+const railDmBadge = document.getElementById('rail-dm-badge');
+
+function parseDatasetJSON(value, fallback = []) {
+    if (!value) return fallback;
+    try {
+        return JSON.parse(value);
+    } catch (error) {
+        console.warn('Не удалось разобрать JSON из data-атрибута', value, error);
+        return fallback;
+    }
+}
+
+function formatRelativeTime(timestamp) {
+    if (!timestamp) {
+        return 'Нет активности';
+    }
+    const date = new Date(timestamp);
+    if (Number.isNaN(date.getTime())) {
+        return 'Нет активности';
+    }
+    const diff = Date.now() - date.getTime();
+    if (diff < 0) {
+        return 'Недавно';
+    }
+    const minutes = Math.floor(diff / 60000);
+    if (minutes < 1) {
+        return 'Только что';
+    }
+    if (minutes < 60) {
+        return `${minutes} мин назад`;
+    }
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) {
+        return `${hours} ч назад`;
+    }
+    const days = Math.floor(hours / 24);
+    if (days < 7) {
+        return `${days} дн назад`;
+    }
+    return date.toLocaleDateString();
+}
+
+function applyMatrixAccent(color) {
+    if (!color) return;
+    document.body.style.setProperty('--matrix-accent', color);
+}
+
+function renderMatrixTags(tags) {
+    if (!matrixRoomTags) return;
+    matrixRoomTags.innerHTML = '';
+    if (!tags || !tags.length) {
+        return;
+    }
+    const tagLabels = {
+        E2EE: 'Шифрование',
+        Team: 'Команда',
+        Moderator: 'Администратор'
+    };
+    tags.forEach(tag => {
+        const chip = document.createElement('span');
+        chip.className = 'matrix-chip';
+        if (tag === 'E2EE') {
+            chip.classList.add('success');
+        } else if (tag === 'Moderator') {
+            chip.classList.add('danger');
+        }
+        chip.textContent = tagLabels[tag] || tag;
+        matrixRoomTags.appendChild(chip);
+    });
+}
+
+function renderMatrixCallFeatures(features) {
+    if (!matrixCallChipRow) return;
+    matrixCallChipRow.innerHTML = '';
+    if (!features) features = {};
+    const featureMap = [
+        { key: 'video', label: 'Видео' },
+        { key: 'audio', label: 'Аудио' },
+        { key: 'screenshare', label: 'Экран' },
+        { key: 'recording', label: 'Запись', className: 'danger' }
+    ];
+    const available = featureMap.filter(item => features[item.key]);
+    if (!available.length) {
+        const emptyChip = document.createElement('span');
+        emptyChip.className = 'matrix-chip';
+        emptyChip.textContent = 'Функции будут доступны позже';
+        matrixCallChipRow.appendChild(emptyChip);
+        return;
+    }
+    available.forEach(item => {
+        const chip = document.createElement('span');
+        chip.className = 'matrix-chip';
+        if (item.className) {
+            chip.classList.add(item.className);
+        }
+        chip.textContent = item.label;
+        matrixCallChipRow.appendChild(chip);
+    });
+}
+
+function renderMatrixMembers(participants, totalCount) {
+    if (!matrixMemberList) return;
+    matrixMemberList.innerHTML = '';
+    const list = Array.isArray(participants) ? participants : [];
+    if (!list.length) {
+        const placeholder = document.createElement('li');
+        placeholder.className = 'matrix-member';
+        placeholder.innerHTML = '<span class="matrix-member-avatar">?</span><div><strong>Нет данных</strong><span>Участники появятся после выбора комнаты</span></div>';
+        matrixMemberList.appendChild(placeholder);
+        return;
+    }
+    list.slice(0, 6).forEach(participant => {
+        const li = document.createElement('li');
+        li.className = 'matrix-member';
+
+        const avatar = document.createElement('span');
+        avatar.className = 'matrix-member-avatar';
+        if (participant.avatar_url) {
+            const img = document.createElement('img');
+            img.src = participant.avatar_url;
+            img.alt = participant.display || participant.username || '';
+            avatar.textContent = '';
+            avatar.appendChild(img);
+        } else {
+            const fallback = (participant.display || participant.username || '?').trim();
+            avatar.textContent = fallback ? fallback[0].toUpperCase() : '?';
+        }
+
+        const info = document.createElement('div');
+        const name = document.createElement('strong');
+        name.textContent = participant.display || participant.username || 'Участник';
+        const role = document.createElement('span');
+        if (participant.role && participant.role !== 'member') {
+            role.textContent = participant.role === 'admin' ? 'Администратор' : participant.role;
+        } else {
+            role.textContent = `@${participant.username || ''}`;
+        }
+        info.appendChild(name);
+        info.appendChild(role);
+
+        li.appendChild(avatar);
+        li.appendChild(info);
+        matrixMemberList.appendChild(li);
+    });
+
+    if (typeof totalCount === 'number' && totalCount > list.length) {
+        const more = document.createElement('li');
+        more.className = 'matrix-member';
+        const extra = totalCount - list.length;
+        more.innerHTML = `<span class="matrix-member-avatar">+${extra}</span><div><strong>Ещё участники</strong><span>Показать всех в настройках</span></div>`;
+        matrixMemberList.appendChild(more);
+    }
+}
+
+function updateMatrixPanelFromElement(element) {
+    if (!matrixPanel || !element) return;
+    matrixPanel.classList.remove('collapsed');
+    if (window.innerWidth > 1280) {
+        matrixPanel.classList.remove('open');
+    }
+
+    const roomName = element.getAttribute('data-room-name') || 'Комната';
+    const topic = element.getAttribute('data-room-topic') || 'Обсуждение';
+    const roomType = element.getAttribute('data-room-type') || '';
+    const accent = element.getAttribute('data-room-accent');
+    const memberCount = parseInt(element.getAttribute('data-room-member-count') || '0', 10);
+    const encryptionLabel = element.getAttribute('data-room-encryption') || '—';
+    const notificationMode = element.getAttribute('data-room-notify') || 'all';
+    const lastActivity = element.getAttribute('data-room-last-activity');
+    const lastAuthor = element.getAttribute('data-room-last-author') || '';
+    const lastPreview = element.getAttribute('data-room-last-preview') || 'Сообщения ещё не отправлялись.';
+    const tags = parseDatasetJSON(element.getAttribute('data-room-tags'), []);
+    const callFeatures = parseDatasetJSON(element.getAttribute('data-room-call'), {});
+    const participants = parseDatasetJSON(element.getAttribute('data-room-participants'), []);
+    const presence = parseDatasetJSON(element.getAttribute('data-room-presence'), {});
+
+    if (accent) {
+        applyMatrixAccent(accent);
+    }
+    if (matrixPanelRoom) {
+        matrixPanelRoom.textContent = roomName;
+    }
+    if (matrixPanelSubtitle) {
+        const subtitleParts = [];
+        if (lastAuthor) {
+            subtitleParts.push(`@${lastAuthor}`);
+        }
+        subtitleParts.push(formatRelativeTime(lastActivity));
+        matrixPanelSubtitle.textContent = subtitleParts.filter(Boolean).join(' • ');
+    }
+    if (matrixRoomTopic) {
+        matrixRoomTopic.textContent = topic;
+    }
+    if (matrixChatTopic) {
+        matrixChatTopic.textContent = topic;
+    }
+    if (matrixMemberCount) {
+        matrixMemberCount.textContent = memberCount.toString();
+    }
+    if (matrixRoomStatus) {
+        matrixRoomStatus.textContent = notificationMode === 'mentions' ? 'Только упоминания' : 'Все сообщения';
+    }
+    if (matrixRoomEncryption) {
+        matrixRoomEncryption.textContent = encryptionLabel;
+    }
+
+    const total = parseInt(presence.total || memberCount || '0', 10);
+    const online = parseInt(presence.online_count || 0, 10);
+    if (matrixChatPresence) {
+        if (total > 0) {
+            matrixChatPresence.textContent = `В сети: ${online}/${total}`;
+        } else {
+            matrixChatPresence.textContent = 'Комната подключена';
+        }
+    }
+
+    renderMatrixTags(tags);
+    renderMatrixCallFeatures(callFeatures);
+    renderMatrixMembers(participants, total);
+
+    if (matrixCallStageText) {
+        if (callFeatures && callFeatures.video && callFeatures.audio) {
+            matrixCallStageText.textContent = 'Готовы к видеозвонку с участниками.';
+        } else if (callFeatures && callFeatures.audio) {
+            matrixCallStageText.textContent = 'Комната настроена для голосового общения.';
+        } else {
+            matrixCallStageText.textContent = 'Звонок начнётся без медиа — добавьте участников.';
+        }
+    }
+
+    if (matrixStartCallBtn) {
+        matrixStartCallBtn.textContent = roomType === 'channel' ? 'Создать трансляцию' : 'Начать звонок';
+    }
+
+    if (matrixTimelinePreview) {
+        const meta = matrixTimelinePreview.querySelector('small');
+        const text = matrixTimelinePreview.querySelector('p');
+        const relative = formatRelativeTime(lastActivity);
+        if (meta) {
+            meta.textContent = lastAuthor ? `@${lastAuthor} • ${relative}` : `Таймлайн • ${relative}`;
+        }
+        if (text) {
+            text.textContent = lastPreview || 'Сообщения ещё не отправлялись.';
+        }
+    }
+
+    if (window.innerWidth <= 1280) {
+        matrixPanel.classList.add('open');
+    }
+}
+
+function toggleMatrixPanel(forceState) {
+    if (!matrixPanel) return;
+    if (window.innerWidth > 1280) {
+        return;
+    }
+    const shouldOpen = typeof forceState === 'boolean' ? forceState : !matrixPanel.classList.contains('open');
+    matrixPanel.classList.toggle('open', shouldOpen);
+}
+
+function recalcDirectUnreadCount() {
+    if (!railDmBadge) return;
+    let total = 0;
+    document.querySelectorAll('.room-item[data-room-type="dm"] .unread-badge').forEach(badge => {
+        const value = parseInt(badge.textContent, 10);
+        if (!Number.isNaN(value)) {
+            total += value;
+        }
+    });
+    if (total > 0) {
+        railDmBadge.textContent = total > 99 ? '99+' : total;
+        railDmBadge.style.display = 'flex';
+    } else {
+        railDmBadge.style.display = 'none';
+    }
+}
+
+if (matrixPanelToggle) {
+    matrixPanelToggle.addEventListener('click', () => toggleMatrixPanel());
+}
+
+if (matrixPanelClose) {
+    matrixPanelClose.addEventListener('click', () => toggleMatrixPanel(false));
+}
+
+if (matrixStartCallBtn) {
+    matrixStartCallBtn.addEventListener('click', () => {
+        toggleMatrixPanel(false);
+        startCall();
+    });
+}
+
+document.addEventListener('click', (event) => {
+    if (!matrixPanel || window.innerWidth > 1280) return;
+    if (!matrixPanel.classList.contains('open')) return;
+    if (matrixPanel.contains(event.target)) return;
+    if (matrixPanelToggle && matrixPanelToggle.contains(event.target)) return;
+    toggleMatrixPanel(false);
+});
+
+window.addEventListener('resize', () => {
+    if (!matrixPanel) return;
+    if (window.innerWidth > 1280) {
+        matrixPanel.classList.remove('open');
+    }
+});
+
+document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') {
+        toggleMatrixPanel(false);
+    }
+});
 // Вызовы
 let localStream = null;
 let isMicEnabled = true;
@@ -511,6 +840,7 @@ document.addEventListener('DOMContentLoaded', (event) => {
     // Запрашиваем разрешение на уведомления
     requestNotificationPermission();
     scheduleAudioUnlock();
+    recalcDirectUnreadCount();
 
     // Подключаемся к Socket.IO по текущему origin. Разрешаем стандартный апгрейд (polling -> websocket).
     socket = io({ transports: ['polling'], upgrade: false });
@@ -2132,6 +2462,7 @@ function updateUnreadBadge(roomId, count) {
             badge.remove();
         }
     }
+    recalcDirectUnreadCount();
 }
 
 async function markRoomAsRead(roomId) {
@@ -6419,7 +6750,8 @@ function selectRoom(element) {
     chatHeader.style.display = 'flex';
     placeholderText.style.display = 'none';
     chatWithName.textContent = roomName;
-    
+    updateMatrixPanelFromElement(element);
+
     clearChatWindow();
 
     // C. Устанавливаем новую комнату
