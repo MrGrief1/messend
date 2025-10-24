@@ -44,6 +44,64 @@ const mediaPreviewDownload = document.getElementById('media-preview-download');
 const mediaPreviewOpen = document.getElementById('media-preview-open');
 const mediaPreviewClose = document.getElementById('media-preview-close');
 const callButtonSplit = document.querySelector('.call-button-split');
+const matrixRail = document.getElementById('matrix-left-rail');
+const contextPanel = document.getElementById('matrix-right-panel');
+const contextScroll = document.getElementById('context-scroll');
+const contextRoomNameEl = document.getElementById('context-room-name');
+const contextRoomTypeEl = document.getElementById('context-room-type');
+const contextRoleBadge = document.getElementById('context-role-badge');
+const contextUnreadBadge = document.getElementById('context-unread-badge');
+const contextMemberCountEl = document.getElementById('context-member-count');
+const contextLastActivityEl = document.getElementById('context-last-activity');
+const contextAvatarEl = document.getElementById('context-room-avatar');
+const contextMemberListEl = document.getElementById('context-member-list');
+const contextEmptyState = document.getElementById('context-empty-state');
+const contextCallPill = document.getElementById('context-call-pill');
+const contextCallTimer = document.getElementById('context-call-timer');
+const contextOpenCallBtn = document.getElementById('context-open-call');
+const contextCloseBtn = document.getElementById('context-close-btn');
+const contextToggleBtn = document.getElementById('context-toggle-btn');
+const callStageEl = document.getElementById('call-stage');
+const callStageTitleEl = document.getElementById('call-stage-title');
+const callStageSubtitleEl = document.getElementById('call-stage-subtitle');
+const callStageTimerEl = document.getElementById('call-stage-timer');
+const callStageParticipantsEl = document.getElementById('call-stage-participants');
+const callStageEmptyEl = document.getElementById('call-stage-empty');
+const callMiniDock = document.getElementById('call-mini-dock');
+const callDockTitleEl = document.getElementById('call-dock-title');
+const callDockTimerEl = document.getElementById('call-dock-timer');
+const callDockReturnBtn = document.getElementById('call-dock-return');
+const callDockEndBtn = document.getElementById('call-dock-end');
+const matrixRailButtons = matrixRail ? Array.from(matrixRail.querySelectorAll('.matrix-rail-btn')) : [];
+
+const CALL_AVATAR_GRADIENTS = [
+    'linear-gradient(135deg, #6a5dfc, #b673ff)',
+    'linear-gradient(135deg, #00a8ff, #0077ff)',
+    'linear-gradient(135deg, #ff7eb3, #ff758c)',
+    'linear-gradient(135deg, #43e97b, #38f9d7)'
+];
+
+let lastContextRoomId = null;
+let lastContextMemberRequest = null;
+let lastActivityTimestamp = null;
+let contextActivityInterval = null;
+let callMiniDockHideTimeout = null;
+
+if (contextPanel) {
+    try {
+        const savedState = localStorage.getItem('matrixContextPanel');
+        if (savedState === 'closed') {
+            contextPanel.classList.remove('is-open');
+            contextPanel.setAttribute('aria-hidden', 'true');
+        } else {
+            contextPanel.classList.add('is-open');
+            contextPanel.setAttribute('aria-hidden', 'false');
+        }
+    } catch (_) {
+        contextPanel.classList.add('is-open');
+        contextPanel.setAttribute('aria-hidden', 'false');
+    }
+}
 // Вызовы
 let localStream = null;
 let isMicEnabled = true;
@@ -87,6 +145,435 @@ function handleCallButtonClick(event) {
 
     setCallDropdownVisibility(false);
     startCall();
+}
+
+function setActiveRailButton(targetButton) {
+    if (!matrixRailButtons.length) return;
+    matrixRailButtons.forEach((btn) => {
+        btn.classList.toggle('active', btn === targetButton);
+        if (btn === targetButton) {
+            btn.setAttribute('aria-pressed', 'true');
+        } else {
+            btn.removeAttribute('aria-pressed');
+        }
+    });
+}
+
+function handleRailAction(event) {
+    const button = event.currentTarget;
+    const action = button.getAttribute('data-rail-action');
+    setActiveRailButton(button);
+
+    switch (action) {
+        case 'chats':
+            if (messageInput && !messageInput.disabled) {
+                messageInput.focus();
+            }
+            break;
+        case 'search':
+            openModal('searchModal');
+            break;
+        case 'create':
+            openModal('createRoomModal');
+            break;
+        case 'settings':
+        case 'profile':
+            openInlineSettings();
+            break;
+        case 'calls':
+            toggleContextPanel(true);
+            if (callStageEl) {
+                callStageEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+            break;
+        case 'home':
+            toggleContextPanel(true);
+            break;
+        default:
+            break;
+    }
+}
+
+function initializeRailNavigation() {
+    if (!matrixRailButtons.length) return;
+    matrixRailButtons.forEach((btn) => {
+        btn.addEventListener('click', handleRailAction);
+    });
+    setActiveRailButton(matrixRailButtons.find(btn => btn.dataset.railAction === 'chats') || matrixRailButtons[0]);
+}
+
+function setContextPanelVisibility(forceOpen) {
+    if (!contextPanel) return;
+    let shouldOpen = typeof forceOpen === 'boolean' ? forceOpen : !contextPanel.classList.contains('is-open');
+
+    if (shouldOpen) {
+        contextPanel.classList.add('is-open');
+        contextPanel.setAttribute('aria-hidden', 'false');
+        try { localStorage.setItem('matrixContextPanel', 'open'); } catch (_) {}
+    } else {
+        contextPanel.classList.remove('is-open');
+        contextPanel.setAttribute('aria-hidden', 'true');
+        try { localStorage.setItem('matrixContextPanel', 'closed'); } catch (_) {}
+    }
+}
+
+function toggleContextPanel(forceOpen) {
+    if (!contextPanel) return;
+    const isHidden = contextPanel.getAttribute('aria-hidden') === 'true';
+    const shouldOpen = typeof forceOpen === 'boolean' ? forceOpen : isHidden;
+    setContextPanelVisibility(shouldOpen);
+}
+
+function updateContextUnread(count) {
+    if (!contextUnreadBadge) return;
+    if (typeof count === 'number' && count > 0) {
+        contextUnreadBadge.textContent = count > 99 ? '99+' : String(count);
+        contextUnreadBadge.style.display = 'inline-flex';
+    } else {
+        contextUnreadBadge.textContent = '0';
+        contextUnreadBadge.style.display = 'none';
+    }
+}
+
+function updateContextPanel(meta = {}) {
+    if (!contextPanel) return;
+    lastContextRoomId = meta.id || null;
+    if (meta.id) {
+        contextPanel.dataset.roomId = meta.id;
+    } else {
+        contextPanel.removeAttribute('data-room-id');
+    }
+
+    contextPanel.setAttribute('data-empty', 'false');
+    if (contextRoomNameEl) contextRoomNameEl.textContent = meta.name || 'Без названия';
+    if (contextRoomTypeEl) contextRoomTypeEl.textContent = formatRoomTypeLabel(meta.type);
+
+    if (contextRoleBadge) {
+        contextRoleBadge.textContent = formatRoleBadge(meta.role);
+        contextRoleBadge.classList.toggle('highlight', (meta.role || '').toLowerCase() === 'admin');
+    }
+
+    updateContextUnread(typeof meta.unread === 'number' ? meta.unread : 0);
+
+    if (contextMemberCountEl) {
+        contextMemberCountEl.textContent = meta.memberCount ? String(meta.memberCount) : '…';
+    }
+
+    if (contextAvatarEl) {
+        if (meta.avatar) {
+            contextAvatarEl.innerHTML = `<img src="${meta.avatar}" alt="${meta.name || ''}">`;
+        } else {
+            const initial = (meta.name || meta.id || '?').trim().charAt(0).toUpperCase() || '?';
+            contextAvatarEl.innerHTML = `<span>${initial}</span>`;
+        }
+    }
+
+    if (contextMemberListEl) {
+        contextMemberListEl.innerHTML = '<li class="context-member-empty">Загрузка участников…</li>';
+    }
+
+    if (meta.lastActivity) {
+        updateContextLastActivity(new Date(meta.lastActivity));
+    } else {
+        updateContextLastActivity(null);
+    }
+
+    if (typeof meta.unread === 'number') {
+        updateContextUnread(meta.unread);
+    }
+
+    let savedState = 'open';
+    try {
+        savedState = localStorage.getItem('matrixContextPanel') || 'open';
+    } catch (_) {}
+    setContextPanelVisibility(savedState !== 'closed');
+    loadContextMembers(meta.id);
+}
+
+function updateContextPanelFromElement(element) {
+    if (!element) return;
+    const meta = {
+        id: element.getAttribute('data-room-id'),
+        name: element.getAttribute('data-room-name'),
+        type: element.getAttribute('data-room-type'),
+        role: element.getAttribute('data-user-role'),
+        avatar: element.getAttribute('data-room-avatar'),
+        unread: parseInt(element.getAttribute('data-room-unread') || '0', 10) || 0
+    };
+    updateContextPanel(meta);
+}
+
+function resetContextPanel() {
+    if (!contextPanel) return;
+    contextPanel.setAttribute('data-empty', 'true');
+    contextPanel.removeAttribute('data-room-id');
+    if (contextRoomNameEl) contextRoomNameEl.textContent = 'Выберите чат';
+    if (contextRoomTypeEl) contextRoomTypeEl.textContent = 'Информация появится здесь';
+    if (contextAvatarEl) contextAvatarEl.innerHTML = '<span>?</span>';
+    if (contextMemberCountEl) contextMemberCountEl.textContent = '0';
+    if (contextMemberListEl) contextMemberListEl.innerHTML = '<li class="context-member-empty">Участники появятся после выбора комнаты</li>';
+    updateContextUnread(0);
+    updateContextLastActivity(null);
+    updateContextCallState(false);
+    setCallMiniDockVisible(false);
+    deactivateCallStage();
+}
+
+async function loadContextMembers(roomId) {
+    if (!roomId || !contextMemberListEl) return;
+    const requestId = Date.now();
+    lastContextMemberRequest = requestId;
+
+    try {
+        const response = await fetch(`/api/room_members/${roomId}`);
+        if (!response.ok) throw new Error('Ошибка загрузки');
+        const data = await response.json();
+        if (lastContextMemberRequest !== requestId) return;
+        if (data.success) {
+            const members = Array.isArray(data.members) ? data.members : [];
+            if (contextMemberCountEl) contextMemberCountEl.textContent = members.length;
+            renderContextMembers(members);
+        } else {
+            throw new Error(data.error || 'Не удалось загрузить участников');
+        }
+    } catch (error) {
+        if (lastContextMemberRequest !== requestId) return;
+        if (contextMemberCountEl) contextMemberCountEl.textContent = '—';
+        if (contextMemberListEl) contextMemberListEl.innerHTML = `<li class="context-member-empty">${error.message || 'Не удалось загрузить участников'}</li>`;
+        if (callStageParticipantsEl) {
+            callStageParticipantsEl.innerHTML = '<div class="call-stage-empty" id="call-stage-empty">Не удалось загрузить участников</div>';
+        }
+    }
+}
+
+function renderContextMembers(members) {
+    if (!contextMemberListEl) return;
+    if (!Array.isArray(members) || members.length === 0) {
+        contextMemberListEl.innerHTML = '<li class="context-member-empty">Пока нет участников</li>';
+        if (callStageParticipantsEl) {
+            callStageParticipantsEl.innerHTML = '<div class="call-stage-empty" id="call-stage-empty">Ожидаем участников звонка…</div>';
+        }
+        return;
+    }
+
+    const fragment = document.createDocumentFragment();
+    const participantCards = document.createDocumentFragment();
+    const previewMembers = members.slice(0, 4);
+
+    members.forEach((member, index) => {
+        const item = document.createElement('li');
+        item.className = 'context-member-item';
+
+        const name = document.createElement('span');
+        name.className = 'context-member-name';
+        name.textContent = member.username ? `@${member.username}` : `Участник ${member.id}`;
+
+        const role = document.createElement('span');
+        role.className = 'context-member-role';
+        role.textContent = formatRoleBadge(member.role);
+
+        if (member.id === CURRENT_USER_ID) {
+            role.textContent = 'Вы';
+            role.classList.add('highlight');
+        }
+
+        item.appendChild(name);
+        item.appendChild(role);
+        fragment.appendChild(item);
+
+        if (index < previewMembers.length && callStageParticipantsEl) {
+            const card = document.createElement('div');
+            card.className = 'call-stage-avatar';
+            if (member.id === CURRENT_USER_ID) {
+                card.classList.add('call-stage-avatar--me');
+            }
+            const circle = document.createElement('div');
+            circle.className = 'call-stage-avatar-circle';
+            circle.style.background = CALL_AVATAR_GRADIENTS[index % CALL_AVATAR_GRADIENTS.length];
+            circle.textContent = (member.username || '?').trim().charAt(0).toUpperCase() || '?';
+
+            const label = document.createElement('div');
+            label.className = 'call-stage-avatar-label';
+            label.textContent = member.username ? `@${member.username}` : 'Участник';
+
+            card.appendChild(circle);
+            card.appendChild(label);
+            participantCards.appendChild(card);
+        }
+    });
+
+    contextMemberListEl.innerHTML = '';
+    contextMemberListEl.appendChild(fragment);
+
+    if (callStageParticipantsEl) {
+        callStageParticipantsEl.innerHTML = '';
+        callStageParticipantsEl.appendChild(participantCards);
+        if (members.length > 4) {
+            const extra = document.createElement('div');
+            extra.className = 'call-stage-avatar';
+            extra.innerHTML = `<div class="call-stage-avatar-circle">+${members.length - 4}</div><div class="call-stage-avatar-label">ещё</div>`;
+            callStageParticipantsEl.appendChild(extra);
+        }
+    }
+}
+
+function formatRoomTypeLabel(type) {
+    switch ((type || '').toLowerCase()) {
+        case 'dm':
+            return 'Личный чат';
+        case 'group':
+            return 'Группа';
+        case 'channel':
+            return 'Канал';
+        default:
+            return 'Комната';
+    }
+}
+
+function formatRoleBadge(role) {
+    switch ((role || '').toLowerCase()) {
+        case 'admin':
+            return 'Администратор';
+        case 'moderator':
+            return 'Модератор';
+        default:
+            return 'Участник';
+    }
+}
+
+function updateContextLastActivity(date) {
+    if (!contextLastActivityEl) return;
+    if (!date || Number.isNaN(date.getTime())) {
+        contextLastActivityEl.textContent = '—';
+        lastActivityTimestamp = null;
+        if (contextActivityInterval) {
+            clearInterval(contextActivityInterval);
+            contextActivityInterval = null;
+        }
+        return;
+    }
+
+    lastActivityTimestamp = date;
+    contextLastActivityEl.textContent = formatRelativeTime(date);
+
+    if (!contextActivityInterval) {
+        contextActivityInterval = setInterval(() => {
+            if (lastActivityTimestamp) {
+                contextLastActivityEl.textContent = formatRelativeTime(lastActivityTimestamp);
+            }
+        }, 60000);
+    }
+}
+
+function formatRelativeTime(date) {
+    try {
+        const diffMs = Date.now() - date.getTime();
+        if (diffMs < 0) return 'только что';
+        const seconds = Math.floor(diffMs / 1000);
+        if (seconds < 45) return 'только что';
+        if (seconds < 90) return 'минуту назад';
+        const minutes = Math.floor(seconds / 60);
+        if (minutes < 60) return `${minutes} мин назад`;
+        const hours = Math.floor(minutes / 60);
+        if (hours < 24) return `${hours} ч назад`;
+        const days = Math.floor(hours / 24);
+        if (days < 7) return `${days} дн назад`;
+        return date.toLocaleString([], { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+    } catch (_) {
+        return '';
+    }
+}
+
+function activateCallStage(options = {}) {
+    if (!callStageEl) return;
+    callStageEl.hidden = false;
+    callStageEl.classList.add('is-visible');
+    if (callStageTitleEl) callStageTitleEl.textContent = options.title || 'Активный звонок';
+    if (callStageSubtitleEl) callStageSubtitleEl.textContent = options.subtitle || 'Подключение участников…';
+}
+
+function deactivateCallStage() {
+    if (!callStageEl) return;
+    callStageEl.classList.remove('is-visible');
+    callStageEl.hidden = true;
+    if (callStageParticipantsEl) {
+        callStageParticipantsEl.innerHTML = '<div class="call-stage-empty" id="call-stage-empty">Ожидаем участников звонка…</div>';
+    }
+}
+
+function setCallMiniDockVisible(visible) {
+    if (!callMiniDock) return;
+    if (callMiniDockHideTimeout) {
+        clearTimeout(callMiniDockHideTimeout);
+        callMiniDockHideTimeout = null;
+    }
+    if (visible) {
+        callMiniDock.hidden = false;
+        requestAnimationFrame(() => callMiniDock.classList.add('is-visible'));
+    } else {
+        callMiniDock.classList.remove('is-visible');
+        callMiniDockHideTimeout = setTimeout(() => {
+            if (!callMiniDock.classList.contains('is-visible')) {
+                callMiniDock.hidden = true;
+            }
+        }, 220);
+    }
+}
+
+function updateCallSurfaces(title, subtitle) {
+    activateCallStage({ title, subtitle });
+    if (callDockTitleEl) callDockTitleEl.textContent = title || 'Активный звонок';
+    if (contextCallPill) {
+        updateContextCallState(true, subtitle);
+    }
+    setCallMiniDockVisible(true);
+}
+
+function updateContextCallState(isActive, subtitle) {
+    if (!contextCallPill) return;
+    const titleEl = contextCallPill.querySelector('.context-call-title');
+    const subtitleEl = contextCallPill.querySelector('.context-call-subtitle');
+    if (isActive) {
+        contextCallPill.dataset.state = 'active';
+        if (titleEl) titleEl.textContent = 'Активный звонок';
+        if (subtitleEl) subtitleEl.textContent = subtitle || 'Участники подключены';
+    } else {
+        contextCallPill.dataset.state = 'idle';
+        if (titleEl) titleEl.textContent = 'Звонков нет';
+        if (subtitleEl) subtitleEl.textContent = 'Начните разговор, чтобы увидеть детали';
+        if (contextCallTimer) contextCallTimer.textContent = '00:00';
+    }
+}
+
+window.toggleContextPanel = toggleContextPanel;
+
+initializeRailNavigation();
+resetContextPanel();
+
+if (contextCloseBtn) {
+    contextCloseBtn.addEventListener('click', () => setContextPanelVisibility(false));
+}
+
+if (contextToggleBtn) {
+    contextToggleBtn.addEventListener('click', () => toggleContextPanel());
+}
+
+if (contextOpenCallBtn) {
+    contextOpenCallBtn.addEventListener('click', () => {
+        if (callStartTime) {
+            returnToCall();
+        } else {
+            startCall();
+        }
+    });
+}
+
+if (callDockReturnBtn) {
+    callDockReturnBtn.addEventListener('click', () => returnToCall());
+}
+
+if (callDockEndBtn) {
+    callDockEndBtn.addEventListener('click', () => endCall());
 }
 
 const reactionIconTemplates = {
@@ -763,6 +1250,9 @@ document.addEventListener('DOMContentLoaded', (event) => {
             currentRoomId = null;
             currentRoomType = null;
             currentUserRole = null;
+            resetContextPanel();
+            setCallMiniDockVisible(false);
+            deactivateCallStage();
         }
         // Удаляем комнату из сайдбара у всех участников
         const roomElement = document.querySelector(`.room-item[data-room-id="${data.room_id}"]`);
@@ -773,8 +1263,16 @@ document.addEventListener('DOMContentLoaded', (event) => {
 
     // НОВОЕ: Управление участниками
     socket.on('member_list_updated', (data) => {
-        if (data.room_id == currentRoomId && document.getElementById('membersModal').style.display === 'flex') {
-            renderMembersList(data.members);
+        if (data.room_id == currentRoomId) {
+            if (document.getElementById('membersModal').style.display === 'flex') {
+                renderMembersList(data.members);
+            }
+            if (Array.isArray(data.members)) {
+                renderContextMembers(data.members);
+                if (contextMemberCountEl) {
+                    contextMemberCountEl.textContent = data.members.length;
+                }
+            }
         }
     });
 
@@ -2117,7 +2615,9 @@ function updateUnreadBadge(roomId, count) {
     if (!roomElement) return;
 
     let badge = roomElement.querySelector('.unread-badge');
-    
+
+    roomElement.setAttribute('data-room-unread', count || 0);
+
     if (count > 0) {
         if (!badge) {
             // Создаем бейдж если его нет
@@ -2131,6 +2631,10 @@ function updateUnreadBadge(roomId, count) {
         if (badge) {
             badge.remove();
         }
+    }
+
+    if (String(roomId) === String(currentRoomId)) {
+        updateContextUnread(count || 0);
     }
 }
 
@@ -2533,6 +3037,9 @@ function displayMessage(data) {
     if (data && typeof data.thread_root_id !== 'undefined') {
         handleThreadMessage(data);
         return;
+    }
+    if (data && data.room_id == currentRoomId && data.timestamp) {
+        updateContextLastActivity(new Date(data.timestamp));
     }
     // Проверяем тип сообщения
     if (data.message_type === 'system') {
@@ -3220,6 +3727,8 @@ function addNewRoomToSidebar(room) {
     li.setAttribute('data-room-type', room.type);
     li.setAttribute('data-user-role', room.role);
     li.setAttribute('data-dm-other-id', room.dm_other_user_id || '');
+    li.setAttribute('data-room-avatar', room.avatar_url || '');
+    li.setAttribute('data-room-unread', room.unread_count || 0);
     
     const icon = document.createElement('span');
     icon.classList.add('room-icon');
@@ -3273,7 +3782,9 @@ function updateRoomInSidebar(room) {
     if (element) {
         element.setAttribute('data-room-name', room.name);
         element.setAttribute('data-user-role', room.role);
-        
+        element.setAttribute('data-room-avatar', room.avatar_url || '');
+        element.setAttribute('data-room-unread', room.unread_count || 0);
+
         // Обновляем текст имени
         const nameText = element.querySelector('.room-name-text');
         if (nameText) nameText.textContent = room.name;
@@ -4623,6 +5134,10 @@ function filterThreadComments(query = '') {
             threadEmptyEl.style.display = 'none';
         } else if (!threadCommentsEl.children.length) {
             threadEmptyEl.style.display = 'block';
+        }
+
+        if (String(room.id) === String(currentRoomId)) {
+            updateContextPanelFromElement(element);
         }
     }
 }
@@ -6430,6 +6945,7 @@ function selectRoom(element) {
     currentDMotherUserId = element.getAttribute('data-dm-other-id');
 
     setupRoomUI();
+    updateContextPanelFromElement(element);
 
     // D. Загружаем историю
     loadChatHistory(roomId);
@@ -8492,7 +9008,7 @@ function showCallIndicator() {
     const indicator = document.getElementById('active-call-indicator');
     if (indicator) {
         indicator.style.display = 'flex';
-        
+
         // Запускаем таймер (callStartTime уже должен быть установлен в openCall)
         if (!callStartTime) {
         callStartTime = Date.now();
@@ -8501,6 +9017,9 @@ function showCallIndicator() {
         updateCallTimer();
         callTimerInterval = setInterval(updateCallTimer, 1000);
     }
+    activateCallStage({});
+    updateContextCallState(true);
+    setCallMiniDockVisible(true);
 }
 
 function hideCallIndicator() {
@@ -8508,26 +9027,33 @@ function hideCallIndicator() {
     if (indicator) {
         indicator.style.display = 'none';
     }
-    
+
     // Останавливаем таймер
     if (callTimerInterval) {
         clearInterval(callTimerInterval);
         callTimerInterval = null;
     }
     callStartTime = null;
+    deactivateCallStage();
+    setCallMiniDockVisible(false);
+    updateContextCallState(false);
 }
 
 function updateCallTimer() {
     if (!callStartTime) return;
-    
+
     const elapsed = Math.floor((Date.now() - callStartTime) / 1000);
     const minutes = Math.floor(elapsed / 60);
     const seconds = elapsed % 60;
-    
+
     const timerEl = document.getElementById('call-indicator-timer');
+    const timerText = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
     if (timerEl) {
-        timerEl.textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+        timerEl.textContent = timerText;
     }
+    if (callStageTimerEl) callStageTimerEl.textContent = timerText;
+    if (callDockTimerEl) callDockTimerEl.textContent = timerText;
+    if (contextCallTimer) contextCallTimer.textContent = timerText;
 }
 
 function returnToCall() {
@@ -8539,8 +9065,11 @@ function returnToCall() {
 function updateCallIndicatorInfo(title, subtitle) {
     const titleEl = document.getElementById('call-indicator-title');
     const subtitleEl = document.getElementById('call-indicator-subtitle');
-    if (titleEl) titleEl.textContent = title || 'Активный звонок';
-    if (subtitleEl) subtitleEl.textContent = subtitle || 'Нажмите, чтобы вернуться';
+    const normalizedTitle = title || 'Активный звонок';
+    const normalizedSubtitle = subtitle || 'Нажмите, чтобы вернуться';
+    if (titleEl) titleEl.textContent = normalizedTitle;
+    if (subtitleEl) subtitleEl.textContent = normalizedSubtitle;
+    updateCallSurfaces(normalizedTitle, normalizedSubtitle);
 }
 
 // ========== Обновление функций блокировки ==========

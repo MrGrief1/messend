@@ -1189,8 +1189,67 @@
         <div class="blob blob-2"></div>
         <div class="blob blob-3"></div>
     </div>
-    
-    <div class="app-layout">
+
+    <aside class="matrix-left-rail glass" id="matrix-left-rail" aria-label="Навигация по приложению">
+        <div class="matrix-rail-top">
+            <button class="matrix-rail-logo" data-rail-action="home" title="GlassChat">
+                <span>GC</span>
+            </button>
+            <button class="matrix-rail-avatar" data-rail-action="profile" title="Ваш профиль">
+                {% if user.avatar_url %}
+                    <img src="{{ user.avatar_url }}" alt="{{ user.username }}">
+                {% else %}
+                    <span>{{ user.username[:1]|upper }}</span>
+                {% endif %}
+            </button>
+        </div>
+        <div class="matrix-rail-nav" role="group" aria-label="Основные разделы">
+            <button class="matrix-rail-btn active" data-rail-action="chats" aria-pressed="true" title="Чаты">
+                <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
+                    <use href="#ui-chat"></use>
+                </svg>
+            </button>
+            <button class="matrix-rail-btn" data-rail-action="spaces" title="Пространства">
+                <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
+                    <use href="#ui-hash"></use>
+                </svg>
+            </button>
+            <button class="matrix-rail-btn" data-rail-action="explore" title="Каталог сообществ">
+                <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
+                    <use href="#ui-compass"></use>
+                </svg>
+            </button>
+            <button class="matrix-rail-btn" data-rail-action="calls" title="Звонки и встречи">
+                <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
+                    <use href="#ui-video-camera"></use>
+                </svg>
+            </button>
+            <button class="matrix-rail-btn" data-rail-action="inbox" title="Входящие события">
+                <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
+                    <use href="#ui-inbox"></use>
+                </svg>
+            </button>
+        </div>
+        <div class="matrix-rail-bottom">
+            <button class="matrix-rail-btn" data-rail-action="search" title="Поиск по Matrix">
+                <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
+                    <use href="#ui-search"></use>
+                </svg>
+            </button>
+            <button class="matrix-rail-btn" data-rail-action="create" title="Создать чат или пространство">
+                <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
+                    <use href="#ui-plus-circle"></use>
+                </svg>
+            </button>
+            <button class="matrix-rail-btn" data-rail-action="settings" title="Настройки профиля">
+                <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
+                    <use href="#ui-cog"></use>
+                </svg>
+            </button>
+        </div>
+    </aside>
+
+    <div class="app-layout matrix-with-rail">
         <div class="bg-shape shape1"></div>
         <div class="bg-shape shape2"></div>
 
@@ -1232,7 +1291,7 @@
                 <ul class="room-list" id="room-list">
                     {% if rooms %}
                         {% for room in rooms %}
-                            <li class="room-item" data-room-id="{{ room.id }}" data-room-type="{{ room.type }}" data-room-name="{{ room.name }}" data-user-role="{{ room.role }}" data-dm-other-id="{{ room.dm_other_user_id or '' }}" onclick="selectRoom(this)">
+                            <li class="room-item" data-room-id="{{ room.id }}" data-room-type="{{ room.type }}" data-room-name="{{ room.name }}" data-user-role="{{ room.role }}" data-dm-other-id="{{ room.dm_other_user_id or '' }}" data-room-avatar="{{ room.avatar_url or '' }}" data-room-unread="{{ room.unread_count or 0 }}" onclick="selectRoom(this)">
                                 <span class="room-icon">
                                     {% if room.avatar_url %}
                                         <img src="{{ room.avatar_url }}" alt="Avatar">
@@ -1265,7 +1324,7 @@
                 <ul class="room-list" id="archive-list" style="display: none;">
                     {% if archived_rooms %}
                         {% for room in archived_rooms %}
-                            <li class="room-item archived" data-room-id="{{ room.id }}" data-room-type="{{ room.type }}" data-room-name="{{ room.name }}" data-user-role="{{ room.role }}" data-dm-other-id="{{ room.dm_other_user_id or '' }}" onclick="selectRoom(this)">
+                            <li class="room-item archived" data-room-id="{{ room.id }}" data-room-type="{{ room.type }}" data-room-name="{{ room.name }}" data-user-role="{{ room.role }}" data-dm-other-id="{{ room.dm_other_user_id or '' }}" data-room-avatar="{{ room.avatar_url or '' }}" data-room-unread="{{ room.unread_count or 0 }}" onclick="selectRoom(this)">
                                 <span class="room-icon">
                                     {% if room.avatar_url %}
                                         <img src="{{ room.avatar_url }}" alt="Avatar">
@@ -1382,6 +1441,11 @@
                                 </button>
                             </div>
                         </div>
+                        <button class="icon-btn" id="context-toggle-btn" onclick="toggleContextPanel()" title="Информация о комнате">
+                            <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
+                                <use href="#ui-info-circle"></use>
+                            </svg>
+                        </button>
                         <button class="icon-btn" id="room-settings-btn" onclick="openContextSettings()" title="Настройки чата">
                             <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
                                 <use href="#ui-ellipsis"></use>
@@ -1409,7 +1473,36 @@
                         <button class="call-indicator-btn danger" onclick="event.stopPropagation(); endCall();">Завершить</button>
                     </div>
                 </div>
-                
+
+                <section class="call-stage glass" id="call-stage" hidden>
+                    <header class="call-stage-header">
+                        <div>
+                            <h4 id="call-stage-title">Звонок не активен</h4>
+                            <p id="call-stage-subtitle">Начните встречу, чтобы увидеть участников</p>
+                        </div>
+                        <span class="call-stage-timer" id="call-stage-timer">00:00</span>
+                    </header>
+                    <div class="call-stage-body">
+                        <div class="call-stage-grid" id="call-stage-participants">
+                            <div class="call-stage-empty" id="call-stage-empty">Ожидаем участников звонка…</div>
+                        </div>
+                        <div class="call-stage-actions">
+                            <button class="ghost-btn" id="call-stage-return" onclick="returnToCall()">
+                                <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
+                                    <use href="#ui-video-camera"></use>
+                                </svg>
+                                <span>Открыть окно звонка</span>
+                            </button>
+                            <button class="ghost-btn danger" onclick="endCall()">
+                                <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
+                                    <use href="#ui-phone-end"></use>
+                                </svg>
+                                <span>Завершить</span>
+                            </button>
+                        </div>
+                    </div>
+                </section>
+
                 <div class="placeholder-text" id="placeholder-text">
                     Выберите чат слева, чтобы начать общение.
                 </div>
@@ -1742,6 +1835,63 @@
             </div>
 
         </div>
+        <aside class="matrix-right-panel enhanced-glass" id="matrix-right-panel" aria-label="Информация о комнате" aria-hidden="true" data-empty="true">
+            <div class="context-header">
+                <div class="context-title-block">
+                    <h3 id="context-room-name">Выберите чат</h3>
+                    <p id="context-room-type" class="context-subtitle">Информация появится здесь</p>
+                </div>
+                <button class="icon-btn ghost" id="context-close-btn" title="Скрыть панель">
+                    <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
+                        <use href="#ui-chevron-right"></use>
+                    </svg>
+                </button>
+            </div>
+            <div class="context-scroll" id="context-scroll" data-empty="true">
+                <section class="context-section context-overview">
+                    <div class="context-avatar" id="context-room-avatar">
+                        <span>{{ user.username[:1]|upper }}</span>
+                    </div>
+                    <div class="context-overview-meta">
+                        <span class="context-chip" id="context-role-badge">—</span>
+                        <span class="context-chip" id="context-unread-badge">0</span>
+                        <span class="context-chip" id="context-member-count">0</span>
+                    </div>
+                    <div class="context-activity">
+                        <span class="context-activity-label">Последняя активность</span>
+                        <span class="context-activity-value" id="context-last-activity">—</span>
+                    </div>
+                </section>
+                <section class="context-section">
+                    <div class="context-section-header">
+                        <h4>Активность</h4>
+                        <button class="ghost-btn" id="context-open-call" type="button">Звонок</button>
+                    </div>
+                    <div class="context-call-pill" id="context-call-pill" data-state="idle">
+                        <div class="context-call-text">
+                            <span class="context-call-title">Звонков нет</span>
+                            <span class="context-call-subtitle">Начните разговор, чтобы увидеть детали</span>
+                        </div>
+                        <span class="context-call-timer" id="context-call-timer">00:00</span>
+                    </div>
+                </section>
+                <section class="context-section">
+                    <div class="context-section-header">
+                        <h4>Участники</h4>
+                        <button class="ghost-btn" type="button" onclick="openContextSettings()">Управление</button>
+                    </div>
+                    <ul class="context-member-list" id="context-member-list">
+                        <li class="context-member-empty" id="context-member-empty">Участники появятся после выбора комнаты</li>
+                    </ul>
+                </section>
+            </div>
+            <div class="context-empty-state" id="context-empty-state">
+                <svg class="context-empty-icon" viewBox="0 0 24 24" aria-hidden="true">
+                    <use href="#ui-compass"></use>
+                </svg>
+                <p>Выберите чат, чтобы увидеть подробности и участников.</p>
+            </div>
+        </aside>
     </div>
 
     <!-- Поиск пользователей -->
@@ -2573,6 +2723,24 @@
                 </div>
             </div>
         </div>
+    </div>
+
+
+    <div class="call-mini-dock glass" id="call-mini-dock" hidden>
+        <button class="call-mini-return" id="call-dock-return" title="Вернуться к звонку">
+            <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
+                <use href="#ui-video-camera"></use>
+            </svg>
+        </button>
+        <div class="call-mini-meta">
+            <span class="call-mini-title" id="call-dock-title">Активный звонок</span>
+            <span class="call-mini-timer" id="call-dock-timer">00:00</span>
+        </div>
+        <button class="call-mini-end" id="call-dock-end" title="Завершить звонок">
+            <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
+                <use href="#ui-phone-end"></use>
+            </svg>
+        </button>
     </div>
 
 
