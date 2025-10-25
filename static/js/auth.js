@@ -1,30 +1,75 @@
 // Переключение между формами входа и регистрации
-function toggleForms() {
+function updateRegisterProgress() {
+    const steps = document.querySelectorAll('.register-progress .progress-dot');
+    if (!steps.length) return;
+
+    const username = document.getElementById('register-username');
+    const email = document.getElementById('register-email');
+    const password = document.getElementById('register-password');
+
+    let filled = 0;
+    if (username && username.value.trim().length >= 3) filled += 1;
+    if (email && /@/.test(email.value)) filled += 1;
+    if (password && password.value.trim().length >= 8) filled += 1;
+
+    steps.forEach((dot, index) => {
+        dot.classList.toggle('is-active', index < Math.max(1, filled));
+    });
+}
+
+function switchAuthTab(tab) {
     const loginForm = document.getElementById('login-form');
     const registerForm = document.getElementById('register-form');
     const messageBox = document.getElementById('message-box');
+    const tabs = document.querySelectorAll('[data-auth-tab]');
 
-    if (loginForm.style.display === 'none') {
-        loginForm.style.display = 'block';
-        registerForm.style.display = 'none';
-    } else {
-        loginForm.style.display = 'none';
-        registerForm.style.display = 'block';
+    const isLogin = tab !== 'register';
+
+    if (loginForm && registerForm) {
+        loginForm.classList.toggle('is-active', isLogin);
+        registerForm.classList.toggle('is-active', !isLogin);
+        loginForm.setAttribute('aria-hidden', (!isLogin).toString());
+        registerForm.setAttribute('aria-hidden', isLogin.toString());
     }
-    messageBox.style.display = 'none'; // Скрываем сообщения при переключении
+
+    tabs.forEach((button) => {
+        const target = button.getAttribute('data-auth-tab');
+        const isActive = target === (isLogin ? 'login' : 'register');
+        button.classList.toggle('is-active', isActive);
+        button.setAttribute('aria-selected', isActive.toString());
+    });
+
+    if (messageBox) {
+        messageBox.textContent = '';
+        messageBox.classList.remove('is-visible', 'is-error', 'is-success');
+    }
+
+    if (!isLogin) {
+        updateRegisterProgress();
+    }
+}
+
+function toggleForms() {
+    const loginForm = document.getElementById('login-form');
+    const targetTab = loginForm && loginForm.classList.contains('is-active') ? 'register' : 'login';
+    switchAuthTab(targetTab);
 }
 
 // Отображение сообщений пользователю
 function showMessage(message, type) {
     const messageBox = document.getElementById('message-box');
+    if (!messageBox) return;
+
     messageBox.textContent = message;
-    messageBox.className = ''; // Очищаем предыдущие классы
+    messageBox.classList.remove('is-error', 'is-success');
+
     if (type === 'error') {
-        messageBox.classList.add('message-error');
+        messageBox.classList.add('is-error');
     } else if (type === 'success') {
-        messageBox.classList.add('message-success');
+        messageBox.classList.add('is-success');
     }
-    messageBox.style.display = 'block';
+
+    messageBox.classList.add('is-visible');
 }
 
 // Обработка Регистрации
@@ -107,7 +152,7 @@ function closeForgotPassword() {
 async function handleForgotPassword() {
     const email = document.getElementById('forgot-email').value;
     const messageDiv = document.getElementById('forgot-message');
-    
+
     if (!email) {
         messageDiv.innerHTML = '<p style="color: #ff4444;">Введите email</p>';
         return;
@@ -134,3 +179,18 @@ async function handleForgotPassword() {
         messageDiv.innerHTML = '<p style="color: #ff4444;">Ошибка соединения с сервером</p>';
     }
 }
+
+document.addEventListener('DOMContentLoaded', () => {
+    const activeTabButton = document.querySelector('.auth-tab.is-active');
+    const initialTab = activeTabButton ? activeTabButton.getAttribute('data-auth-tab') : 'login';
+    switchAuthTab(initialTab || 'login');
+
+    ['register-username', 'register-email', 'register-password'].forEach((id) => {
+        const element = document.getElementById(id);
+        if (element) {
+            element.addEventListener('input', updateRegisterProgress);
+        }
+    });
+
+    updateRegisterProgress();
+});
