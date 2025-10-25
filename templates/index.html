@@ -20,25 +20,25 @@
         /* Жидкий анимированный фон */
         .liquid-bg {
             position: fixed;
-            top: 0; 
-            left: 0; 
-            width: 100%; 
+            top: 0;
+            left: 0;
+            width: 100%;
             height: 100%;
             z-index: -2;
             overflow: hidden;
-            background: linear-gradient(45deg, #f6d5f7, #fbe9d7);
+            background: radial-gradient(circle at 0% 0%, rgba(16, 191, 147, 0.45), rgba(8, 24, 28, 0.95));
         }
-        
+
         [data-theme="dark"] .liquid-bg {
-            background: linear-gradient(45deg, #2c3e50, #34495e);
+            background: radial-gradient(circle at 0% 0%, rgba(10, 132, 115, 0.35), rgba(5, 16, 20, 0.95));
         }
-        
+
         [data-theme="ocean"] .liquid-bg {
-            background: linear-gradient(45deg, #001f3f, #003366);
+            background: radial-gradient(circle at 0% 0%, rgba(0, 141, 219, 0.35), rgba(0, 20, 38, 0.9));
         }
-        
+
         [data-theme="amoled"] .liquid-bg {
-            background: linear-gradient(45deg, #000000, #0b0b0b);
+            background: radial-gradient(circle at 0% 0%, rgba(0, 0, 0, 0.9), rgba(0, 0, 0, 1));
         }
         
         .blob {
@@ -49,30 +49,30 @@
             will-change: transform;
         }
         
-        .blob-1 { 
-            height: 300px; 
-            width: 300px; 
-            background: linear-gradient(135deg, #a29bfe, #6c5ce7); 
-            top: 10%; 
-            left: 10%; 
+        .blob-1 {
+            height: 320px;
+            width: 320px;
+            background: radial-gradient(circle at 20% 20%, rgba(13, 189, 139, 0.68), rgba(8, 52, 58, 0.15));
+            top: 10%;
+            left: 8%;
         }
-        
-        .blob-2 { 
-            height: 400px; 
-            width: 400px; 
-            background: linear-gradient(135deg, #74b9ff, #0984e3); 
-            bottom: 10%; 
-            right: 10%; 
-            animation-duration: 25s; 
+
+        .blob-2 {
+            height: 420px;
+            width: 420px;
+            background: radial-gradient(circle at 70% 30%, rgba(37, 142, 180, 0.65), rgba(5, 25, 30, 0.18));
+            bottom: 12%;
+            right: 6%;
+            animation-duration: 25s;
         }
-        
-        .blob-3 { 
-            height: 250px; 
-            width: 250px; 
-            background: linear-gradient(135deg, #ff7675, #e17055); 
-            bottom: 30%; 
-            left: 40%; 
-            animation-duration: 15s; 
+
+        .blob-3 {
+            height: 280px;
+            width: 280px;
+            background: radial-gradient(circle at 50% 50%, rgba(90, 220, 187, 0.5), rgba(7, 33, 31, 0.1));
+            bottom: 32%;
+            left: 42%;
+            animation-duration: 15s;
         }
         
         @keyframes liquidMove {
@@ -94,24 +94,24 @@
         }
         
         /* Темные темы для блобов */
-        [data-theme="dark"] .blob-1 { 
-            background: linear-gradient(135deg, #8e44ad, #9b59b6); 
+        [data-theme="dark"] .blob-1 {
+            background: radial-gradient(circle at 20% 20%, rgba(9, 132, 115, 0.7), rgba(6, 24, 28, 0.18));
         }
-        [data-theme="dark"] .blob-2 { 
-            background: linear-gradient(135deg, #2980b9, #3498db); 
+        [data-theme="dark"] .blob-2 {
+            background: radial-gradient(circle at 70% 30%, rgba(32, 122, 157, 0.7), rgba(4, 18, 22, 0.2));
         }
-        [data-theme="dark"] .blob-3 { 
-            background: linear-gradient(135deg, #c0392b, #e74c3c); 
+        [data-theme="dark"] .blob-3 {
+            background: radial-gradient(circle at 50% 50%, rgba(66, 186, 166, 0.55), rgba(5, 23, 25, 0.1));
         }
-        
-        [data-theme="ocean"] .blob-1 { 
-            background: linear-gradient(135deg, #00cec9, #81ecec); 
+
+        [data-theme="ocean"] .blob-1 {
+            background: radial-gradient(circle at 20% 20%, rgba(0, 181, 173, 0.75), rgba(3, 38, 53, 0.2));
         }
-        [data-theme="ocean"] .blob-2 { 
-            background: linear-gradient(135deg, #0984e3, #74b9ff); 
+        [data-theme="ocean"] .blob-2 {
+            background: radial-gradient(circle at 70% 30%, rgba(0, 141, 219, 0.72), rgba(1, 26, 47, 0.18));
         }
-        [data-theme="ocean"] .blob-3 { 
-            background: linear-gradient(135deg, #00b894, #00cec9); 
+        [data-theme="ocean"] .blob-3 {
+            background: radial-gradient(circle at 50% 50%, rgba(0, 188, 147, 0.5), rgba(2, 30, 40, 0.12));
         }
         
         /* Плавающая (левитирующая) навигация в стиле Telegram */
@@ -1381,6 +1381,10 @@
                                     <span>Аудиозвонок</span>
                                 </button>
                             </div>
+                        </div>
+                        <div class="call-quality-pill" id="call-quality-pill" data-state="idle">
+                            <span class="pill-dot"></span>
+                            <span class="pill-label" id="call-quality-label">HD готово</span>
                         </div>
                         <button class="icon-btn" id="room-settings-btn" onclick="openContextSettings()" title="Настройки чата">
                             <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">

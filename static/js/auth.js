@@ -1,17 +1,45 @@
-// Переключение между формами входа и регистрации
-function toggleForms() {
+// Переключение между формами входа и регистрации с обновлённым UI
+function switchAuthView(view) {
     const loginForm = document.getElementById('login-form');
     const registerForm = document.getElementById('register-form');
     const messageBox = document.getElementById('message-box');
+    const loginButton = document.getElementById('segmented-login');
+    const registerButton = document.getElementById('segmented-register');
+    const authTitle = document.getElementById('auth-title');
+    const authSubtitle = document.getElementById('auth-subtitle');
 
-    if (loginForm.style.display === 'none') {
-        loginForm.style.display = 'block';
-        registerForm.style.display = 'none';
-    } else {
+    if (!loginForm || !registerForm) {
+        return;
+    }
+
+    if (view === 'register') {
         loginForm.style.display = 'none';
         registerForm.style.display = 'block';
+        authTitle.textContent = 'Создать новый профиль';
+        authSubtitle.textContent = 'Получите персональный @тег и начните общение в обновлённом интерфейсе.';
+        if (loginButton) loginButton.classList.remove('active');
+        if (registerButton) registerButton.classList.add('active');
+    } else {
+        loginForm.style.display = 'block';
+        registerForm.style.display = 'none';
+        authTitle.textContent = 'Добро пожаловать назад';
+        authSubtitle.textContent = 'Используйте @тег или почту, чтобы попасть в обновлённый GlassChat.';
+        if (loginButton) loginButton.classList.add('active');
+        if (registerButton) registerButton.classList.remove('active');
     }
-    messageBox.style.display = 'none'; // Скрываем сообщения при переключении
+
+    if (messageBox) {
+        messageBox.style.display = 'none';
+    }
+}
+
+function toggleForms() {
+    const loginForm = document.getElementById('login-form');
+    if (loginForm && loginForm.style.display === 'none') {
+        switchAuthView('login');
+    } else {
+        switchAuthView('register');
+    }
 }
 
 // Отображение сообщений пользователю
@@ -134,3 +162,7 @@ async function handleForgotPassword() {
         messageDiv.innerHTML = '<p style="color: #ff4444;">Ошибка соединения с сервером</p>';
     }
 }
+
+document.addEventListener('DOMContentLoaded', () => {
+    switchAuthView('login');
+});

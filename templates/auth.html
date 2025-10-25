@@ -10,27 +10,62 @@
     <div class="auth-container">
         <div class="bg-shape shape1"></div>
         <div class="bg-shape shape2"></div>
-        <div class="bg-shape" style="width: 350px; height: 350px; background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); top: 50%; left: 50%; transform: translate(-50%, -50%); filter: blur(90px); opacity: 0.4;"></div>
+        <div class="bg-shape" style="width: 420px; height: 420px; background: radial-gradient(circle at 30% 30%, rgba(16, 191, 147, 0.5), rgba(9, 38, 43, 0.05)); top: 50%; left: 42%; transform: translate(-50%, -50%); filter: blur(100px); opacity: 0.6;"></div>
+
+        <div class="auth-hero">
+            <div class="glass" style="padding: 12px 18px; border-radius: 32px; display: inline-flex; gap: 10px; align-items: center; backdrop-filter: blur(22px); -webkit-backdrop-filter: blur(22px); border: 1px solid rgba(94, 220, 187, 0.3); box-shadow: 0 16px 36px rgba(7, 19, 24, 0.45);">
+                <svg class="ui-icon" style="--icon-size: 20px; color: #7ef0c8;" viewBox="0 0 24 24" aria-hidden="true">
+                    <use href="#ui-sparkles"></use>
+                </svg>
+                <span style="font-size: 13px; letter-spacing: 0.08em; text-transform: uppercase; color: rgba(214, 246, 241, 0.78);">Messend x Element</span>
+            </div>
+            <h1>GlassChat — современный мессенджер в стиле Element</h1>
+            <p>Новый лаконичный дизайн, быстрые групповые чаты, устойчивые звонки и эффект стекла по всему интерфейсу. Войдите, чтобы продолжить общение.</p>
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <strong>Комнаты &amp; Архивы</strong>
+                    <span>Управляйте личными чатами, группами и каналами в аккуратной боковой панели, как в Element.</span>
+                </div>
+                <div class="feature-card">
+                    <strong>HD звонки</strong>
+                    <span>Оптимизированный WebRTC с быстрым подключением, отдельное управление микрофоном и камерой.</span>
+                </div>
+                <div class="feature-card">
+                    <strong>Мгновенные реакции</strong>
+                    <span>Минималистичные эмодзи, всплывающие меню и анимации в духе современного Element.</span>
+                </div>
+                <div class="feature-card">
+                    <strong>Темы &amp; стекло</strong>
+                    <span>Прозрачные панели, аккуратные градиенты и автоматическая синхронизация темы устройства.</span>
+                </div>
+            </div>
+        </div>
 
         <div class="auth-card glass">
-            
+
+            <div class="auth-card-header">
+                <h2 id="auth-title">Добро пожаловать назад</h2>
+                <p id="auth-subtitle">Используйте @тег или почту, чтобы попасть в обновлённый GlassChat.</p>
+            </div>
+
+            <div class="auth-segmented">
+                <button type="button" class="auth-segmented-btn active" id="segmented-login" onclick="switchAuthView('login')">Вход</button>
+                <button type="button" class="auth-segmented-btn" id="segmented-register" onclick="switchAuthView('register')">Регистрация</button>
+            </div>
+
             <div id="login-form">
-                <h1>Добро пожаловать</h1>
-                <p>Войдите в свой аккаунт</p>
                 <div class="input-group">
                     <input type="text" id="login-identifier" placeholder="@Имя пользователя или Email" required>
                 </div>
                 <div class="input-group">
                     <input type="password" id="login-password" placeholder="Пароль" required>
                 </div>
-                <button onclick="handleLogin()">Войти</button>
+                <button type="button" onclick="handleLogin()">Войти</button>
                 <p class="toggle-link">Нет аккаунта? <a onclick="toggleForms()">Зарегистрироваться</a></p>
                 <p class="toggle-link"><a onclick="showForgotPassword()" style="font-size: 14px; color: var(--color-primary);">Забыли пароль?</a></p>
             </div>
 
             <div id="register-form" style="display: none;">
-                <h1>Создать аккаунт</h1>
-                <p>Придумайте уникальный @тег</p>
                 <div class="input-group">
                     <input type="text" id="register-username" placeholder="Имя пользователя (без @)" required>
                 </div>
@@ -40,7 +75,7 @@
                 <div class="input-group">
                     <input type="password" id="register-password" placeholder="Придумайте пароль" required>
                 </div>
-                <button onclick="handleRegister()">Зарегистрироваться</button>
+                <button type="button" onclick="handleRegister()">Зарегистрироваться</button>
                 <p class="toggle-link">Уже есть аккаунт? <a onclick="toggleForms()">Войти</a></p>
             </div>
 

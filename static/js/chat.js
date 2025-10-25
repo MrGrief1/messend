@@ -15,6 +15,8 @@ const roomList = document.getElementById('room-list');
 const callButton = document.getElementById('call-button');
 const sendButton = document.getElementById('send-button');
 const messageField = document.getElementById('message-field');
+const callQualityPill = document.getElementById('call-quality-pill');
+const callQualityLabel = document.getElementById('call-quality-label');
 // Доп. элементы заголовка чата
 const membersBtn = document.getElementById('room-members-btn');
 const roomSettingsBtn = document.getElementById('room-settings-btn');
@@ -114,6 +116,20 @@ const reactionTemplateCache = new Map();
 function getReactionIconTemplate(emoji) {
     return reactionIconTemplates[emoji] || null;
 }
+
+function setCallQualityState(state, label) {
+    if (!callQualityPill || !callQualityLabel) {
+        return;
+    }
+    if (state) {
+        callQualityPill.dataset.state = state;
+    }
+    if (label) {
+        callQualityLabel.textContent = label;
+    }
+}
+
+setCallQualityState('idle', 'HD готово');
 
 function createReactionSvgElement(emoji) {
     const template = getReactionIconTemplate(emoji);
@@ -3861,7 +3877,9 @@ async function openCall() {
         // ВАЖНО: Сначала устанавливаем время начала звонка
         callStartTime = Date.now();
         console.log('callStartTime установлен:', callStartTime);
-        
+
+        setCallQualityState('connecting', isAudioOnly ? 'Подключение аудио…' : 'Подключение видео…');
+
         // Используем новую функцию с поддержкой аудио/видео режима
         console.log('Запрос доступа к медиа...');
         await ensureLocalMediaWithMode();
@@ -3911,6 +3929,7 @@ async function openCall() {
     } catch (error) {
         console.error('Ошибка при начале звонка:', error);
         alert('Не удалось начать звонок. Проверьте доступ к камере/микрофону.');
+        setCallQualityState('idle', 'HD готово');
         endCall();
     }
 }
@@ -8492,7 +8511,9 @@ function showCallIndicator() {
     const indicator = document.getElementById('active-call-indicator');
     if (indicator) {
         indicator.style.display = 'flex';
-        
+
+        setCallQualityState('live', isAudioOnly ? 'Аудио в эфире' : 'Видео в эфире');
+
         // Запускаем таймер (callStartTime уже должен быть установлен в openCall)
         if (!callStartTime) {
         callStartTime = Date.now();
@@ -8508,6 +8529,8 @@ function hideCallIndicator() {
     if (indicator) {
         indicator.style.display = 'none';
     }
+
+    setCallQualityState('idle', 'HD готово');
     
     // Останавливаем таймер
     if (callTimerInterval) {
@@ -9263,14 +9286,16 @@ function sendCallInvitations() {
 function showCallLobbyIndicator(roomId) {
     // Показываем индикатор только если мы в этой комнате
     if (currentRoomId != roomId) return;
-    
+
+    setCallQualityState('connecting', 'Лобби звонка');
+
     // Проверяем, не создан ли уже индикатор
     let indicator = document.getElementById('call-lobby-indicator');
     if (!indicator) {
         indicator = document.createElement('div');
         indicator.id = 'call-lobby-indicator';
         indicator.className = 'active-call-indicator';
-        indicator.style.background = 'linear-gradient(135deg, #007AFF 0%, #0051D5 100%)';
+        indicator.style.background = 'linear-gradient(135deg, rgba(13, 189, 139, 0.85) 0%, rgba(18, 98, 103, 0.95) 100%)';
         indicator.innerHTML = `
             <div class="call-indicator-left">
                 <div class="call-indicator-icon">
@@ -9303,6 +9328,9 @@ function hideCallLobbyIndicator() {
     const indicator = document.getElementById('call-lobby-indicator');
     if (indicator) {
         indicator.remove();
+    }
+    if (!callStartTime) {
+        setCallQualityState('idle', 'HD готово');
     }
 }
 
