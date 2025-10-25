@@ -5,69 +5,190 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Вход / Регистрация - GlassChat</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
 </head>
-<body data-theme="dark">
-    <div class="auth-container">
-        <div class="bg-shape shape1"></div>
-        <div class="bg-shape shape2"></div>
-        <div class="bg-shape" style="width: 350px; height: 350px; background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); top: 50%; left: 50%; transform: translate(-50%, -50%); filter: blur(90px); opacity: 0.4;"></div>
-
-        <div class="auth-card glass">
-            
-            <div id="login-form">
-                <h1>Добро пожаловать</h1>
-                <p>Войдите в свой аккаунт</p>
-                <div class="input-group">
-                    <input type="text" id="login-identifier" placeholder="@Имя пользователя или Email" required>
-                </div>
-                <div class="input-group">
-                    <input type="password" id="login-password" placeholder="Пароль" required>
-                </div>
-                <button onclick="handleLogin()">Войти</button>
-                <p class="toggle-link">Нет аккаунта? <a onclick="toggleForms()">Зарегистрироваться</a></p>
-                <p class="toggle-link"><a onclick="showForgotPassword()" style="font-size: 14px; color: var(--color-primary);">Забыли пароль?</a></p>
-            </div>
-
-            <div id="register-form" style="display: none;">
-                <h1>Создать аккаунт</h1>
-                <p>Придумайте уникальный @тег</p>
-                <div class="input-group">
-                    <input type="text" id="register-username" placeholder="Имя пользователя (без @)" required>
-                </div>
-                <div class="input-group">
-                    <input type="email" id="register-email" placeholder="Email (для подтверждения)" required>
-                </div>
-                <div class="input-group">
-                    <input type="password" id="register-password" placeholder="Придумайте пароль" required>
-                </div>
-                <button onclick="handleRegister()">Зарегистрироваться</button>
-                <p class="toggle-link">Уже есть аккаунт? <a onclick="toggleForms()">Войти</a></p>
-            </div>
-
-            <div id="message-box"></div>
-            
-            <!-- Модальное окно восстановления пароля -->
-            <div id="forgot-password-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 1000; align-items: center; justify-content: center;">
-                <div class="glass" style="max-width: 400px; width: 90%; padding: 30px; border-radius: var(--radius-xl);">
-                    <h2 style="margin-bottom: 20px;">Восстановление пароля</h2>
-                    <p style="margin-bottom: 20px; opacity: 0.8;">Введите email, использованный при регистрации</p>
-                    <div class="input-group">
-                        <input type="email" id="forgot-email" placeholder="Ваш Email" required>
-                    </div>
-                    <button onclick="handleForgotPassword()" style="width: 100%; margin-bottom: 10px;">Отправить ссылку</button>
-                    <button onclick="closeForgotPassword()" style="width: 100%; background: var(--glass-bg);">Отмена</button>
-                    <div id="forgot-message" style="margin-top: 15px; text-align: center;"></div>
-                    <p style="margin-top: 15px; font-size: 12px; opacity: 0.6; text-align: center;">💡 Письмо может прийти с задержкой 3-5 минут. Проверьте папку "Спам"</p>
-                </div>
-            </div>
-        </div>
+<body data-theme="dark" class="auth-page">
+    <div class="auth-background">
+        <div class="auth-orb orb-primary"></div>
+        <div class="auth-orb orb-accent"></div>
+        <div class="auth-grid"></div>
     </div>
+
+    <div class="auth-layout">
+        <aside class="auth-showcase enhanced-glass" aria-label="Краткое описание возможностей GlassChat">
+            <div class="auth-brand">
+                <div class="brand-icon">M</div>
+                <div class="brand-copy">
+                    <h1>GlassChat Next</h1>
+                    <p>Обновлённый интерфейс с эффектом стекла и поддержкой защищённых звонков.</p>
+                </div>
+            </div>
+
+            <div class="auth-metrics">
+                <div class="metric-chip">
+                    <span class="material-icons-round" aria-hidden="true">shield</span>
+                    Сквозное шифрование по умолчанию
+                </div>
+                <div class="metric-chip">
+                    <span class="material-icons-round" aria-hidden="true">groups</span>
+                    Видеоконференции до 32 участников
+                </div>
+                <div class="metric-chip">
+                    <span class="material-icons-round" aria-hidden="true">brush</span>
+                    Динамические темы и ночной режим
+                </div>
+            </div>
+
+            <div class="auth-feature-grid">
+                <article class="feature-card glass">
+                    <header>
+                        <span class="material-icons-round" aria-hidden="true">forum</span>
+                        <h2>Звонки и чаты</h2>
+                    </header>
+                    <p>Создавайте приватные комнаты, групповые каналы и запускайте мгновенные видеозвонки одним касанием.</p>
+                </article>
+                <article class="feature-card glass">
+                    <header>
+                        <span class="material-icons-round" aria-hidden="true">poll</span>
+                        <h2>Сотрудничество</h2>
+                    </header>
+                    <p>Общие заметки, опросы и реакции помогают команде принимать решения быстрее.</p>
+                </article>
+                <article class="feature-card glass">
+                    <header>
+                        <span class="material-icons-round" aria-hidden="true">palette</span>
+                        <h2>Гибкий дизайн</h2>
+                    </header>
+                    <p>Новый режим стекла с глубоким блюром и акцентами в стиле Element делает интерфейс сдержанным и современным.</p>
+                </article>
+            </div>
+
+            <footer class="auth-showcase-footer">
+                <div>
+                    <h3>Современная команда</h3>
+                    <p>Используйте GlassChat вместо бесконечных писем. Настройте роли, статусы и уведомления под свой ритм работы.</p>
+                </div>
+                <ul class="auth-highlights" aria-label="Преимущества">
+                    <li><span class="material-icons-round" aria-hidden="true">check_circle</span> PWA на любых устройствах</li>
+                    <li><span class="material-icons-round" aria-hidden="true">check_circle</span> Встроенные боты и сценарии</li>
+                    <li><span class="material-icons-round" aria-hidden="true">check_circle</span> Импорт чатов Element и Telegram</li>
+                </ul>
+            </footer>
+        </aside>
+
+        <main class="auth-card glass" role="main">
+            <div class="auth-card-header">
+                <div class="auth-tabs" role="tablist">
+                    <button type="button" class="auth-tab active" data-auth-tab="login" role="tab" aria-selected="true">Вход</button>
+                    <button type="button" class="auth-tab" data-auth-tab="register" role="tab" aria-selected="false">Регистрация</button>
+                </div>
+                <button class="theme-toggle" type="button" id="auth-theme-toggle" aria-label="Переключить тему">
+                    <span class="material-icons-round" aria-hidden="true">dark_mode</span>
+                </button>
+            </div>
+
+            <section id="login-form" class="auth-form active" data-auth-panel="login" role="tabpanel">
+                <h2>Добро пожаловать 👋</h2>
+                <p class="form-subtitle">Войдите, чтобы продолжить разговоры и встречи.</p>
+                <label for="login-identifier">@Имя пользователя или Email</label>
+                <div class="input-group with-addon">
+                    <span class="material-icons-round" aria-hidden="true">person</span>
+                    <input type="text" id="login-identifier" placeholder="Например, @alex" autocomplete="username" required>
+                </div>
+                <label for="login-password">Пароль</label>
+                <div class="input-group with-addon">
+                    <span class="material-icons-round" aria-hidden="true">lock</span>
+                    <input type="password" id="login-password" placeholder="Введите пароль" autocomplete="current-password" required>
+                    <button type="button" class="input-addon-btn" data-toggle-password="login-password" aria-label="Показать пароль">
+                        <span class="material-icons-round" aria-hidden="true">visibility</span>
+                    </button>
+                </div>
+                <div class="form-actions">
+                    <label class="checkbox">
+                        <input type="checkbox" id="remember-me">
+                        <span>Запомнить меня</span>
+                    </label>
+                    <button type="button" class="link-btn" onclick="showForgotPassword()">Забыли пароль?</button>
+                </div>
+                <button class="primary-btn" onclick="handleLogin()">Войти</button>
+                <div class="divider" role="presentation"><span>или</span></div>
+                <button class="secondary-btn" type="button" id="demo-mode">Просмотреть демо</button>
+                <p class="switch-text">Нет аккаунта? <button type="button" class="link-btn" data-switch="register">Создать</button></p>
+            </section>
+
+            <section id="register-form" class="auth-form" data-auth-panel="register" role="tabpanel" hidden>
+                <h2>Создайте команду</h2>
+                <p class="form-subtitle">Зарегистрируйте учётную запись и начните защищённые звонки за минуты.</p>
+                <label for="register-username">Имя пользователя</label>
+                <div class="input-group with-addon">
+                    <span class="material-icons-round" aria-hidden="true">alternate_email</span>
+                    <input type="text" id="register-username" placeholder="Без пробелов и @" autocomplete="nickname" minlength="3" maxlength="32" required>
+                </div>
+                <p class="input-hint" id="username-hint">Используйте латиницу, цифры и подчёркивания. Минимум 3 символа.</p>
+
+                <label for="register-email">Email</label>
+                <div class="input-group with-addon">
+                    <span class="material-icons-round" aria-hidden="true">mail</span>
+                    <input type="email" id="register-email" placeholder="name@example.com" autocomplete="email" required>
+                </div>
+                <p class="input-hint" id="email-hint">Мы отправим письмо с подтверждением и ссылкой для восстановления пароля.</p>
+
+                <label for="register-password">Пароль</label>
+                <div class="input-group with-addon">
+                    <span class="material-icons-round" aria-hidden="true">key</span>
+                    <input type="password" id="register-password" placeholder="Минимум 8 символов" autocomplete="new-password" required>
+                    <button type="button" class="input-addon-btn" data-toggle-password="register-password" aria-label="Показать пароль">
+                        <span class="material-icons-round" aria-hidden="true">visibility</span>
+                    </button>
+                </div>
+                <div class="password-strength" aria-live="polite">
+                    <div class="password-strength-bar" id="password-strength-bar"></div>
+                    <span id="password-strength-label">Введите пароль</span>
+                </div>
+
+                <label class="checkbox">
+                    <input type="checkbox" id="privacy-confirm" required>
+                    <span>Я принимаю условия использования и политику конфиденциальности</span>
+                </label>
+
+                <button class="primary-btn" onclick="handleRegister()" id="register-submit" disabled>Создать аккаунт</button>
+                <p class="switch-text">Уже с нами? <button type="button" class="link-btn" data-switch="login">Войти</button></p>
+            </section>
+
+            <div id="message-box" role="status" aria-live="polite"></div>
+
+            <div id="forgot-password-modal" class="modal-overlay" hidden>
+                <div class="modal-content glass">
+                    <button class="close-btn" type="button" onclick="closeForgotPassword()" aria-label="Закрыть восстановление">
+                        <span class="material-icons-round" aria-hidden="true">close</span>
+                    </button>
+                    <h2>Восстановление доступа</h2>
+                    <p>Введите email, указанный при регистрации. Мы отправим безопасную ссылку.</p>
+                    <div class="input-group with-addon">
+                        <span class="material-icons-round" aria-hidden="true">mail</span>
+                        <input type="email" id="forgot-email" placeholder="Ваш email" required>
+                    </div>
+                    <div class="modal-actions">
+                        <button class="primary-btn" type="button" onclick="handleForgotPassword()">Отправить ссылку</button>
+                        <button class="secondary-btn" type="button" onclick="closeForgotPassword()">Отмена</button>
+                    </div>
+                    <div id="forgot-message" class="modal-message"></div>
+                    <p class="modal-hint">Письмо может прийти с задержкой до 5 минут. Проверьте папку «Спам».</p>
+                </div>
+            </div>
+        </main>
+    </div>
+
     <script>
-        // Автоприменение темы из localStorage на странице входа
         try {
-            const t = localStorage.getItem('appTheme');
-            if (t) document.body.setAttribute('data-theme', t);
-        } catch {}
+            const savedTheme = localStorage.getItem('appTheme');
+            if (savedTheme) {
+                document.body.setAttribute('data-theme', savedTheme);
+            }
+        } catch (error) {
+            console.warn('Не удалось применить тему из localStorage', error);
+        }
     </script>
     <script src="{{ url_for('static', filename='js/auth.js') }}"></script>
 </body>
