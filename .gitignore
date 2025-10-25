@@ -1,0 +1,27 @@
+# Build artifacts and Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.log
+
+# Node dependencies
+node_modules/
+**/node_modules/
+
+# Local development artifacts
+.env
+.env.*
+*.sqlite3
+instance/
+
+# Project-specific archives and binaries
+cloudflared.exe
+sfu_server/recordings/
+projects/
+
+# IDE
+.vscode/
+*.code-workspace
+.idea/
+.DS_Store
