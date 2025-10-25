@@ -1,30 +1,60 @@
-// Переключение между формами входа и регистрации
-function toggleForms() {
+// --- Управление состоянием форм входа/регистрации ---
+function switchAuthView(nextView) {
     const loginForm = document.getElementById('login-form');
     const registerForm = document.getElementById('register-form');
     const messageBox = document.getElementById('message-box');
+    const authCard = document.querySelector('.auth-card');
+    const loginTab = document.querySelector('[data-form-target="login"]');
+    const registerTab = document.querySelector('[data-form-target="register"]');
 
-    if (loginForm.style.display === 'none') {
-        loginForm.style.display = 'block';
-        registerForm.style.display = 'none';
-    } else {
-        loginForm.style.display = 'none';
-        registerForm.style.display = 'block';
+    const view = nextView === 'register' ? 'register' : 'login';
+
+    if (authCard) {
+        authCard.setAttribute('data-active', view);
     }
-    messageBox.style.display = 'none'; // Скрываем сообщения при переключении
+
+    if (loginForm) {
+        loginForm.classList.toggle('is-hidden', view !== 'login');
+        loginForm.toggleAttribute('hidden', view !== 'login');
+    }
+
+    if (registerForm) {
+        registerForm.classList.toggle('is-hidden', view !== 'register');
+        registerForm.toggleAttribute('hidden', view !== 'register');
+    }
+
+    if (loginTab) {
+        loginTab.classList.toggle('is-active', view === 'login');
+        loginTab.setAttribute('aria-selected', view === 'login');
+    }
+
+    if (registerTab) {
+        registerTab.classList.toggle('is-active', view === 'register');
+        registerTab.setAttribute('aria-selected', view === 'register');
+    }
+
+    if (messageBox) {
+        messageBox.textContent = '';
+        messageBox.className = 'auth-alert';
+        messageBox.setAttribute('hidden', '');
+    }
 }
 
 // Отображение сообщений пользователю
 function showMessage(message, type) {
     const messageBox = document.getElementById('message-box');
+    if (!messageBox) return;
+
     messageBox.textContent = message;
-    messageBox.className = ''; // Очищаем предыдущие классы
+    messageBox.className = 'auth-alert';
+
     if (type === 'error') {
         messageBox.classList.add('message-error');
     } else if (type === 'success') {
         messageBox.classList.add('message-success');
     }
-    messageBox.style.display = 'block';
+
+    messageBox.removeAttribute('hidden');
 }
 
 // Обработка Регистрации
@@ -49,7 +79,8 @@ async function handleRegister() {
             // Автоматический вход после успешной регистрации
             document.getElementById('login-identifier').value = username;
             document.getElementById('login-password').value = password;
-            setTimeout(handleLogin, 1500); 
+            switchAuthView('login');
+            setTimeout(handleLogin, 1500);
         } else {
             showMessage(data.message, 'error');
         }
@@ -94,14 +125,30 @@ async function handleLogin() {
 // Восстановление пароля
 function showForgotPassword() {
     const modal = document.getElementById('forgot-password-modal');
-    modal.style.display = 'flex';
-    document.getElementById('forgot-email').value = '';
-    document.getElementById('forgot-message').innerHTML = '';
+    if (!modal) return;
+
+    modal.removeAttribute('hidden');
+
+    const emailField = document.getElementById('forgot-email');
+    if (emailField) {
+        emailField.value = '';
+        try {
+            emailField.focus({ preventScroll: true });
+        } catch (focusError) {
+            emailField.focus();
+        }
+    }
+
+    const feedback = document.getElementById('forgot-message');
+    if (feedback) {
+        feedback.textContent = '';
+    }
 }
 
 function closeForgotPassword() {
     const modal = document.getElementById('forgot-password-modal');
-    modal.style.display = 'none';
+    if (!modal) return;
+    modal.setAttribute('hidden', '');
 }
 
 async function handleForgotPassword() {
@@ -134,3 +181,36 @@ async function handleForgotPassword() {
         messageDiv.innerHTML = '<p style="color: #ff4444;">Ошибка соединения с сервером</p>';
     }
 }
+
+document.addEventListener('DOMContentLoaded', () => {
+    const tabButtons = document.querySelectorAll('[data-form-target]');
+    tabButtons.forEach((button) => {
+        button.addEventListener('click', (event) => {
+            event.preventDefault();
+            const target = button.getAttribute('data-form-target');
+            switchAuthView(target);
+        });
+    });
+
+    const inlineToggle = document.querySelectorAll('[data-inline-toggle]');
+    inlineToggle.forEach((trigger) => {
+        trigger.addEventListener('click', (event) => {
+            event.preventDefault();
+            const target = trigger.getAttribute('data-inline-toggle');
+            switchAuthView(target);
+        });
+    });
+
+    // Обеспечиваем корректный начальный вид
+    const initialView = document.body && document.body.dataset ? document.body.dataset.authView : null;
+    switchAuthView(initialView || 'login');
+});
+
+document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') {
+        const modal = document.getElementById('forgot-password-modal');
+        if (modal && !modal.hasAttribute('hidden')) {
+            closeForgotPassword();
+        }
+    }
+});
