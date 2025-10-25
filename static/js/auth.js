@@ -1,30 +1,60 @@
 // Переключение между формами входа и регистрации
-function toggleForms() {
+function toggleForms(target) {
     const loginForm = document.getElementById('login-form');
     const registerForm = document.getElementById('register-form');
     const messageBox = document.getElementById('message-box');
+    const tabs = document.querySelectorAll('.auth-tab');
+    const formsContainer = document.querySelector('.auth-forms');
 
-    if (loginForm.style.display === 'none') {
-        loginForm.style.display = 'block';
-        registerForm.style.display = 'none';
+    let showRegister;
+
+    if (target === 'register') {
+        showRegister = true;
+    } else if (target === 'login') {
+        showRegister = false;
     } else {
-        loginForm.style.display = 'none';
-        registerForm.style.display = 'block';
+        showRegister = !registerForm.classList.contains('is-active');
     }
-    messageBox.style.display = 'none'; // Скрываем сообщения при переключении
+
+    const activeKey = showRegister ? 'register' : 'login';
+
+    loginForm.classList.toggle('is-active', activeKey === 'login');
+    registerForm.classList.toggle('is-active', activeKey === 'register');
+    loginForm.setAttribute('aria-hidden', activeKey === 'register');
+    registerForm.setAttribute('aria-hidden', activeKey === 'login');
+
+    if (formsContainer) {
+        formsContainer.setAttribute('data-active', activeKey);
+    }
+
+    tabs.forEach((tab) => {
+        const isActive = tab.dataset.target === activeKey;
+        tab.classList.toggle('active', isActive);
+        tab.setAttribute('aria-selected', String(isActive));
+    });
+
+    if (messageBox) {
+        messageBox.textContent = '';
+        messageBox.className = 'message-box';
+        messageBox.setAttribute('hidden', '');
+    }
 }
 
 // Отображение сообщений пользователю
 function showMessage(message, type) {
     const messageBox = document.getElementById('message-box');
+    if (!messageBox) return;
+
     messageBox.textContent = message;
-    messageBox.className = ''; // Очищаем предыдущие классы
+    messageBox.className = 'message-box';
+
     if (type === 'error') {
         messageBox.classList.add('message-error');
     } else if (type === 'success') {
         messageBox.classList.add('message-success');
     }
-    messageBox.style.display = 'block';
+
+    messageBox.removeAttribute('hidden');
 }
 
 // Обработка Регистрации
@@ -46,10 +76,11 @@ async function handleRegister() {
 
         if (data.success) {
             showMessage(data.message, 'success');
+            toggleForms('login');
             // Автоматический вход после успешной регистрации
             document.getElementById('login-identifier').value = username;
             document.getElementById('login-password').value = password;
-            setTimeout(handleLogin, 1500); 
+            setTimeout(handleLogin, 1500);
         } else {
             showMessage(data.message, 'error');
         }
@@ -94,25 +125,52 @@ async function handleLogin() {
 // Восстановление пароля
 function showForgotPassword() {
     const modal = document.getElementById('forgot-password-modal');
-    modal.style.display = 'flex';
-    document.getElementById('forgot-email').value = '';
-    document.getElementById('forgot-message').innerHTML = '';
+    const messageDiv = document.getElementById('forgot-message');
+
+    if (modal) {
+        modal.style.display = 'flex';
+    }
+
+    const emailField = document.getElementById('forgot-email');
+    if (emailField) {
+        emailField.value = '';
+    }
+
+    if (messageDiv) {
+        messageDiv.className = 'message-box';
+        messageDiv.textContent = '';
+        messageDiv.setAttribute('hidden', '');
+    }
 }
 
 function closeForgotPassword() {
     const modal = document.getElementById('forgot-password-modal');
-    modal.style.display = 'none';
+    const messageDiv = document.getElementById('forgot-message');
+
+    if (modal) {
+        modal.style.display = 'none';
+    }
+
+    if (messageDiv) {
+        messageDiv.className = 'message-box';
+        messageDiv.textContent = '';
+        messageDiv.setAttribute('hidden', '');
+    }
 }
 
 async function handleForgotPassword() {
     const email = document.getElementById('forgot-email').value;
     const messageDiv = document.getElementById('forgot-message');
-    
+
     if (!email) {
-        messageDiv.innerHTML = '<p style="color: #ff4444;">Введите email</p>';
+        if (messageDiv) {
+            messageDiv.className = 'message-box message-error';
+            messageDiv.textContent = 'Введите email';
+            messageDiv.removeAttribute('hidden');
+        }
         return;
     }
-    
+
     try {
         const response = await fetch('/api/forgot_password', {
             method: 'POST',
@@ -122,15 +180,29 @@ async function handleForgotPassword() {
         
         const data = await response.json();
         
+        if (!messageDiv) {
+            return;
+        }
+
+        messageDiv.className = 'message-box';
+
         if (data.success) {
-            messageDiv.innerHTML = `<p style="color: #34C759;">${data.message}<br><small style="opacity: 0.8;">Проверьте почту через несколько минут</small></p>`;
+            messageDiv.classList.add('message-success');
+            messageDiv.innerHTML = `${data.message}<br><small style="opacity:0.75;">Проверьте почту через несколько минут</small>`;
+            messageDiv.removeAttribute('hidden');
             setTimeout(() => {
                 closeForgotPassword();
             }, 5000);
         } else {
-            messageDiv.innerHTML = `<p style="color: #ff4444;">${data.message}</p>`;
+            messageDiv.classList.add('message-error');
+            messageDiv.textContent = data.message;
+            messageDiv.removeAttribute('hidden');
         }
     } catch (error) {
-        messageDiv.innerHTML = '<p style="color: #ff4444;">Ошибка соединения с сервером</p>';
+        if (messageDiv) {
+            messageDiv.className = 'message-box message-error';
+            messageDiv.textContent = 'Ошибка соединения с сервером';
+            messageDiv.removeAttribute('hidden');
+        }
     }
 }
