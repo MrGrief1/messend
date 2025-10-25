@@ -1,28 +1,32 @@
 // Переключение между формами входа и регистрации
-function toggleForms() {
+function toggleForms(target) {
     const loginForm = document.getElementById('login-form');
     const registerForm = document.getElementById('register-form');
     const messageBox = document.getElementById('message-box');
+    const tabs = document.querySelectorAll('[data-auth-tab]');
 
-    if (loginForm.style.display === 'none') {
-        loginForm.style.display = 'block';
-        registerForm.style.display = 'none';
-    } else {
-        loginForm.style.display = 'none';
-        registerForm.style.display = 'block';
-    }
+    const showLogin = target ? target === 'login' : loginForm.style.display === 'none';
+    loginForm.style.display = showLogin ? 'block' : 'none';
+    registerForm.style.display = showLogin ? 'none' : 'block';
+
+    tabs.forEach((tab) => {
+        const tabTarget = tab.getAttribute('data-auth-tab');
+        tab.classList.toggle('active', tabTarget === (showLogin ? 'login' : 'register'));
+    });
+
     messageBox.style.display = 'none'; // Скрываем сообщения при переключении
+    messageBox.className = 'message-box';
 }
 
 // Отображение сообщений пользователю
 function showMessage(message, type) {
     const messageBox = document.getElementById('message-box');
     messageBox.textContent = message;
-    messageBox.className = ''; // Очищаем предыдущие классы
+    messageBox.className = 'message-box';
     if (type === 'error') {
-        messageBox.classList.add('message-error');
+        messageBox.classList.add('error');
     } else if (type === 'success') {
-        messageBox.classList.add('message-success');
+        messageBox.classList.add('success');
     }
     messageBox.style.display = 'block';
 }
@@ -94,22 +98,31 @@ async function handleLogin() {
 // Восстановление пароля
 function showForgotPassword() {
     const modal = document.getElementById('forgot-password-modal');
-    modal.style.display = 'flex';
+    modal.classList.add('active');
+    modal.setAttribute('aria-hidden', 'false');
     document.getElementById('forgot-email').value = '';
-    document.getElementById('forgot-message').innerHTML = '';
+    const forgotMessage = document.getElementById('forgot-message');
+    if (forgotMessage) {
+        forgotMessage.style.display = 'none';
+        forgotMessage.className = 'message-box';
+        forgotMessage.innerHTML = '';
+    }
 }
 
 function closeForgotPassword() {
     const modal = document.getElementById('forgot-password-modal');
-    modal.style.display = 'none';
+    modal.classList.remove('active');
+    modal.setAttribute('aria-hidden', 'true');
 }
 
 async function handleForgotPassword() {
     const email = document.getElementById('forgot-email').value;
     const messageDiv = document.getElementById('forgot-message');
-    
+
     if (!email) {
-        messageDiv.innerHTML = '<p style="color: #ff4444;">Введите email</p>';
+        messageDiv.className = 'message-box error';
+        messageDiv.textContent = 'Введите email';
+        messageDiv.style.display = 'block';
         return;
     }
     
@@ -123,14 +136,20 @@ async function handleForgotPassword() {
         const data = await response.json();
         
         if (data.success) {
-            messageDiv.innerHTML = `<p style="color: #34C759;">${data.message}<br><small style="opacity: 0.8;">Проверьте почту через несколько минут</small></p>`;
+            messageDiv.className = 'message-box success';
+            messageDiv.innerHTML = `${data.message}<br><small style="opacity: 0.8;">Проверьте почту через несколько минут</small>`;
+            messageDiv.style.display = 'block';
             setTimeout(() => {
                 closeForgotPassword();
             }, 5000);
         } else {
-            messageDiv.innerHTML = `<p style="color: #ff4444;">${data.message}</p>`;
+            messageDiv.className = 'message-box error';
+            messageDiv.textContent = data.message;
+            messageDiv.style.display = 'block';
         }
     } catch (error) {
-        messageDiv.innerHTML = '<p style="color: #ff4444;">Ошибка соединения с сервером</p>';
+        messageDiv.className = 'message-box error';
+        messageDiv.textContent = 'Ошибка соединения с сервером';
+        messageDiv.style.display = 'block';
     }
 }

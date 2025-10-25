@@ -9,6 +9,7 @@
     <meta name="theme-color" content="#000000">
     <title>GlassChat</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/element-overrides.css') }}">
     <!-- Fonts and Icons -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
@@ -1181,7 +1182,7 @@
         }
     </style>
 </head>
-<body data-theme="{{ user.theme }}">
+<body class="element-shell" data-theme="{{ user.theme }}">
     {% include 'partials/icon-sprite.html' %}
     <!-- Жидкий анимированный фон -->
     <div class="liquid-bg">
@@ -1193,6 +1194,48 @@
     <div class="app-layout">
         <div class="bg-shape shape1"></div>
         <div class="bg-shape shape2"></div>
+
+        <header class="workspace-topbar">
+            <div class="topbar-section">
+                <span class="workspace-pill">
+                    <span class="status-dot" id="workspace-status-dot"></span>
+                    <span id="workspace-active-room">Главная</span>
+                </span>
+                <div class="workspace-meta">
+                    <strong>@{{ user.username }}</strong>
+                    <small id="workspace-room-meta">Выберите чат или создайте новый</small>
+                </div>
+            </div>
+            <div class="topbar-section">
+                <div class="topbar-actions">
+                    <button class="ghost-button" id="workspace-command-button" type="button">
+                        <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
+                            <use href="#ui-search"></use>
+                        </svg>
+                        Команды
+                    </button>
+                    <button class="ghost-button" type="button" data-workspace-action="toggle-theme">
+                        <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
+                            <use href="#ui-paint-brush"></use>
+                        </svg>
+                        Сменить тему
+                    </button>
+                    <button class="primary-action" type="button" data-workspace-action="quick-call">
+                        <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
+                            <use href="#ui-mic"></use>
+                        </svg>
+                        Быстрый звонок
+                    </button>
+                </div>
+                <div class="topbar-avatar" id="workspace-avatar">
+                    {% if user.avatar_url %}
+                        <img src="{{ user.avatar_url }}" alt="@{{ user.username }}">
+                    {% else %}
+                        <div class="avatar-fallback">{{ user.username[0]|upper }}</div>
+                    {% endif %}
+                </div>
+            </div>
+        </header>
 
         <div class="sidebar enhanced-glass">
             <div class="sidebar-header">
@@ -2922,7 +2965,23 @@
         </div>
     </div>
 
+    <div id="command-palette-overlay" role="presentation" aria-hidden="true">
+        <div class="command-palette" role="dialog" aria-modal="true" aria-labelledby="command-palette-title">
+            <header>
+                <div class="command-input-wrapper">
+                    <svg class="command-icon" viewBox="0 0 24 24" aria-hidden="true">
+                        <use href="#ui-search"></use>
+                    </svg>
+                    <input id="command-palette-input" type="search" placeholder="Введите команду или имя чата…" autocomplete="off">
+                </div>
+                <small id="command-palette-title">Используйте ⌘/Ctrl + K для быстрого доступа к действиям</small>
+            </header>
+            <ul id="command-palette-results"></ul>
+        </div>
+    </div>
+
     <script src="{{ url_for('static', filename='js/chat.js') }}"></script>
     <script src="{{ url_for('static', filename='js/sfu.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/ui-modern.js') }}"></script>
 </body>
 </html>
