@@ -111,7 +111,7 @@ class User(db.Model):
     password_hash = db.Column(db.String(256), nullable=False)
     is_verified = db.Column(db.Boolean, default=False, nullable=False)
     bio = db.Column(db.String(200), default="", nullable=True)
-    theme = db.Column(db.String(20), default="dark", nullable=False)
+    theme = db.Column(db.String(20), default="matrix", nullable=False)
     avatar_url = db.Column(db.String(256), nullable=True)
 
     rooms = db.relationship('RoomParticipant', backref='user', lazy='dynamic')
@@ -1142,7 +1142,7 @@ def update_profile():
         user.username = new_username
 
     user.bio = new_bio[:200]
-    if new_theme in ['dark', 'light', 'ocean', 'amoled']: user.theme = new_theme
+    if new_theme in ['dark', 'light', 'ocean', 'amoled', 'matrix']: user.theme = new_theme
 
     db.session.commit()
     return jsonify({'success': True, 'message': 'Профиль обновлен.', 'username': user.username, 'theme': user.theme, 'bio': user.bio})

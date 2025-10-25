@@ -1,17 +1,33 @@
 // Переключение между формами входа и регистрации
-function toggleForms() {
+function toggleForms(mode) {
     const loginForm = document.getElementById('login-form');
     const registerForm = document.getElementById('register-form');
     const messageBox = document.getElementById('message-box');
+    const switcherButtons = document.querySelectorAll('.auth-switcher button');
 
-    if (loginForm.style.display === 'none') {
-        loginForm.style.display = 'block';
-        registerForm.style.display = 'none';
+    let showLogin;
+    if (mode === 'login') {
+        showLogin = true;
+    } else if (mode === 'register') {
+        showLogin = false;
     } else {
-        loginForm.style.display = 'none';
-        registerForm.style.display = 'block';
+        showLogin = loginForm.style.display === 'none';
     }
-    messageBox.style.display = 'none'; // Скрываем сообщения при переключении
+
+    loginForm.style.display = showLogin ? 'block' : 'none';
+    registerForm.style.display = showLogin ? 'none' : 'block';
+
+    switcherButtons.forEach((btn) => {
+        const target = btn.getAttribute('data-mode');
+        if (!target) return;
+        if ((showLogin && target === 'login') || (!showLogin && target === 'register')) {
+            btn.classList.add('active');
+        } else {
+            btn.classList.remove('active');
+        }
+    });
+
+    messageBox.style.display = 'none';
 }
 
 // Отображение сообщений пользователю

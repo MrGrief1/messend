@@ -6,17 +6,31 @@
     <title>Вход / Регистрация - GlassChat</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
-<body data-theme="dark">
+<body data-theme="matrix">
     <div class="auth-container">
         <div class="bg-shape shape1"></div>
         <div class="bg-shape shape2"></div>
         <div class="bg-shape" style="width: 350px; height: 350px; background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); top: 50%; left: 50%; transform: translate(-50%, -50%); filter: blur(90px); opacity: 0.4;"></div>
 
         <div class="auth-card glass">
-            
+            <div class="auth-intro">
+                <div class="auth-logo">M</div>
+                <div class="auth-intro-text">
+                    <h1>Messend</h1>
+                    <p>Новая сдержанная оболочка с эффектом стекла и поддержкой звонков, групп и каналов.</p>
+                </div>
+            </div>
+
+            <div class="auth-switcher" role="tablist" aria-label="Переключение форм входа и регистрации">
+                <button type="button" class="active" data-mode="login" onclick="toggleForms('login')">Вход</button>
+                <button type="button" data-mode="register" onclick="toggleForms('register')">Регистрация</button>
+            </div>
+
             <div id="login-form">
-                <h1>Добро пожаловать</h1>
-                <p>Войдите в свой аккаунт</p>
+                <div class="auth-form-header">
+                    <h2>Войдите в аккаунт</h2>
+                    <p>Используйте @тег или Email и пароль для доступа к переписке.</p>
+                </div>
                 <div class="input-group">
                     <input type="text" id="login-identifier" placeholder="@Имя пользователя или Email" required>
                 </div>
@@ -24,13 +38,15 @@
                     <input type="password" id="login-password" placeholder="Пароль" required>
                 </div>
                 <button onclick="handleLogin()">Войти</button>
-                <p class="toggle-link">Нет аккаунта? <a onclick="toggleForms()">Зарегистрироваться</a></p>
+                <p class="toggle-link">Нет аккаунта? <a onclick="toggleForms('register')">Зарегистрироваться</a></p>
                 <p class="toggle-link"><a onclick="showForgotPassword()" style="font-size: 14px; color: var(--color-primary);">Забыли пароль?</a></p>
             </div>
 
             <div id="register-form" style="display: none;">
-                <h1>Создать аккаунт</h1>
-                <p>Придумайте уникальный @тег</p>
+                <div class="auth-form-header">
+                    <h2>Создайте профиль</h2>
+                    <p>Придумайте уникальный @тег и подключите Email для восстановления доступа.</p>
+                </div>
                 <div class="input-group">
                     <input type="text" id="register-username" placeholder="Имя пользователя (без @)" required>
                 </div>
@@ -41,7 +57,7 @@
                     <input type="password" id="register-password" placeholder="Придумайте пароль" required>
                 </div>
                 <button onclick="handleRegister()">Зарегистрироваться</button>
-                <p class="toggle-link">Уже есть аккаунт? <a onclick="toggleForms()">Войти</a></p>
+                <p class="toggle-link">Уже есть аккаунт? <a onclick="toggleForms('login')">Войти</a></p>
             </div>
 
             <div id="message-box"></div>

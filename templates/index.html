@@ -32,7 +32,13 @@
         [data-theme="dark"] .liquid-bg {
             background: linear-gradient(45deg, #2c3e50, #34495e);
         }
-        
+
+        [data-theme="matrix"] .liquid-bg {
+            background: radial-gradient(circle at 20% 20%, rgba(13, 189, 139, 0.08), transparent 55%),
+                        radial-gradient(circle at 80% 0%, rgba(70, 160, 255, 0.08), transparent 45%),
+                        linear-gradient(45deg, #0a1018, #07121c);
+        }
+
         [data-theme="ocean"] .liquid-bg {
             background: linear-gradient(45deg, #001f3f, #003366);
         }
@@ -94,18 +100,30 @@
         }
         
         /* Темные темы для блобов */
-        [data-theme="dark"] .blob-1 { 
-            background: linear-gradient(135deg, #8e44ad, #9b59b6); 
+        [data-theme="dark"] .blob-1 {
+            background: linear-gradient(135deg, #8e44ad, #9b59b6);
         }
-        [data-theme="dark"] .blob-2 { 
-            background: linear-gradient(135deg, #2980b9, #3498db); 
+
+        [data-theme="matrix"] .blob-1 {
+            background: linear-gradient(135deg, rgba(13, 189, 139, 0.7), rgba(31, 218, 154, 0.45));
         }
-        [data-theme="dark"] .blob-3 { 
-            background: linear-gradient(135deg, #c0392b, #e74c3c); 
+        [data-theme="dark"] .blob-2 {
+            background: linear-gradient(135deg, #2980b9, #3498db);
+        }
+
+        [data-theme="matrix"] .blob-2 {
+            background: linear-gradient(135deg, rgba(70, 160, 255, 0.65), rgba(20, 104, 186, 0.55));
+        }
+        [data-theme="dark"] .blob-3 {
+            background: linear-gradient(135deg, #c0392b, #e74c3c);
+        }
+
+        [data-theme="matrix"] .blob-3 {
+            background: linear-gradient(135deg, rgba(13, 189, 139, 0.6), rgba(7, 87, 116, 0.65));
         }
         
-        [data-theme="ocean"] .blob-1 { 
-            background: linear-gradient(135deg, #00cec9, #81ecec); 
+        [data-theme="ocean"] .blob-1 {
+            background: linear-gradient(135deg, #00cec9, #81ecec);
         }
         [data-theme="ocean"] .blob-2 { 
             background: linear-gradient(135deg, #0984e3, #74b9ff); 
@@ -1181,7 +1199,7 @@
         }
     </style>
 </head>
-<body data-theme="{{ user.theme }}">
+<body data-theme="{{ user.theme or 'matrix' }}">
     {% include 'partials/icon-sprite.html' %}
     <!-- Жидкий анимированный фон -->
     <div class="liquid-bg">
@@ -1654,7 +1672,18 @@
                                 </div>
                                 <span class="theme-label">Светлая</span>
                             </div>
-                            
+
+                            <div class="theme-option {% if user.theme=='matrix' %}active{% endif %}" data-theme="matrix" onclick="selectTheme('matrix')">
+                                <div class="theme-preview matrix-preview">
+                                    <div class="theme-preview-header"></div>
+                                    <div class="theme-preview-content">
+                                        <div class="theme-preview-sidebar"></div>
+                                        <div class="theme-preview-main"></div>
+                                    </div>
+                                </div>
+                                <span class="theme-label">Element</span>
+                            </div>
+
                             <div class="theme-option {% if user.theme=='ocean' %}active{% endif %}" data-theme="ocean" onclick="selectTheme('ocean')">
                                 <div class="theme-preview ocean-preview">
                                     <div class="theme-preview-header"></div>
@@ -2012,8 +2041,9 @@
                 <select id="settingsTheme">
                     <option value="dark" {% if user.theme=='dark' %}selected{% endif %}>Тёмная</option>
                     <option value="light" {% if user.theme=='light' %}selected{% endif %}>Светлая</option>
+                    <option value="matrix" {% if user.theme=='matrix' %}selected{% endif %}>Element</option>
                     <option value="ocean" {% if user.theme=='ocean' %}selected{% endif %}>Океан</option>
-                            <option value="amoled" {% if user.theme=='amoled' %}selected{% endif %}>AMOLED</option>
+                    <option value="amoled" {% if user.theme=='amoled' %}selected{% endif %}>AMOLED</option>
                 </select>
             </div>
 

@@ -5901,7 +5901,7 @@ function resetGlassEffect() {
 
 // === НОВОЕ: Встроенные настройки ===
 
-let selectedTheme = document.body.getAttribute('data-theme') || 'dark';
+let selectedTheme = document.body.getAttribute('data-theme') || 'matrix';
 
 function openInlineSettings() {
     // Скрываем чат, показываем настройки
