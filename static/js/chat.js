@@ -44,6 +44,9 @@ const mediaPreviewDownload = document.getElementById('media-preview-download');
 const mediaPreviewOpen = document.getElementById('media-preview-open');
 const mediaPreviewClose = document.getElementById('media-preview-close');
 const callButtonSplit = document.querySelector('.call-button-split');
+const SKIN_STORAGE_KEY = 'appSkin';
+const AVAILABLE_SKINS = ['element', 'classic'];
+const DEFAULT_SKIN = 'element';
 // Вызовы
 let localStream = null;
 let isMicEnabled = true;
@@ -76,6 +79,86 @@ let isCallModalOpen = false;
 let reactionTargetMessageId = null; // ID сообщения, на которое мы реагируем
 let activePreviewCleanup = null;
 let activePreviewMediaElement = null;
+
+function normalizeSkin(value) {
+    return AVAILABLE_SKINS.includes(value) ? value : DEFAULT_SKIN;
+}
+
+function updateSkinSelectorUI(skin) {
+    const selector = document.getElementById('skin-selector');
+    if (!selector) {
+        return;
+    }
+
+    selector.querySelectorAll('.skin-option').forEach((option) => {
+        if (option.dataset.skin === skin) {
+            option.classList.add('active');
+        } else {
+            option.classList.remove('active');
+        }
+    });
+}
+
+function applySkinToDocument(skin) {
+    const body = document.body;
+    const doc = document.documentElement;
+    if (!body || !doc) {
+        return;
+    }
+
+    const safeSkin = normalizeSkin(skin);
+    body.setAttribute('data-skin', safeSkin);
+    doc.setAttribute('data-skin', safeSkin);
+
+    body.classList.remove('element-skin', 'classic-skin');
+    body.classList.add(`${safeSkin}-skin`);
+
+    updateSkinSelectorUI(safeSkin);
+}
+
+function persistSkin(skin) {
+    const safeSkin = normalizeSkin(skin);
+    try {
+        localStorage.setItem(SKIN_STORAGE_KEY, safeSkin);
+    } catch (error) {
+        console.warn('Не удалось сохранить облик в localStorage', error);
+    }
+
+    try {
+        const maxAge = 60 * 60 * 24 * 180; // 6 месяцев
+        document.cookie = `appSkin=${safeSkin}; path=/; max-age=${maxAge}; SameSite=Lax`;
+    } catch (error) {
+        console.warn('Не удалось сохранить облик в cookie', error);
+    }
+}
+
+function applySkin(skin, { persist = false } = {}) {
+    const safeSkin = normalizeSkin(skin);
+    applySkinToDocument(safeSkin);
+    if (persist) {
+        persistSkin(safeSkin);
+    }
+}
+
+function initializeSkinFromStorage() {
+    let storedSkin = DEFAULT_SKIN;
+    try {
+        const value = localStorage.getItem(SKIN_STORAGE_KEY);
+        if (value) {
+            storedSkin = normalizeSkin(value);
+        }
+    } catch (error) {
+        console.warn('Не удалось прочитать сохранённый облик', error);
+    }
+
+    applySkin(storedSkin);
+}
+
+function selectSkin(skin) {
+    applySkin(skin, { persist: true });
+}
+
+window.selectSkin = selectSkin;
 
 function handleCallButtonClick(event) {
     const arrowZone = event.target.closest('.call-button-split');
@@ -500,6 +583,8 @@ function showBrowserNotification(title, options = {}) {
 
 // Инициализация Socket.IO
 document.addEventListener('DOMContentLoaded', (event) => {
+    initializeSkinFromStorage();
+
     // Применяем сохраненную тему до инициализации UI
     try {
         const savedTheme = localStorage.getItem('appTheme');

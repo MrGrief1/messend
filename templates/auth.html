@@ -3,71 +3,213 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Вход / Регистрация - GlassChat</title>
+    <title>GlassChat — вход и регистрация</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/auth-modern.css') }}">
 </head>
-<body data-theme="dark">
-    <div class="auth-container">
-        <div class="bg-shape shape1"></div>
-        <div class="bg-shape shape2"></div>
-        <div class="bg-shape" style="width: 350px; height: 350px; background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); top: 50%; left: 50%; transform: translate(-50%, -50%); filter: blur(90px); opacity: 0.4;"></div>
+<body class="auth-page element-skin" data-theme="dark" data-skin="element">
+    <div class="auth-background">
+        <div class="auth-blob blob-a"></div>
+        <div class="auth-blob blob-b"></div>
+        <div class="auth-blob blob-c"></div>
+    </div>
 
-        <div class="auth-card glass">
-            
-            <div id="login-form">
-                <h1>Добро пожаловать</h1>
-                <p>Войдите в свой аккаунт</p>
-                <div class="input-group">
-                    <input type="text" id="login-identifier" placeholder="@Имя пользователя или Email" required>
+    <main class="auth-shell">
+        <section class="auth-showcase">
+            <div class="auth-showcase-header">
+                <div class="auth-brand">
+                    <svg viewBox="0 0 32 32" aria-hidden="true">
+                        <path d="M8 12.5L16 4l8 8.5M8 19.5L16 28l8-8.5" />
+                        <path d="M5 15.75L16 26.5l11-10.75" />
+                    </svg>
+                    <strong>GlassChat Matrix</strong>
                 </div>
-                <div class="input-group">
-                    <input type="password" id="login-password" placeholder="Пароль" required>
-                </div>
-                <button onclick="handleLogin()">Войти</button>
-                <p class="toggle-link">Нет аккаунта? <a onclick="toggleForms()">Зарегистрироваться</a></p>
-                <p class="toggle-link"><a onclick="showForgotPassword()" style="font-size: 14px; color: var(--color-primary);">Забыли пароль?</a></p>
+                <h1>Командный мессенджер с эффектом стекла</h1>
+                <p>
+                    Объединяет гибкие чаты, групповые звонки и мощные темы. Создано, чтобы выглядеть так же
+                    свежо, как Element, но с фирменным стеклянным свечением.
+                </p>
             </div>
 
-            <div id="register-form" style="display: none;">
-                <h1>Создать аккаунт</h1>
-                <p>Придумайте уникальный @тег</p>
-                <div class="input-group">
-                    <input type="text" id="register-username" placeholder="Имя пользователя (без @)" required>
-                </div>
-                <div class="input-group">
-                    <input type="email" id="register-email" placeholder="Email (для подтверждения)" required>
-                </div>
-                <div class="input-group">
-                    <input type="password" id="register-password" placeholder="Придумайте пароль" required>
-                </div>
-                <button onclick="handleRegister()">Зарегистрироваться</button>
-                <p class="toggle-link">Уже есть аккаунт? <a onclick="toggleForms()">Войти</a></p>
+            <div class="auth-feature-grid">
+                <article class="auth-feature-card">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path fill="currentColor" d="M5 3a2 2 0 0 0-2 2v11.75A3.25 3.25 0 0 0 6.25 20h11.5A3.25 3.25 0 0 0 21 16.75V5a2 2 0 0 0-2-2H5Zm5.67 5.28a.75.75 0 0 1 1.06.02l2 2.12 2-2.12a.75.75 0 0 1 1.08 1.04l-2.5 2.65 2.5 2.65a.75.75 0 0 1-1.08 1.04l-2-2.12-2 2.12a.75.75 0 1 1-1.08-1.04l2.5-2.65-2.5-2.65a.75.75 0 0 1 .02-1.06Z" />
+                    </svg>
+                    <h3>Звонки без компромиссов</h3>
+                    <span>Экранные конференции, быстрый созвон в один клик и плавающее окно возврата.</span>
+                </article>
+                <article class="auth-feature-card">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path fill="currentColor" d="M4.75 4A2.75 2.75 0 0 0 2 6.75v6.5A2.75 2.75 0 0 0 4.75 16h1.55l-.6 2.23a.75.75 0 0 0 1.06.88l4.44-2.11h7a2.75 2.75 0 0 0 2.75-2.75v-6.5A2.75 2.75 0 0 0 18.25 4H4.75Z" />
+                    </svg>
+                    <h3>Умные комнаты</h3>
+                    <span>Приватные диалоги, группы и каналы с быстрым переключением и метками непрочитанного.</span>
+                </article>
+                <article class="auth-feature-card">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path fill="currentColor" d="M5.25 3A2.25 2.25 0 0 0 3 5.25v13.5A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V5.25A2.25 2.25 0 0 0 18.75 3H5.25Zm9.25 6a.75.75 0 0 1 .75-.75h2.5a.75.75 0 0 1 0 1.5h-2.5A.75.75 0 0 1 14.5 9Zm-7 6h3.5a.75.75 0 0 1 0 1.5h-3.5a.75.75 0 0 1 0-1.5Z" />
+                    </svg>
+                    <h3>Файлы и опросы</h3>
+                    <span>Медиа, документы, реакции и голосовые — всё внутри единого контекстного меню.</span>
+                </article>
             </div>
 
-            <div id="message-box"></div>
-            
-            <!-- Модальное окно восстановления пароля -->
-            <div id="forgot-password-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 1000; align-items: center; justify-content: center;">
-                <div class="glass" style="max-width: 400px; width: 90%; padding: 30px; border-radius: var(--radius-xl);">
-                    <h2 style="margin-bottom: 20px;">Восстановление пароля</h2>
-                    <p style="margin-bottom: 20px; opacity: 0.8;">Введите email, использованный при регистрации</p>
-                    <div class="input-group">
-                        <input type="email" id="forgot-email" placeholder="Ваш Email" required>
+            <div class="auth-cta">
+                <div>
+                    <strong>Уже используете GlassChat?</strong>
+                    <span>Синхронизация настроек и тем между вебом и десктопом.</span>
+                </div>
+                <button type="button" onclick="document.querySelector('[data-mode=\'login\']').click()">Перейти к входу</button>
+            </div>
+        </section>
+
+        <section class="auth-panel" data-mode="login">
+            <div class="auth-panel-content">
+                <div class="auth-tabs" role="tablist">
+                    <button type="button" class="auth-tab active" data-mode="login" onclick="toggleForms('login')">Вход</button>
+                    <button type="button" class="auth-tab" data-mode="register" onclick="toggleForms('register')">Регистрация</button>
+                </div>
+
+                <div class="auth-progress" aria-hidden="true">
+                    <div class="auth-progress-step active" data-step="login">
+                        <span class="auth-progress-dot"></span>
+                        Вход
                     </div>
-                    <button onclick="handleForgotPassword()" style="width: 100%; margin-bottom: 10px;">Отправить ссылку</button>
-                    <button onclick="closeForgotPassword()" style="width: 100%; background: var(--glass-bg);">Отмена</button>
-                    <div id="forgot-message" style="margin-top: 15px; text-align: center;"></div>
-                    <p style="margin-top: 15px; font-size: 12px; opacity: 0.6; text-align: center;">💡 Письмо может прийти с задержкой 3-5 минут. Проверьте папку "Спам"</p>
+                    <div class="auth-progress-step" data-step="register">
+                        <span class="auth-progress-dot"></span>
+                        Новый аккаунт
+                    </div>
+                </div>
+
+                <div id="message-box" class="message-box" role="alert"></div>
+
+                <form class="auth-form" id="login-form" data-state="active" novalidate>
+                    <h2>С возвращением</h2>
+                    <p>Введите @username или email и пароль, чтобы вернуться в диалоги.</p>
+
+                    <label class="input-row">
+                        <span class="input-label">Логин или email</span>
+                        <span class="input-field">
+                            <svg viewBox="0 0 24 24" aria-hidden="true">
+                                <path fill="currentColor" d="M4 4.75A2.75 2.75 0 0 1 6.75 2h10.5A2.75 2.75 0 0 1 20 4.75v14.5A2.75 2.75 0 0 1 17.25 22H6.75A2.75 2.75 0 0 1 4 19.25V4.75Zm2.75-.25a.25.25 0 0 0-.25.25v14.5c0 .14.11.25.25.25h10.5a.25.25 0 0 0 .25-.25V4.75a.25.25 0 0 0-.25-.25H6.75Z" />
+                            </svg>
+                            <input type="text" id="login-identifier" placeholder="@username или email" autocomplete="username" required>
+                        </span>
+                    </label>
+
+                    <label class="input-row">
+                        <span class="input-label">Пароль <span id="login-caps" hidden>Caps Lock</span></span>
+                        <span class="input-field">
+                            <svg viewBox="0 0 24 24" aria-hidden="true">
+                                <path fill="currentColor" d="M12 2a6 6 0 0 0-6 6v2.25H4.75a.75.75 0 0 0-.75.75v8.5A2.75 2.75 0 0 0 6.75 22h10.5A2.75 2.75 0 0 0 20 19.5v-8.5a.75.75 0 0 0-.75-.75H18V8a6 6 0 0 0-6-6Zm0 1.5A4.5 4.5 0 0 1 16.5 8v2.25h-9V8A4.5 4.5 0 0 1 12 3.5Z" />
+                            </svg>
+                            <input type="password" id="login-password" placeholder="Введите пароль" autocomplete="current-password" required>
+                        </span>
+                    </label>
+
+                    <div class="auth-actions">
+                        <button type="button" class="primary-action" onclick="handleLogin()">Войти</button>
+                        <p class="secondary-link">Нет аккаунта? <button type="button" onclick="toggleForms('register')">Зарегистрироваться</button></p>
+                        <div class="forgot-trigger">Забыли пароль? <button type="button" onclick="showForgotPassword()">Восстановить доступ</button></div>
+                    </div>
+                </form>
+
+                <form class="auth-form" id="register-form" data-state="hidden" novalidate>
+                    <h2>Создайте пространство</h2>
+                    <p>Получите свой @username, чтобы участвовать в группах и звонках.</p>
+
+                    <label class="input-row">
+                        <span class="input-label">Имя пользователя <span id="username-preview">@example</span></span>
+                        <span class="input-field">
+                            <svg viewBox="0 0 24 24" aria-hidden="true">
+                                <path fill="currentColor" d="M12 2a5 5 0 0 0-5 5v2H6a2 2 0 0 0-2 2v7.25A3.75 3.75 0 0 0 7.75 22h8.5A3.75 3.75 0 0 0 20 18.25V11a2 2 0 0 0-2-2h-1V7a5 5 0 0 0-5-5Zm0 1.5A3.5 3.5 0 0 1 15.5 7v2h-7V7A3.5 3.5 0 0 1 12 3.5Z" />
+                            </svg>
+                            <input type="text" id="register-username" placeholder="без @" autocomplete="username" minlength="3" maxlength="30" required>
+                        </span>
+                    </label>
+
+                    <label class="input-row">
+                        <span class="input-label">Email <span>для подтверждения</span></span>
+                        <span class="input-field">
+                            <svg viewBox="0 0 24 24" aria-hidden="true">
+                                <path fill="currentColor" d="M4.75 4A2.75 2.75 0 0 0 2 6.75v10.5A2.75 2.75 0 0 0 4.75 20h14.5A2.75 2.75 0 0 0 22 17.25V6.75A2.75 2.75 0 0 0 19.25 4H4.75Zm0 1.5h14.5c.69 0 1.25.56 1.25 1.25v.42l-8.32 4.99a.75.75 0 0 1-.76 0L3.5 7.17V6.75c0-.69.56-1.25 1.25-1.25ZM3.5 9.23l6.73 4.03-6.6 3.96a1.25 1.25 0 0 1-.13-.54V9.23Zm8.02 4.88.48.29c.23.14.52.14.76 0l.48-.29 6.89 4.13c-.22.18-.5.3-.81.3H4.75c-.3 0-.58-.11-.81-.3l6.9-4.13Z" />
+                            </svg>
+                            <input type="email" id="register-email" placeholder="name@example.com" autocomplete="email" required>
+                        </span>
+                    </label>
+
+                    <label class="input-row">
+                        <span class="input-label">Пароль</span>
+                        <span class="input-field">
+                            <svg viewBox="0 0 24 24" aria-hidden="true">
+                                <path fill="currentColor" d="M7.75 8A4.25 4.25 0 0 1 12 3.75 4.25 4.25 0 0 1 16.25 8v2.25h.5A2.25 2.25 0 0 1 19 12.5v7.25A2.25 2.25 0 0 1 16.75 22h-9.5A2.25 2.25 0 0 1 5 19.75V12.5A2.25 2.25 0 0 1 7.25 10.25h.5V8Zm1.5 0v2.25h5.5V8A2.75 2.75 0 0 0 12 5.25 2.75 2.75 0 0 0 9.25 8Z" />
+                            </svg>
+                            <input type="password" id="register-password" placeholder="Минимум 8 символов" autocomplete="new-password" minlength="8" required>
+                        </span>
+                        <div class="password-meter" id="password-meter"><span></span></div>
+                    </label>
+
+                    <div class="auth-actions">
+                        <button type="button" class="primary-action" onclick="handleRegister()">Создать аккаунт</button>
+                        <p class="secondary-link">Уже зарегистрированы? <button type="button" onclick="toggleForms('login')">Войти</button></p>
+                    </div>
+                </form>
+
+                <div class="auth-metadata">
+                    <div class="auth-meta-card">
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <path fill="currentColor" d="M5.25 4A3.25 3.25 0 0 0 2 7.25v9.5A3.25 3.25 0 0 0 5.25 20h13.5A3.25 3.25 0 0 0 22 16.75v-9.5A3.25 3.25 0 0 0 18.75 4H5.25Zm6.18 3.22a.75.75 0 0 1 1.06 0l2.49 2.48a.75.75 0 1 1-1.06 1.06l-1.71-1.72v6.71a.75.75 0 0 1-1.5 0V9.04l-1.71 1.72a.75.75 0 1 1-1.06-1.06l2.49-2.48Z" />
+                        </svg>
+                        <strong>Быстрый старт.</strong> Подключитесь за секунды — настройки звонков подхватываются автоматически.
+                    </div>
+                    <div class="auth-meta-card">
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <path fill="currentColor" d="M3.5 5.75A2.75 2.75 0 0 1 6.25 3h11.5A2.75 2.75 0 0 1 20.5 5.75V18.5a.5.5 0 0 1-.79.39l-3.4-2.55a2.75 2.75 0 0 0-1.65-.55H6.25A2.75 2.75 0 0 1 3.5 13.99V5.75Z" />
+                        </svg>
+                        <strong>Чаты в стиле Element.</strong> Три колонки, стеклянные карточки и акценты Matrix по умолчанию.
+                    </div>
                 </div>
             </div>
+        </section>
+    </main>
+
+    <div id="forgot-password-modal" class="forgot-modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="forgot-title">
+        <div class="forgot-modal">
+            <h3 id="forgot-title">Восстановление пароля</h3>
+            <p>Введите email, на который зарегистрирован аккаунт. Мы отправим ссылку для сброса.</p>
+            <label class="input-row">
+                <span class="input-label">Email</span>
+                <span class="input-field">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path fill="currentColor" d="M4.75 4A2.75 2.75 0 0 0 2 6.75v10.5A2.75 2.75 0 0 0 4.75 20h14.5A2.75 2.75 0 0 0 22 17.25V6.75A2.75 2.75 0 0 0 19.25 4H4.75Zm0 1.5h14.5c.69 0 1.25.56 1.25 1.25v.42l-8.32 4.99a.75.75 0 0 1-.76 0L3.5 7.17V6.75c0-.69.56-1.25 1.25-1.25ZM3.5 9.23l6.73 4.03-6.6 3.96a1.25 1.25 0 0 1-.13-.54V9.23Zm8.02 4.88.48.29c.23.14.52.14.76 0l.48-.29 6.89 4.13c-.22.18-.5.3-.81.3H4.75c-.3 0-.58-.11-.81-.3l6.9-4.13Z" />
+                    </svg>
+                    <input type="email" id="forgot-email" placeholder="name@example.com" autocomplete="email">
+                </span>
+            </label>
+            <div id="forgot-message"></div>
+            <div class="modal-actions">
+                <button type="button" onclick="handleForgotPassword()">Отправить ссылку</button>
+                <button type="button" onclick="closeForgotPassword()">Отмена</button>
+            </div>
+            <div class="modal-hint">Письмо может прийти с задержкой до 5 минут. Проверьте папку «Спам».</div>
         </div>
     </div>
+
     <script>
-        // Автоприменение темы из localStorage на странице входа
         try {
             const t = localStorage.getItem('appTheme');
             if (t) document.body.setAttribute('data-theme', t);
-        } catch {}
+            const skin = localStorage.getItem('appSkin');
+            if (skin) {
+                document.body.dataset.skin = skin;
+                document.body.classList.remove('element-skin', 'classic-skin');
+                document.body.classList.add(`${skin}-skin`);
+            }
+        } catch (error) {
+            console.warn('Не удалось применить сохранённые настройки темы', error);
+        }
     </script>
     <script src="{{ url_for('static', filename='js/auth.js') }}"></script>
 </body>

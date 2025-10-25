@@ -5489,3 +5489,283 @@ html {
         padding: 12px clamp(12px, 8vw, 18px);
     }
 }
+
+/* === Интерфейсные скины === */
+html[data-skin="element"] body,
+body[data-skin="element"],
+body.element-skin {
+    --bg-gradient-start: #02060c;
+    --bg-gradient-mid: #06101f;
+    --bg-gradient-end: #030914;
+    --glass-opacity: 0.12;
+    --glass-border-opacity: 0.24;
+    --glass-shadow: 0 30px 120px rgba(3, 17, 35, 0.58);
+    --chat-area-bg: rgba(7, 13, 23, 0.66);
+    --header-bg: rgba(9, 18, 28, 0.85);
+    --surface-elevated: rgba(8, 18, 32, 0.92);
+    --surface-muted: rgba(6, 14, 24, 0.72);
+    --scrollbar-thumb: rgba(75, 125, 180, 0.55);
+    --msg-received-bg: rgba(5, 26, 48, 0.72);
+    --msg-sent-bg: linear-gradient(135deg, rgba(13, 189, 139, 0.9), rgba(10, 132, 255, 0.78));
+    --msg-sent-text: rgba(255, 255, 255, 0.94);
+    --thread-accent: rgba(10, 132, 255, 0.22);
+    color-scheme: dark;
+}
+
+html[data-skin="classic"] body,
+body[data-skin="classic"],
+body.classic-skin {
+    --glass-opacity: 0.08;
+    --glass-border-opacity: 0.15;
+    --glass-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+}
+
+body[data-skin="element"] .app-layout {
+    gap: 24px;
+    padding: 22px;
+    backdrop-filter: blur(18px) saturate(140%);
+}
+
+body[data-skin="element"] .sidebar {
+    background: linear-gradient(180deg, rgba(6, 14, 24, 0.92) 0%, rgba(4, 10, 18, 0.86) 100%);
+    border-radius: 32px;
+    border: 1px solid rgba(45, 118, 193, 0.22);
+    box-shadow: 0 26px 80px rgba(3, 16, 35, 0.55);
+    padding: 20px 18px 24px 18px;
+}
+
+body[data-skin="element"] .sidebar-header {
+    padding: 0 4px 20px 4px;
+    border-bottom: 1px solid rgba(45, 118, 193, 0.18);
+    margin-bottom: 14px;
+}
+
+body[data-skin="element"] .room-item {
+    border-radius: 20px;
+    padding: 14px 16px;
+    background: rgba(8, 20, 36, 0.4);
+    border: 1px solid transparent;
+    transition: transform 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+}
+
+body[data-skin="element"] .room-item.active,
+body[data-skin="element"] .room-item:hover {
+    background: rgba(8, 26, 48, 0.72);
+    border-color: rgba(10, 132, 255, 0.36);
+    transform: translateX(8px);
+    box-shadow: 0 20px 42px rgba(10, 132, 255, 0.22);
+}
+
+body[data-skin="element"] .main-content {
+    border-radius: 32px;
+    border: 1px solid rgba(45, 118, 193, 0.2);
+    background: linear-gradient(180deg, rgba(4, 14, 24, 0.85) 0%, rgba(3, 11, 20, 0.92) 100%);
+    box-shadow: 0 26px 80px rgba(3, 16, 35, 0.45);
+}
+
+body[data-skin="element"] .chat-header {
+    border-bottom: 1px solid rgba(45, 118, 193, 0.24);
+    background: rgba(6, 18, 32, 0.88);
+    backdrop-filter: blur(22px);
+}
+
+body[data-skin="element"] .chat-window {
+    background: radial-gradient(120% 140% at 80% 0%, rgba(10, 132, 255, 0.08) 0%, transparent 65%),
+        radial-gradient(90% 120% at 20% 100%, rgba(13, 189, 139, 0.08) 0%, transparent 68%),
+        rgba(3, 10, 20, 0.82);
+}
+
+body[data-skin="element"] .message {
+    border-radius: 20px;
+    padding: 14px 16px;
+}
+
+body[data-skin="element"] .message.incoming {
+    background: rgba(8, 26, 48, 0.66);
+    border: 1px solid rgba(45, 118, 193, 0.18);
+}
+
+body[data-skin="element"] .message.outgoing {
+    background: linear-gradient(135deg, rgba(13, 189, 139, 0.95), rgba(10, 132, 255, 0.82));
+    box-shadow: 0 12px 40px rgba(10, 132, 255, 0.32);
+}
+
+body[data-skin="element"] .chat-input-area {
+    background: rgba(6, 16, 28, 0.9);
+    border-radius: 24px;
+    border: 1px solid rgba(45, 118, 193, 0.28);
+}
+
+body[data-skin="element"] .composer-field {
+    background: rgba(4, 12, 22, 0.9);
+    border-radius: 16px;
+    border: 1px solid rgba(45, 118, 193, 0.22);
+}
+
+body[data-skin="element"] .call-button-combined {
+    border-radius: 18px;
+    background: linear-gradient(120deg, rgba(13, 189, 139, 0.92), rgba(10, 132, 255, 0.9));
+    color: #fff;
+    box-shadow: 0 18px 45px rgba(10, 132, 255, 0.28);
+}
+
+body[data-skin="element"] .call-dropdown-menu {
+    border-radius: 18px;
+    border: 1px solid rgba(45, 118, 193, 0.25);
+    box-shadow: 0 30px 90px rgba(4, 18, 35, 0.55);
+    background: rgba(6, 16, 28, 0.94);
+}
+
+body[data-skin="element"] .call-dropdown-item {
+    border-radius: 14px;
+}
+
+body[data-skin="element"] .active-call-indicator {
+    background: linear-gradient(120deg, rgba(13, 189, 139, 0.9), rgba(10, 132, 255, 0.86));
+    border-radius: 22px;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    box-shadow: 0 24px 60px rgba(10, 132, 255, 0.32);
+}
+
+body[data-skin="element"] .call-card {
+    border-radius: 26px;
+    border: 1px solid rgba(45, 118, 193, 0.22);
+    background: linear-gradient(180deg, rgba(4, 10, 18, 0.92) 0%, rgba(6, 16, 28, 0.96) 100%);
+}
+
+body[data-skin="element"] .settings-content-inline {
+    background: rgba(4, 12, 22, 0.82);
+    border-radius: 28px;
+    border: 1px solid rgba(45, 118, 193, 0.22);
+    padding: 24px;
+}
+
+body[data-skin="element"] .settings-section {
+    background: rgba(6, 16, 28, 0.68);
+    border-radius: 24px;
+    border: 1px solid rgba(45, 118, 193, 0.18);
+    padding: 20px;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+body[data-skin="element"] .settings-section h3 {
+    color: rgba(222, 240, 255, 0.94);
+}
+
+body[data-skin="element"] .theme-option {
+    border-radius: 20px;
+    border: 1px solid transparent;
+}
+
+body[data-skin="element"] .theme-option.active {
+    border-color: rgba(10, 132, 255, 0.45);
+    box-shadow: 0 16px 40px rgba(10, 132, 255, 0.24);
+}
+
+body[data-skin="element"] .thread-header {
+    background: rgba(6, 16, 28, 0.86);
+    border-bottom: 1px solid rgba(45, 118, 193, 0.24);
+}
+
+body[data-skin="element"] .thread-root-card {
+    border-radius: 24px;
+    border: 1px solid rgba(45, 118, 193, 0.2);
+    background: rgba(4, 12, 22, 0.82);
+}
+
+body[data-skin="element"] .thread-comments .message {
+    border-radius: 18px;
+}
+
+body[data-skin="element"] .telegram-mobile-nav {
+    background: linear-gradient(180deg, rgba(4, 12, 22, 0.92), rgba(6, 16, 28, 0.9));
+    border: 1px solid rgba(45, 118, 193, 0.25);
+    box-shadow: 0 18px 42px rgba(4, 16, 34, 0.6);
+}
+
+body[data-skin="element"] .telegram-nav-item.active {
+    background: linear-gradient(120deg, rgba(13, 189, 139, 0.9), rgba(10, 132, 255, 0.92));
+    box-shadow: 0 20px 48px rgba(10, 132, 255, 0.28);
+}
+
+/* --- Переключатель облика --- */
+.skin-selector {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 16px;
+}
+
+.skin-option {
+    position: relative;
+    border-radius: 18px;
+    padding: 18px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(8, 18, 32, 0.6);
+    cursor: pointer;
+    transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.skin-option.active {
+    border-color: rgba(10, 132, 255, 0.48);
+    box-shadow: 0 18px 42px rgba(10, 132, 255, 0.28);
+}
+
+.skin-preview {
+    height: 72px;
+    border-radius: 14px;
+    background: linear-gradient(160deg, rgba(13, 189, 139, 0.2), rgba(10, 132, 255, 0.12));
+    position: relative;
+    overflow: hidden;
+    margin-bottom: 12px;
+}
+
+.skin-preview::before,
+.skin-preview::after {
+    content: '';
+    position: absolute;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.12);
+}
+
+.skin-preview::before {
+    left: 10px;
+    top: 12px;
+    width: 26%;
+    height: 48px;
+}
+
+.skin-preview::after {
+    right: 12px;
+    top: 18px;
+    width: 52%;
+    height: 36px;
+}
+
+.skin-option span {
+    display: block;
+    font-weight: 600;
+    font-size: 14px;
+    color: rgba(235, 245, 255, 0.86);
+}
+
+.skin-option small {
+    display: block;
+    margin-top: 6px;
+    font-size: 12px;
+    color: rgba(210, 225, 240, 0.62);
+}
+
+body[data-skin="classic"] .skin-preview::before,
+body[data-skin="classic"] .skin-preview::after {
+    background: rgba(255, 255, 255, 0.18);
+}
+
+body[data-skin="classic"] .skin-option.active {
+    border-color: rgba(255, 255, 255, 0.28);
+}
+
+/* --- Регистрация --- */
+#username-preview.error {
+    color: #ff7373;
+}
+

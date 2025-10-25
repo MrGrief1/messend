@@ -1,136 +1,367 @@
-// Переключение между формами входа и регистрации
-function toggleForms() {
-    const loginForm = document.getElementById('login-form');
-    const registerForm = document.getElementById('register-form');
-    const messageBox = document.getElementById('message-box');
+(function () {
+    const AUTH_SKIN_CLASSNAMES = ['element-skin', 'classic-skin'];
+    const formState = {
+        mode: 'login'
+    };
 
-    if (loginForm.style.display === 'none') {
-        loginForm.style.display = 'block';
-        registerForm.style.display = 'none';
-    } else {
-        loginForm.style.display = 'none';
-        registerForm.style.display = 'block';
+    function getPanel() {
+        return document.querySelector('.auth-panel');
     }
-    messageBox.style.display = 'none'; // Скрываем сообщения при переключении
-}
 
-// Отображение сообщений пользователю
-function showMessage(message, type) {
-    const messageBox = document.getElementById('message-box');
-    messageBox.textContent = message;
-    messageBox.className = ''; // Очищаем предыдущие классы
-    if (type === 'error') {
-        messageBox.classList.add('message-error');
-    } else if (type === 'success') {
-        messageBox.classList.add('message-success');
+    function getMessageBox() {
+        return document.getElementById('message-box');
     }
-    messageBox.style.display = 'block';
-}
 
-// Обработка Регистрации
-async function handleRegister() {
-    const username = document.getElementById('register-username').value;
-    const email = document.getElementById('register-email').value;
-    const password = document.getElementById('register-password').value;
-
-    try {
-        const response = await fetch('/api/register', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ username, email, password }),
-        });
-
-        const data = await response.json();
-
-        if (data.success) {
-            showMessage(data.message, 'success');
-            // Автоматический вход после успешной регистрации
-            document.getElementById('login-identifier').value = username;
-            document.getElementById('login-password').value = password;
-            setTimeout(handleLogin, 1500); 
-        } else {
-            showMessage(data.message, 'error');
+    function toggleForms(nextMode) {
+        const panel = getPanel();
+        if (!panel) {
+            return;
         }
-    } catch (error) {
-        showMessage('Ошибка сети или сервера. Попробуйте позже.', 'error');
-    }
-}
 
-// Обработка Входа
-async function handleLogin() {
-    const identifier = document.getElementById('login-identifier').value;
-    const password = document.getElementById('login-password').value;
-
-    // Простая валидация на стороне клиента
-    if (!identifier || !password) {
-        showMessage('Пожалуйста, введите логин и пароль.', 'error');
-        return;
-    }
-
-    try {
-        const response = await fetch('/api/login', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ identifier, password }),
-        });
-
-        const data = await response.json();
-
-        if (data.success) {
-            // Перенаправление на главную страницу при успехе
-            window.location.href = '/';
-        } else {
-            showMessage(data.message, 'error');
+        const desiredMode = nextMode === 'register' ? 'register' : 'login';
+        if (formState.mode === desiredMode) {
+            hideMessage();
+            return;
         }
-    } catch (error) {
-        showMessage('Ошибка сети или сервера. Попробуйте позже.', 'error');
-    }
-}
 
-// Восстановление пароля
-function showForgotPassword() {
-    const modal = document.getElementById('forgot-password-modal');
-    modal.style.display = 'flex';
-    document.getElementById('forgot-email').value = '';
-    document.getElementById('forgot-message').innerHTML = '';
-}
+        formState.mode = desiredMode;
+        panel.dataset.mode = desiredMode;
 
-function closeForgotPassword() {
-    const modal = document.getElementById('forgot-password-modal');
-    modal.style.display = 'none';
-}
+        const loginForm = document.getElementById('login-form');
+        const registerForm = document.getElementById('register-form');
 
-async function handleForgotPassword() {
-    const email = document.getElementById('forgot-email').value;
-    const messageDiv = document.getElementById('forgot-message');
-    
-    if (!email) {
-        messageDiv.innerHTML = '<p style="color: #ff4444;">Введите email</p>';
-        return;
-    }
-    
-    try {
-        const response = await fetch('/api/forgot_password', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email })
-        });
-        
-        const data = await response.json();
-        
-        if (data.success) {
-            messageDiv.innerHTML = `<p style="color: #34C759;">${data.message}<br><small style="opacity: 0.8;">Проверьте почту через несколько минут</small></p>`;
-            setTimeout(() => {
-                closeForgotPassword();
-            }, 5000);
-        } else {
-            messageDiv.innerHTML = `<p style="color: #ff4444;">${data.message}</p>`;
+        if (loginForm && registerForm) {
+            if (desiredMode === 'login') {
+                loginForm.dataset.state = 'active';
+                registerForm.dataset.state = 'hidden';
+            } else {
+                loginForm.dataset.state = 'hidden';
+                registerForm.dataset.state = 'active';
+            }
         }
-    } catch (error) {
-        messageDiv.innerHTML = '<p style="color: #ff4444;">Ошибка соединения с сервером</p>';
+
+        updateTabs(desiredMode);
+        updateProgress(desiredMode);
+        hideMessage();
     }
-}
+
+    function updateTabs(mode) {
+        document.querySelectorAll('.auth-tab').forEach((tab) => {
+            const tabMode = tab.getAttribute('data-mode');
+            if (tabMode === mode) {
+                tab.classList.add('active');
+            } else {
+                tab.classList.remove('active');
+            }
+        });
+    }
+
+    function updateProgress(mode) {
+        document.querySelectorAll('.auth-progress-step').forEach((step) => {
+            const stepKey = step.getAttribute('data-step');
+            if (mode === 'register' && stepKey === 'register') {
+                step.classList.add('active');
+            } else if (mode === 'login' && stepKey === 'login') {
+                step.classList.add('active');
+            } else {
+                step.classList.remove('active');
+            }
+        });
+    }
+
+    function hideMessage() {
+        const messageBox = getMessageBox();
+        if (messageBox) {
+            messageBox.textContent = '';
+            messageBox.className = 'message-box';
+            messageBox.style.display = 'none';
+        }
+    }
+
+    function showMessage(message, type) {
+        const messageBox = getMessageBox();
+        if (!messageBox) {
+            return;
+        }
+
+        messageBox.textContent = message;
+        messageBox.className = 'message-box';
+        if (type === 'error') {
+            messageBox.classList.add('message-error');
+        } else if (type === 'success') {
+            messageBox.classList.add('message-success');
+        }
+        messageBox.style.display = 'block';
+    }
+
+    function validateUsername(value) {
+        return /^[a-zA-Z0-9_]{3,30}$/.test(value);
+    }
+
+    function refreshUsernamePreview() {
+        const input = document.getElementById('register-username');
+        const preview = document.getElementById('username-preview');
+        if (!input || !preview) {
+            return;
+        }
+
+        let normalized = input.value.trim().replace(/@/g, '');
+        input.value = normalized;
+        if (!normalized) {
+            preview.textContent = '@example';
+            preview.classList.remove('error');
+            return;
+        }
+
+        preview.textContent = '@' + normalized;
+        if (!validateUsername(normalized)) {
+            preview.classList.add('error');
+        } else {
+            preview.classList.remove('error');
+        }
+    }
+
+    function evaluatePasswordStrength(password) {
+        let score = 0;
+        if (password.length >= 8) score++;
+        if (/[0-9]/.test(password)) score++;
+        if (/[A-Z]/.test(password) && /[a-z]/.test(password)) score++;
+        if (/[^A-Za-z0-9]/.test(password)) score++;
+        return Math.min(score, 3);
+    }
+
+    function refreshPasswordMeter() {
+        const meter = document.getElementById('password-meter');
+        const input = document.getElementById('register-password');
+        if (!meter || !input) {
+            return;
+        }
+
+        const strength = evaluatePasswordStrength(input.value);
+        meter.dataset.strength = String(strength);
+    }
+
+    function showCapsLockWarning(event) {
+        const indicator = document.getElementById('login-caps');
+        if (!indicator) {
+            return;
+        }
+
+        if (event.getModifierState && event.getModifierState('CapsLock')) {
+            indicator.hidden = false;
+        } else {
+            indicator.hidden = true;
+        }
+    }
+
+    async function handleRegister() {
+        const usernameInput = document.getElementById('register-username');
+        const emailInput = document.getElementById('register-email');
+        const passwordInput = document.getElementById('register-password');
+
+        if (!usernameInput || !emailInput || !passwordInput) {
+            return;
+        }
+
+        const username = usernameInput.value.trim();
+        const email = emailInput.value.trim();
+        const password = passwordInput.value;
+
+        if (!validateUsername(username)) {
+            showMessage('Имя пользователя может содержать только латинские буквы, цифры и подчёркивания (3-30 символов).', 'error');
+            return;
+        }
+
+        if (!email) {
+            showMessage('Введите корректный email для подтверждения.', 'error');
+            return;
+        }
+
+        if (password.length < 8) {
+            showMessage('Пароль должен содержать минимум 8 символов.', 'error');
+            return;
+        }
+
+        try {
+            const response = await fetch('/api/register', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ username, email, password })
+            });
+
+            const data = await response.json();
+            if (data.success) {
+                showMessage(data.message || 'Аккаунт создан успешно!', 'success');
+                const loginIdentifier = document.getElementById('login-identifier');
+                const loginPassword = document.getElementById('login-password');
+                if (loginIdentifier && loginPassword) {
+                    loginIdentifier.value = username;
+                    loginPassword.value = password;
+                }
+
+                setTimeout(() => {
+                    toggleForms('login');
+                    setTimeout(handleLogin, 400);
+                }, 1200);
+            } else {
+                showMessage(data.message || 'Не удалось создать аккаунт.', 'error');
+            }
+        } catch (error) {
+            console.error('Register error:', error);
+            showMessage('Ошибка сети или сервера. Попробуйте позже.', 'error');
+        }
+    }
+
+    async function handleLogin() {
+        const identifierInput = document.getElementById('login-identifier');
+        const passwordInput = document.getElementById('login-password');
+        if (!identifierInput || !passwordInput) {
+            return;
+        }
+
+        const identifier = identifierInput.value.trim();
+        const password = passwordInput.value;
+
+        if (!identifier || !password) {
+            showMessage('Пожалуйста, введите логин и пароль.', 'error');
+            return;
+        }
+
+        try {
+            const response = await fetch('/api/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ identifier, password })
+            });
+
+            const data = await response.json();
+            if (data.success) {
+                window.location.href = '/';
+            } else {
+                showMessage(data.message || 'Не удалось выполнить вход.', 'error');
+            }
+        } catch (error) {
+            console.error('Login error:', error);
+            showMessage('Ошибка сети или сервера. Попробуйте позже.', 'error');
+        }
+    }
+
+    function showForgotPassword() {
+        const modal = document.getElementById('forgot-password-modal');
+        const emailInput = document.getElementById('forgot-email');
+        const message = document.getElementById('forgot-message');
+        if (!modal) {
+            return;
+        }
+
+        modal.classList.add('show');
+        if (emailInput) {
+            emailInput.value = '';
+            emailInput.focus();
+        }
+        if (message) {
+            message.innerHTML = '';
+        }
+    }
+
+    function closeForgotPassword() {
+        const modal = document.getElementById('forgot-password-modal');
+        if (modal) {
+            modal.classList.remove('show');
+        }
+    }
+
+    async function handleForgotPassword() {
+        const emailInput = document.getElementById('forgot-email');
+        const message = document.getElementById('forgot-message');
+        if (!emailInput || !message) {
+            return;
+        }
+
+        const email = emailInput.value.trim();
+        if (!email) {
+            message.innerHTML = '<p style="color:#ff7373">Введите email.</p>';
+            return;
+        }
+
+        try {
+            const response = await fetch('/api/forgot_password', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email })
+            });
+            const data = await response.json();
+            if (data.success) {
+                message.innerHTML = `<p style="color:#34C759">${data.message || 'Мы отправили письмо для восстановления.'}</p>`;
+                setTimeout(closeForgotPassword, 4800);
+            } else {
+                message.innerHTML = `<p style="color:#ff7373">${data.message || 'Не удалось отправить письмо.'}</p>`;
+            }
+        } catch (error) {
+            console.error('Forgot password error:', error);
+            message.innerHTML = '<p style="color:#ff7373">Ошибка соединения с сервером.</p>';
+        }
+    }
+
+    function attachListeners() {
+        const usernameInput = document.getElementById('register-username');
+        const passwordInput = document.getElementById('register-password');
+        const loginPassword = document.getElementById('login-password');
+
+        if (usernameInput) {
+            usernameInput.addEventListener('input', refreshUsernamePreview);
+        }
+        if (passwordInput) {
+            passwordInput.addEventListener('input', refreshPasswordMeter);
+        }
+        if (loginPassword) {
+            ['keyup', 'keydown'].forEach((eventName) => {
+                loginPassword.addEventListener(eventName, showCapsLockWarning);
+            });
+        }
+
+        const panel = getPanel();
+        if (panel) {
+            panel.addEventListener('keydown', (event) => {
+                if (event.key === 'Enter') {
+                    if (formState.mode === 'login') {
+                        handleLogin();
+                    } else {
+                        handleRegister();
+                    }
+                }
+            });
+        }
+    }
+
+    function applyStoredSkin() {
+        try {
+            const skin = localStorage.getItem('appSkin');
+            if (skin) {
+                document.body.dataset.skin = skin;
+                document.body.classList.remove(...AUTH_SKIN_CLASSNAMES);
+                document.body.classList.add(`${skin}-skin`);
+            }
+        } catch (error) {
+            console.warn('Skin restore failed', error);
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        applyStoredSkin();
+        refreshUsernamePreview();
+        refreshPasswordMeter();
+        attachListeners();
+    });
+
+    window.toggleForms = toggleForms;
+    window.showForgotPassword = showForgotPassword;
+    window.closeForgotPassword = closeForgotPassword;
+    window.handleForgotPassword = handleForgotPassword;
+    window.handleRegister = handleRegister;
+    window.handleLogin = handleLogin;
+})();

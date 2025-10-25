@@ -13,6 +13,16 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.5/socket.io.min.js"></script>
+    <script>
+        try {
+            const storedSkin = localStorage.getItem('appSkin');
+            if (storedSkin) {
+                document.documentElement.setAttribute('data-skin', storedSkin);
+            }
+        } catch (error) {
+            console.warn('Не удалось восстановить сохранённый облик интерфейса', error);
+        }
+    </script>
     
     <style>
         /* Дополнительные стили для жидкого фона и мобильной оптимизации */
@@ -1181,7 +1191,7 @@
         }
     </style>
 </head>
-<body data-theme="{{ user.theme }}">
+<body data-theme="{{ user.theme }}" data-skin="element" class="element-skin">
     {% include 'partials/icon-sprite.html' %}
     <!-- Жидкий анимированный фон -->
     <div class="liquid-bg">
@@ -1675,6 +1685,22 @@
                                     </div>
                                 </div>
                                 <span class="theme-label">AMOLED</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="settings-section">
+                        <h3>Облик интерфейса</h3>
+                        <div class="skin-selector" id="skin-selector">
+                            <div class="skin-option active" data-skin="element" onclick="selectSkin('element')">
+                                <div class="skin-preview"></div>
+                                <span>Element Glass</span>
+                                <small>Тёмное стекло, акценты Matrix</small>
+                            </div>
+                            <div class="skin-option" data-skin="classic" onclick="selectSkin('classic')">
+                                <div class="skin-preview"></div>
+                                <span>Classic</span>
+                                <small>Первоначальная компоновка</small>
                             </div>
                         </div>
                     </div>
