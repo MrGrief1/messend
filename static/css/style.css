@@ -2812,6 +2812,395 @@ hr {
     background-clip: padding-box;
 }
 
+
+/* --- Редактор папок --- */
+.folder-editor {
+    width: 520px;
+    max-width: min(520px, calc(100vw - 48px));
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.folder-editor-header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.folder-editor-heading h3 {
+    margin: 0;
+    font-size: 20px;
+}
+
+.folder-editor-subtitle {
+    display: block;
+    margin-top: 4px;
+    font-size: 13px;
+    opacity: 0.7;
+}
+
+.folder-editor-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.folder-editor-toolbar .ghost-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding-inline: 14px;
+}
+
+.folder-editor-toolbar svg {
+    width: 16px;
+    height: 16px;
+}
+
+.folder-editor-body {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.folder-section {
+    background: rgba(255, 255, 255, 0.04);
+    border-radius: 18px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    overflow: hidden;
+    transition: border-color 0.2s ease;
+}
+
+.folder-section.is-open {
+    border-color: rgba(255, 255, 255, 0.16);
+}
+
+.folder-section-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 16px 20px;
+}
+
+.folder-section-header h4 {
+    margin: 0;
+    font-size: 16px;
+}
+
+.folder-section-description {
+    margin: 4px 0 0 0;
+    font-size: 13px;
+    opacity: 0.7;
+}
+
+.folder-section-toggle svg {
+    transition: transform 0.3s var(--easing-smooth);
+}
+
+.folder-section:not(.is-open) .folder-section-toggle svg {
+    transform: rotate(-90deg);
+}
+
+.folder-section-content {
+    display: none;
+    padding: 0 20px 20px 20px;
+    overflow: hidden;
+    transform-origin: top;
+}
+
+.folder-section.is-open .folder-section-content {
+    display: block;
+}
+
+.folder-section.is-animating .folder-section-content,
+.folder-section.is-animating .folder-section-toggle {
+    pointer-events: none;
+}
+
+.folder-color-grid {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 14px;
+    padding-top: 12px;
+    max-height: 180px;
+    overflow-y: auto;
+}
+
+.folder-color-option {
+    width: 44px;
+    height: 44px;
+    border-radius: var(--radius-full);
+    border: 2px solid transparent;
+    cursor: pointer;
+    transition: transform 0.2s ease, border-color 0.2s ease;
+    position: relative;
+}
+
+.folder-color-option:hover {
+    transform: translateY(-2px);
+}
+
+.folder-color-option.is-active {
+    border-color: rgba(255, 255, 255, 0.9);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35);
+}
+
+.folder-color-option.is-active::after {
+    content: '';
+    position: absolute;
+    inset: 10px;
+    border-radius: inherit;
+    border: 2px solid rgba(0, 0, 0, 0.2);
+}
+
+.folder-icon-grid {
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 12px;
+    padding-top: 12px;
+    max-height: 220px;
+    overflow-y: auto;
+}
+
+.folder-icon-option {
+    width: 48px;
+    height: 48px;
+    border-radius: 16px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    cursor: pointer;
+    transition: transform 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+}
+
+.folder-icon-option svg {
+    width: 22px;
+    height: 22px;
+    stroke-width: 1.7;
+    opacity: 0.85;
+}
+
+.folder-icon-option:hover {
+    transform: translateY(-2px);
+    border-color: rgba(255, 255, 255, 0.18);
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.folder-icon-option.is-active {
+    border-color: var(--color-primary);
+    background: color-mix(in srgb, var(--color-primary) 18%, transparent);
+    box-shadow: 0 6px 16px rgba(0, 122, 255, 0.25);
+}
+
+.folder-color-grid,
+.folder-icon-grid {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.24) transparent;
+}
+
+.folder-color-grid::-webkit-scrollbar,
+.folder-icon-grid::-webkit-scrollbar {
+    width: 4px;
+}
+
+.folder-color-grid::-webkit-scrollbar-thumb,
+.folder-icon-grid::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.22);
+    border-radius: 999px;
+}
+
+.folder-color-grid::-webkit-scrollbar-thumb:hover,
+.folder-icon-grid::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.32);
+}
+
+/* --- Панель Википедии --- */
+.knowledge-overlay {
+    position: fixed;
+    inset: 0;
+    display: none;
+    z-index: 1100;
+}
+
+.knowledge-overlay.is-visible {
+    display: block;
+}
+
+.knowledge-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.55);
+    backdrop-filter: blur(8px);
+}
+
+.knowledge-panel {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: min(420px, 90vw);
+    height: 100%;
+    background: var(--glass-bg);
+    border-left: 1px solid var(--glass-border);
+    box-shadow: -16px 0 40px rgba(0, 0, 0, 0.35);
+    display: flex;
+    flex-direction: column;
+    padding: 28px;
+    animation: knowledgeSlideIn 0.35s var(--easing-smooth);
+}
+
+@keyframes knowledgeSlideIn {
+    from {
+        transform: translateX(40px);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+.knowledge-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+}
+
+.knowledge-title h3 {
+    margin: 0;
+    font-size: 22px;
+}
+
+.knowledge-term {
+    margin: 6px 0 0 0;
+    font-size: 14px;
+    opacity: 0.7;
+}
+
+.knowledge-controls {
+    display: flex;
+    gap: 12px;
+    align-items: flex-end;
+    margin: 24px 0 16px 0;
+    flex-wrap: wrap;
+}
+
+.knowledge-search {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 18px;
+    padding: 6px 6px 6px 16px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.knowledge-search input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    color: var(--text-color);
+    font-size: 14px;
+    padding: 8px 4px;
+}
+
+.knowledge-search input::placeholder {
+    color: rgba(255, 255, 255, 0.4);
+}
+
+.knowledge-language {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 160px;
+    font-size: 13px;
+    opacity: 0.85;
+}
+
+.knowledge-language select {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 14px;
+    color: inherit;
+    padding: 10px 14px;
+    font-size: 13px;
+}
+
+.knowledge-content-scroll {
+    flex: 1;
+    overflow-y: auto;
+    margin: 0;
+    padding-right: 6px;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.24) transparent;
+    scrollbar-gutter: stable both-edges;
+}
+
+.knowledge-content-scroll::-webkit-scrollbar {
+    width: 4px;
+}
+
+.knowledge-content-scroll::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.22);
+    border-radius: 999px;
+}
+
+.knowledge-content-scroll::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.32);
+}
+
+.knowledge-content {
+    line-height: 1.6;
+    font-size: 14px;
+    color: var(--text-color);
+}
+
+.knowledge-content h4,
+.knowledge-content h5 {
+    margin-top: 20px;
+    margin-bottom: 8px;
+}
+
+.knowledge-placeholder {
+    opacity: 0.65;
+    font-style: italic;
+}
+
+.knowledge-footer {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: flex-end;
+    padding-top: 18px;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.knowledge-footer .ghost-btn,
+.knowledge-footer .ghost-btn.primary {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.knowledge-footer .ghost-btn.primary {
+    background: color-mix(in srgb, var(--color-primary) 18%, transparent);
+    border-color: transparent;
+    color: var(--text-color);
+}
+
+.knowledge-footer .ghost-btn.primary:hover {
+    background: color-mix(in srgb, var(--color-primary) 26%, transparent);
+}
+
 /* --- Стили для range слайдеров --- */
 input[type="range"] {
     -webkit-appearance: none;

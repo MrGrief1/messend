@@ -2583,6 +2583,108 @@
     </div>
 
 
+
+    <!-- Редактор папок -->
+    <div id="folderEditorModal" class="modal-overlay" onclick="closeModal(event)">
+        <div class="modal-content glass folder-editor" onclick="event.stopPropagation()" role="dialog" aria-modal="true" aria-labelledby="folderEditorTitle">
+            <div class="modal-header folder-editor-header">
+                <div class="folder-editor-heading">
+                    <h3 id="folderEditorTitle">Редактирование папки</h3>
+                    <span id="folderEditorSubtitle" class="folder-editor-subtitle">Настройте цвет и иконку для быстрой навигации</span>
+                </div>
+                <div class="folder-editor-toolbar">
+                    <button class="ghost-btn" id="renameFolderBtn" type="button">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M16.862 3.487a1.5 1.5 0 0 1 2.121 2.121l-10.5 10.5-3.621.483.483-3.621 10.5-10.5Z"></path>
+                            <path d="M5 21h14"></path>
+                        </svg>
+                        Переименовать
+                    </button>
+                    <button class="ghost-btn danger" id="deleteFolderBtn" type="button">
+                        <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
+                            <use href="#ui-trash"></use>
+                        </svg>
+                        Удалить папку
+                    </button>
+                    <button class="close-btn" onclick="closeModal(event)" aria-label="Закрыть редактор папки">&times;</button>
+                </div>
+            </div>
+            <div class="folder-editor-body">
+                <section class="folder-section is-open" data-collapsible="true">
+                    <header class="folder-section-header">
+                        <div>
+                            <h4>Изменить цвет</h4>
+                            <p class="folder-section-description">Выберите цвет, который поможет выделить папку среди остальных.</p>
+                        </div>
+                        <button class="icon-btn folder-section-toggle" type="button" aria-label="Свернуть раздел цвета">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <polyline points="6 9 12 15 18 9"></polyline>
+                            </svg>
+                        </button>
+                    </header>
+                    <div class="folder-section-content">
+                        <div class="folder-color-grid" id="folderColorList" role="listbox" aria-label="Доступные цвета папок"></div>
+                    </div>
+                </section>
+
+                <section class="folder-section is-open" data-collapsible="true">
+                    <header class="folder-section-header">
+                        <div>
+                            <h4>Изменить иконку</h4>
+                            <p class="folder-section-description">Иконка поможет моментально понять, что находится внутри папки.</p>
+                        </div>
+                        <button class="icon-btn folder-section-toggle" type="button" aria-label="Свернуть раздел иконок">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <polyline points="6 9 12 15 18 9"></polyline>
+                            </svg>
+                        </button>
+                    </header>
+                    <div class="folder-section-content">
+                        <div class="folder-icon-grid" id="folderIconGrid" role="listbox" aria-label="Иконки папок"></div>
+                    </div>
+                </section>
+            </div>
+        </div>
+    </div>
+
+    <!-- Панель Википедии -->
+    <div id="knowledgeOverlay" class="knowledge-overlay" aria-hidden="true">
+        <div class="knowledge-backdrop" data-close-knowledge></div>
+        <aside class="knowledge-panel" role="dialog" aria-modal="true" aria-labelledby="knowledgeTitle">
+            <header class="knowledge-header">
+                <div class="knowledge-title">
+                    <h3 id="knowledgeTitle">Википедия</h3>
+                    <p id="knowledgeTerm" class="knowledge-term"></p>
+                </div>
+                <button class="close-btn" type="button" data-close-knowledge aria-label="Закрыть панель Википедии">&times;</button>
+            </header>
+            <div class="knowledge-controls">
+                <div class="knowledge-search">
+                    <input id="knowledgeSearchInput" type="text" placeholder="Найдите статью" aria-label="Поиск в Википедии">
+                    <button id="knowledgeSearchBtn" class="icon-btn" type="button" title="Найти статью">
+                        <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
+                            <use href="#ui-search"></use>
+                        </svg>
+                    </button>
+                </div>
+                <label class="knowledge-language">
+                    <span>Язык статьи</span>
+                    <select id="knowledgeLanguage"></select>
+                </label>
+            </div>
+            <div class="knowledge-content-scroll" id="knowledgeContentScroll">
+                <article id="knowledgeContent" class="knowledge-content" tabindex="0">
+                    <p class="knowledge-placeholder">Введите запрос, чтобы получить краткое описание из Википедии.</p>
+                </article>
+            </div>
+            <footer class="knowledge-footer">
+                <a id="knowledgeOpenArticle" class="ghost-btn primary" href="#" target="_blank" rel="noopener" style="display:none;">Читать статью полностью</a>
+                <button id="knowledgeCopyLink" class="ghost-btn" type="button">Скопировать ссылку</button>
+                <button id="knowledgeSearchWeb" class="ghost-btn" type="button">Искать в интернете</button>
+            </footer>
+        </aside>
+    </div>
+
     <!-- Приглашения на доску -->
     <div id="whiteboardInviteToast" class="whiteboard-toast" role="status" aria-live="polite">
         <div class="whiteboard-toast-body">
