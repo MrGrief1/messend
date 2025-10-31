@@ -111,6 +111,653 @@ const reactionLabels = {
 
 const reactionTemplateCache = new Map();
 
+const knowledgeDefaultLang = 'ru';
+const knowledgeLanguages = ['ru', 'en', 'zh', 'fr', 'de'];
+const knowledgeWikiCodes = { ru: 'ru', en: 'en', zh: 'zh', fr: 'fr', de: 'de' };
+const knowledgeTranslations = {
+    ru: {
+        name: "Русский",
+        title: "Центр знаний",
+        subtitle: "Быстрый доступ к Википедии и избранным темам.",
+        searchPlaceholder: "Поиск по Википедии...",
+        openFolderSettings: "Настроить папку",
+        sections: {
+            summary: "Ключевые факты",
+            summaryIntro: "Введите запрос, чтобы увидеть основную информацию по теме.",
+            timeline: "История",
+            timelineIntro: "Основные вехи появятся после выбора темы.",
+            sources: "Источники",
+            sourcesIntro: "Ссылки появятся автоматически, когда мы найдём материалы."
+        },
+        wiki: {
+            title: "Сводка из Википедии",
+            empty: "Введите запрос, чтобы увидеть результаты.",
+            snippet: "Краткое описание для «{query}».",
+            more: "Читать на Википедии"
+        },
+        folder: {
+            title: "Настройка папки",
+            preview: "Предпросмотр",
+            rename: "Переименовать",
+            delete: "Удалить папку",
+            color: "Изменить цвет",
+            icon: "Изменить иконку",
+            hint: "Выберите цвет и иконку, чтобы выделить коллекцию.",
+            renamePrompt: "Введите новое имя папки:",
+            renameEmpty: "Название не может быть пустым.",
+            deleteConfirm: "Удалить текущие настройки папки? Их можно будет задать снова.",
+            defaultName: "Коллекция"
+        }
+    },
+    en: {
+        name: "English",
+        title: "Knowledge Center",
+        subtitle: "Quick Wikipedia lookup for your saved topics.",
+        searchPlaceholder: "Search Wikipedia...",
+        openFolderSettings: "Customize folder",
+        sections: {
+            summary: "Key facts",
+            summaryIntro: "Enter a query to surface the essential information.",
+            timeline: "Timeline",
+            timelineIntro: "Highlights will appear once a topic is selected.",
+            sources: "Sources",
+            sourcesIntro: "Reference links will load automatically when material is available."
+        },
+        wiki: {
+            title: "Wikipedia summary",
+            empty: "Start typing to see the results.",
+            snippet: "A concise overview for “{query}”.",
+            more: "Read on Wikipedia"
+        },
+        folder: {
+            title: "Folder settings",
+            preview: "Preview",
+            rename: "Rename",
+            delete: "Delete folder",
+            color: "Change color",
+            icon: "Change icon",
+            hint: "Pick a color and icon to highlight this collection.",
+            renamePrompt: "Enter a new folder name:",
+            renameEmpty: "Folder name cannot be empty.",
+            deleteConfirm: "Reset the folder appearance? You can customise it again later.",
+            defaultName: "Collection"
+        }
+    },
+    zh: {
+        name: "中文",
+        title: "知识中心",
+        subtitle: "快速浏览维基百科并管理收藏夹。",
+        searchPlaceholder: "搜索维基百科…",
+        openFolderSettings: "管理收藏夹",
+        sections: {
+            summary: "关键信息",
+            summaryIntro: "输入搜索词即可查看主要信息。",
+            timeline: "历史",
+            timelineIntro: "选择主题后将显示重要时间线。",
+            sources: "来源",
+            sourcesIntro: "找到资料后会自动显示参考链接。"
+        },
+        wiki: {
+            title: "维基百科摘要",
+            empty: "输入查询即可查看结果。",
+            snippet: "关于“{query}”的摘要。",
+            more: "在维基百科阅读"
+        },
+        folder: {
+            title: "文件夹设置",
+            preview: "预览",
+            rename: "重命名",
+            delete: "删除文件夹",
+            color: "更改颜色",
+            icon: "更改图标",
+            hint: "选择颜色和图标让收藏夹更醒目。",
+            renamePrompt: "输入新的文件夹名称：",
+            renameEmpty: "名称不能为空。",
+            deleteConfirm: "确定要重置文件夹设置吗？",
+            defaultName: "收藏夹"
+        }
+    },
+    fr: {
+        name: "Français",
+        title: "Centre de connaissances",
+        subtitle: "Accès rapide à Wikipédia pour vos collections.",
+        searchPlaceholder: "Rechercher sur Wikipédia...",
+        openFolderSettings: "Personnaliser le dossier",
+        sections: {
+            summary: "Faits essentiels",
+            summaryIntro: "Saisissez une requête pour afficher les informations principales.",
+            timeline: "Chronologie",
+            timelineIntro: "Les étapes clés apparaîtront après la sélection d’un sujet.",
+            sources: "Sources",
+            sourcesIntro: "Les références seront affichées automatiquement lorsque disponibles."
+        },
+        wiki: {
+            title: "Résumé Wikipédia",
+            empty: "Commencez à taper pour afficher les résultats.",
+            snippet: "Aperçu rapide de « {query} ».",
+            more: "Lire sur Wikipédia"
+        },
+        folder: {
+            title: "Paramètres du dossier",
+            preview: "Aperçu",
+            rename: "Renommer",
+            delete: "Supprimer le dossier",
+            color: "Modifier la couleur",
+            icon: "Modifier l’icône",
+            hint: "Choisissez une couleur et une icône pour mettre en avant la collection.",
+            renamePrompt: "Saisissez un nouveau nom de dossier :",
+            renameEmpty: "Le nom ne peut pas être vide.",
+            deleteConfirm: "Réinitialiser l’apparence du dossier ? Vous pourrez la modifier à nouveau.",
+            defaultName: "Collection"
+        }
+    },
+    de: {
+        name: "Deutsch",
+        title: "Wissenscenter",
+        subtitle: "Schneller Wikipedia-Zugriff für deine Sammlungen.",
+        searchPlaceholder: "Wikipedia durchsuchen...",
+        openFolderSettings: "Ordner anpassen",
+        sections: {
+            summary: "Wichtige Fakten",
+            summaryIntro: "Gib eine Anfrage ein, um die wichtigsten Informationen zu sehen.",
+            timeline: "Zeitleiste",
+            timelineIntro: "Die wichtigsten Stationen erscheinen, sobald ein Thema ausgewählt ist.",
+            sources: "Quellen",
+            sourcesIntro: "Verweise werden automatisch eingeblendet, sobald Inhalte gefunden werden."
+        },
+        wiki: {
+            title: "Wikipedia-Zusammenfassung",
+            empty: "Gib eine Suche ein, um Ergebnisse zu sehen.",
+            snippet: "Kurzer Überblick zu „{query}“.",
+            more: "Auf Wikipedia lesen"
+        },
+        folder: {
+            title: "Ordner-Einstellungen",
+            preview: "Vorschau",
+            rename: "Umbenennen",
+            delete: "Ordner löschen",
+            color: "Farbe ändern",
+            icon: "Symbol ändern",
+            hint: "Wähle Farbe und Symbol, damit die Sammlung hervorsticht.",
+            renamePrompt: "Neuen Ordnernamen eingeben:",
+            renameEmpty: "Der Name darf nicht leer sein.",
+            deleteConfirm: "Ordnerdarstellung zurücksetzen? Du kannst sie später erneut anpassen.",
+            defaultName: "Sammlung"
+        }
+    }
+};
+
+const knowledgeFolderState = {
+    color: '#7F8CFE',
+    icon: 'ui-archive',
+    customName: false,
+    name: knowledgeTranslations[knowledgeDefaultLang]?.folder?.defaultName || 'Коллекция'
+};
+
+function getKnowledgeTranslation(lang, key) {
+    if (!key) {
+        return '';
+    }
+    const fallbacks = [lang, knowledgeDefaultLang, 'en'];
+    for (const code of fallbacks) {
+        const source = knowledgeTranslations[code];
+        if (!source) {
+            continue;
+        }
+        const parts = key.split('.');
+        let value = source;
+        for (const part of parts) {
+            if (value && typeof value === 'object' && part in value) {
+                value = value[part];
+            } else {
+                value = undefined;
+                break;
+            }
+        }
+        if (typeof value === 'string') {
+            return value;
+        }
+    }
+    return '';
+}
+
+function getActiveKnowledgeLang() {
+    const select = document.getElementById('knowledge-language');
+    const lang = select && select.value ? select.value : knowledgeDefaultLang;
+    return knowledgeTranslations[lang] ? lang : knowledgeDefaultLang;
+}
+
+function applyKnowledgeLanguage(lang) {
+    const normalizedLang = knowledgeTranslations[lang] ? lang : knowledgeDefaultLang;
+    document.querySelectorAll('[data-knowledge-key]').forEach((element) => {
+        const key = element.getAttribute('data-knowledge-key');
+        const text = getKnowledgeTranslation(normalizedLang, key);
+        if (typeof text === 'string' && text.length) {
+            element.textContent = text;
+        }
+    });
+
+    document.querySelectorAll('[data-knowledge-placeholder]').forEach((element) => {
+        const key = element.getAttribute('data-knowledge-placeholder');
+        const text = getKnowledgeTranslation(normalizedLang, key);
+        if (typeof text === 'string' && text.length) {
+            element.setAttribute('placeholder', text);
+        }
+    });
+
+    updateKnowledgeDynamicTexts(normalizedLang);
+    const searchInput = document.getElementById('knowledge-search-input');
+    if (searchInput) {
+        renderKnowledgePreview(searchInput.value.trim(), normalizedLang);
+    }
+}
+
+function updateKnowledgeDynamicTexts(lang) {
+    document.querySelectorAll('[data-knowledge-dynamic]').forEach((element) => {
+        const key = element.getAttribute('data-knowledge-dynamic');
+        const text = getKnowledgeTranslation(lang, key);
+        if (typeof text === 'string' && text.length) {
+            element.innerHTML = text;
+        }
+    });
+}
+
+function toggleKnowledgeDrawer(forceOpen) {
+    const drawer = document.getElementById('knowledgeDrawer');
+    const toggleButton = document.getElementById('knowledge-toggle');
+    if (!drawer || !toggleButton) {
+        return;
+    }
+    const shouldOpen = typeof forceOpen === 'boolean' ? forceOpen : drawer.classList.contains('knowledge-hidden');
+    drawer.classList.toggle('knowledge-hidden', !shouldOpen);
+    drawer.setAttribute('aria-hidden', shouldOpen ? 'false' : 'true');
+    toggleButton.setAttribute('aria-expanded', shouldOpen ? 'true' : 'false');
+    if (shouldOpen) {
+        const input = document.getElementById('knowledge-search-input');
+        requestAnimationFrame(() => input && input.focus());
+    }
+}
+
+function renderKnowledgePreview(query, lang) {
+    const container = document.getElementById('knowledge-wiki-content');
+    if (!container) {
+        return;
+    }
+    const summaryNode = document.getElementById('knowledge-summary-content');
+    const timelineNode = document.getElementById('knowledge-timeline');
+    const normalizedLang = knowledgeTranslations[lang] ? lang : knowledgeDefaultLang;
+    const trimmedQuery = (query || '').trim();
+
+    if (!trimmedQuery) {
+        const emptyText = escapeHtml(getKnowledgeTranslation(normalizedLang, 'wiki.empty'));
+        container.innerHTML = `<p class="knowledge-empty">${emptyText}</p>`;
+        if (summaryNode) {
+            summaryNode.innerHTML = escapeHtml(getKnowledgeTranslation(normalizedLang, 'sections.summaryIntro'));
+        }
+        if (timelineNode) {
+            timelineNode.innerHTML = `<p>${escapeHtml(getKnowledgeTranslation(normalizedLang, 'sections.timelineIntro'))}</p>`;
+        }
+        return;
+    }
+
+    const safeQuery = escapeHtml(trimmedQuery);
+    const highlight = `<mark>${safeQuery}</mark>`;
+
+    if (summaryNode) {
+        const summaryTemplate = getKnowledgeTranslation(normalizedLang, 'sections.summaryIntro');
+        if (summaryTemplate) {
+            summaryNode.innerHTML = summaryTemplate.replace('{query}', highlight);
+        }
+    }
+
+    if (timelineNode) {
+        const timelineTemplate = getKnowledgeTranslation(normalizedLang, 'sections.timelineIntro');
+        if (timelineTemplate) {
+            timelineNode.innerHTML = `<p>${timelineTemplate.replace('{query}', highlight)}</p>`;
+        }
+    }
+
+    const snippetTemplate = getKnowledgeTranslation(normalizedLang, 'wiki.snippet') || '{query}';
+    const wikiLinkLabel = getKnowledgeTranslation(normalizedLang, 'wiki.more') || 'Read on Wikipedia';
+    const languageCode = knowledgeWikiCodes[normalizedLang] || knowledgeWikiCodes[knowledgeDefaultLang];
+
+    container.innerHTML = `
+        <article class="knowledge-article">
+            <h4>${highlight}</h4>
+            <p>${snippetTemplate.replace('{query}', highlight)}</p>
+            <a class="ghost-btn" target="_blank" rel="noopener" href="https://${languageCode}.wikipedia.org/wiki/${encodeURIComponent(trimmedQuery)}">${escapeHtml(wikiLinkLabel)}</a>
+        </article>
+    `;
+}
+
+function escapeHtml(value) {
+    if (value === null || value === undefined) {
+        return '';
+    }
+    return String(value).replace(/[&<>"']/g, (char) => {
+        switch (char) {
+            case '&':
+                return '&amp;';
+            case '<':
+                return '&lt;';
+            case '>':
+                return '&gt;';
+            case '"':
+                return '&quot;';
+            case "'":
+                return '&#39;';
+            default:
+                return char;
+        }
+    });
+}
+
+function updateKnowledgeFolderPreview() {
+    const color = knowledgeFolderState.color || '#7F8CFE';
+    const name = knowledgeFolderState.name || getKnowledgeTranslation(getActiveKnowledgeLang(), 'folder.defaultName') || 'Коллекция';
+
+    const drawerPreview = document.getElementById('knowledge-folder-preview');
+    const modalPreview = document.getElementById('knowledge-folder-modal-preview');
+    const previewNodes = [drawerPreview, modalPreview];
+
+    previewNodes.forEach((node) => {
+        if (!node) {
+            return;
+        }
+        node.style.background = hexToRgba(color, 0.18);
+        node.style.borderColor = hexToRgba(color, 0.38);
+    });
+
+    const drawerIcon = document.getElementById('knowledge-folder-preview-icon');
+    const modalIcon = document.getElementById('knowledge-folder-modal-icon');
+    if (drawerIcon) {
+        drawerIcon.setAttribute('href', `#${knowledgeFolderState.icon}`);
+    }
+    if (modalIcon) {
+        modalIcon.setAttribute('href', `#${knowledgeFolderState.icon}`);
+    }
+
+    const drawerName = document.getElementById('knowledge-folder-name');
+    const modalName = document.getElementById('knowledge-folder-modal-name');
+    if (drawerName) {
+        drawerName.textContent = name;
+    }
+    if (modalName) {
+        modalName.textContent = name;
+    }
+}
+
+function hexToRgba(hex, alpha) {
+    if (!hex) {
+        return `rgba(255,255,255,${alpha})`;
+    }
+    const clean = hex.replace('#', '');
+    if (clean.length !== 6) {
+        return `rgba(255,255,255,${alpha})`;
+    }
+    const r = parseInt(clean.slice(0, 2), 16);
+    const g = parseInt(clean.slice(2, 4), 16);
+    const b = parseInt(clean.slice(4, 6), 16);
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
+function highlightKnowledgePalette() {
+    const modal = document.getElementById('collectionSettingsModal');
+    if (!modal) {
+        return;
+    }
+    modal.querySelectorAll('[data-folder-color]').forEach((button) => {
+        const color = button.getAttribute('data-folder-color');
+        if (color) {
+            button.style.setProperty('--folder-color', color);
+        }
+        const isActive = color === knowledgeFolderState.color;
+        button.classList.toggle('is-selected', isActive);
+        button.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+    });
+    modal.querySelectorAll('[data-folder-icon]').forEach((button) => {
+        const icon = button.getAttribute('data-folder-icon');
+        const isActive = icon === knowledgeFolderState.icon;
+        button.classList.toggle('is-selected', isActive);
+        button.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+    });
+}
+
+function handleKnowledgeColorSelect(color) {
+    if (!color) {
+        return;
+    }
+    knowledgeFolderState.color = color;
+    highlightKnowledgePalette();
+    updateKnowledgeFolderPreview();
+}
+
+function handleKnowledgeIconSelect(icon) {
+    if (!icon) {
+        return;
+    }
+    knowledgeFolderState.icon = icon;
+    highlightKnowledgePalette();
+    updateKnowledgeFolderPreview();
+}
+
+function handleKnowledgeFolderRename(lang) {
+    const normalizedLang = knowledgeTranslations[lang] ? lang : knowledgeDefaultLang;
+    const promptMessage = getKnowledgeTranslation(normalizedLang, 'folder.renamePrompt') || 'Enter a new folder name:';
+    const result = prompt(promptMessage, knowledgeFolderState.name);
+    if (result === null) {
+        return;
+    }
+    const trimmed = result.trim();
+    if (!trimmed) {
+        const errorText = getKnowledgeTranslation(normalizedLang, 'folder.renameEmpty') || 'Folder name cannot be empty.';
+        alert(errorText);
+        return;
+    }
+    knowledgeFolderState.name = trimmed;
+    knowledgeFolderState.customName = true;
+    updateKnowledgeFolderPreview();
+}
+
+function handleKnowledgeFolderDelete(lang) {
+    const normalizedLang = knowledgeTranslations[lang] ? lang : knowledgeDefaultLang;
+    const confirmText = getKnowledgeTranslation(normalizedLang, 'folder.deleteConfirm') || 'Reset folder appearance?';
+    if (!confirm(confirmText)) {
+        return;
+    }
+    knowledgeFolderState.color = '#7F8CFE';
+    knowledgeFolderState.icon = 'ui-archive';
+    knowledgeFolderState.customName = false;
+    knowledgeFolderState.name = getKnowledgeTranslation(normalizedLang, 'folder.defaultName') || 'Collection';
+    highlightKnowledgePalette();
+    updateKnowledgeFolderPreview();
+}
+
+function setupKnowledgeAccordions(root) {
+    if (!root) {
+        return;
+    }
+    root.querySelectorAll('[data-collapsible-trigger]').forEach((button) => {
+        const targetId = button.getAttribute('data-target');
+        if (!targetId) {
+            return;
+        }
+        const target = root.querySelector(`#${targetId}`);
+        if (!target) {
+            return;
+        }
+        target.classList.remove('is-animating', 'is-expanding', 'is-collapsing');
+        if (target._knowledgeTransitionHandler) {
+            target.removeEventListener('transitionend', target._knowledgeTransitionHandler);
+            target._knowledgeTransitionHandler = null;
+        }
+        if (target._knowledgeCollapseTimer) {
+            clearTimeout(target._knowledgeCollapseTimer);
+            target._knowledgeCollapseTimer = null;
+        }
+        const isExpanded = button.getAttribute('aria-expanded') === 'true';
+        if (isExpanded) {
+            target.classList.add('is-open');
+            target.style.height = 'auto';
+        } else {
+            target.classList.remove('is-open');
+            target.style.height = '0px';
+        }
+        button.addEventListener('click', () => toggleKnowledgeSection(button, target));
+    });
+}
+
+function toggleKnowledgeSection(button, target) {
+    if (!button || !target) {
+        return;
+    }
+
+    if (target._knowledgeTransitionHandler) {
+        target.removeEventListener('transitionend', target._knowledgeTransitionHandler);
+        target._knowledgeTransitionHandler = null;
+    }
+    if (target._knowledgeCollapseTimer) {
+        clearTimeout(target._knowledgeCollapseTimer);
+        target._knowledgeCollapseTimer = null;
+    }
+
+    const isOpen = button.getAttribute('aria-expanded') === 'true';
+    target.classList.remove('is-expanding', 'is-collapsing');
+    target.classList.add('is-animating');
+
+    if (isOpen) {
+        const startHeight = target.scrollHeight;
+        target.style.height = `${startHeight}px`;
+        target.classList.add('is-collapsing');
+        requestAnimationFrame(() => {
+            target.classList.remove('is-open');
+            target.style.height = '0px';
+        });
+    } else {
+        target.classList.add('is-open');
+        target.classList.add('is-expanding');
+        target.style.height = '0px';
+        requestAnimationFrame(() => {
+            const fullHeight = target.scrollHeight;
+            target.style.height = `${fullHeight}px`;
+        });
+    }
+
+    const cleanup = () => {
+        if (target._knowledgeCollapseTimer) {
+            clearTimeout(target._knowledgeCollapseTimer);
+            target._knowledgeCollapseTimer = null;
+        }
+        target.classList.remove('is-animating', 'is-expanding', 'is-collapsing');
+        target.style.height = target.classList.contains('is-open') ? 'auto' : '0px';
+        if (target._knowledgeTransitionHandler) {
+            target.removeEventListener('transitionend', target._knowledgeTransitionHandler);
+            target._knowledgeTransitionHandler = null;
+        }
+    };
+
+    const onTransitionEnd = (event) => {
+        if (!event || event.propertyName === 'height') {
+            cleanup();
+        }
+    };
+
+    target._knowledgeTransitionHandler = onTransitionEnd;
+    target._knowledgeCollapseTimer = setTimeout(cleanup, 360);
+    target.addEventListener('transitionend', onTransitionEnd);
+    button.setAttribute('aria-expanded', isOpen ? 'false' : 'true');
+}
+
+function initKnowledgeCenter() {
+    const drawer = document.getElementById('knowledgeDrawer');
+    const toggleButton = document.getElementById('knowledge-toggle');
+    const languageSelect = document.getElementById('knowledge-language');
+    const searchInput = document.getElementById('knowledge-search-input');
+    if (!drawer || !toggleButton || !languageSelect || !searchInput) {
+        return;
+    }
+
+    knowledgeLanguages.forEach((code) => {
+        const data = knowledgeTranslations[code];
+        if (!data) {
+            return;
+        }
+        const option = document.createElement('option');
+        option.value = code;
+        option.textContent = data.name;
+        languageSelect.appendChild(option);
+    });
+
+    const storedLang = localStorage.getItem('knowledgeLanguage');
+    const initialLang = storedLang && knowledgeTranslations[storedLang] ? storedLang : knowledgeDefaultLang;
+    languageSelect.value = initialLang;
+
+    if (!knowledgeFolderState.customName) {
+        knowledgeFolderState.name = getKnowledgeTranslation(initialLang, 'folder.defaultName') || knowledgeFolderState.name;
+    }
+
+    applyKnowledgeLanguage(initialLang);
+    updateKnowledgeFolderPreview();
+    highlightKnowledgePalette();
+
+    languageSelect.addEventListener('change', () => {
+        const lang = languageSelect.value;
+        localStorage.setItem('knowledgeLanguage', lang);
+        if (!knowledgeFolderState.customName) {
+            knowledgeFolderState.name = getKnowledgeTranslation(lang, 'folder.defaultName') || knowledgeFolderState.name;
+        }
+        applyKnowledgeLanguage(lang);
+        updateKnowledgeFolderPreview();
+        highlightKnowledgePalette();
+    });
+
+    toggleButton.addEventListener('click', () => toggleKnowledgeDrawer());
+    drawer.querySelector('[data-action="close-knowledge"]')?.addEventListener('click', () => toggleKnowledgeDrawer(false));
+    drawer.querySelector('[data-action="open-folder-modal"]')?.addEventListener('click', () => openModal('collectionSettingsModal'));
+
+    searchInput.addEventListener('input', () => {
+        renderKnowledgePreview(searchInput.value.trim(), languageSelect.value);
+    });
+
+    const renameButton = document.getElementById('knowledge-folder-rename');
+    if (renameButton) {
+        renameButton.addEventListener('click', () => handleKnowledgeFolderRename(languageSelect.value));
+    }
+    const deleteButton = document.getElementById('knowledge-folder-delete');
+    if (deleteButton) {
+        deleteButton.addEventListener('click', () => handleKnowledgeFolderDelete(languageSelect.value));
+    }
+
+    const modal = document.getElementById('collectionSettingsModal');
+    if (modal) {
+        modal.querySelectorAll('[data-folder-color]').forEach((button) => {
+            const color = button.getAttribute('data-folder-color');
+            if (color) {
+                button.style.setProperty('--folder-color', color);
+            }
+            button.addEventListener('click', () => handleKnowledgeColorSelect(color));
+        });
+        modal.querySelectorAll('[data-folder-icon]').forEach((button) => {
+            button.addEventListener('click', () => handleKnowledgeIconSelect(button.getAttribute('data-folder-icon')));
+        });
+    }
+
+    setupKnowledgeAccordions(drawer);
+    highlightKnowledgePalette();
+    updateKnowledgeFolderPreview();
+    renderKnowledgePreview('', initialLang);
+    toggleKnowledgeDrawer(false);
+
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape' && !drawer.classList.contains('knowledge-hidden')) {
+            toggleKnowledgeDrawer(false);
+        }
+    });
+}
+
+window.toggleKnowledgeDrawer = toggleKnowledgeDrawer;
+document.addEventListener('DOMContentLoaded', initKnowledgeCenter);
+
 function getReactionIconTemplate(emoji) {
     return reactionIconTemplates[emoji] || null;
 }

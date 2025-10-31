@@ -2602,6 +2602,166 @@
         </div>
     </div>
 
+    <!-- Переключатель центра знаний -->
+    <button id="knowledge-toggle" class="knowledge-floating-btn" type="button" aria-expanded="false" aria-controls="knowledgeDrawer" onclick="toggleKnowledgeDrawer()">
+        <svg class="knowledge-toggle-icon" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M9.5 2.75a4.75 4.75 0 0 1 4.75 4.75c0 1.36-.55 2.59-1.44 3.47l-.57.57a1.5 1.5 0 0 0-.44 1.06v.65a.75.75 0 0 0 .75.75h.44a3.5 3.5 0 0 1 3.5 3.5v.2a3.5 3.5 0 0 1-3.5 3.5h-6a3.5 3.5 0 0 1-3.5-3.5v-.2a3.5 3.5 0 0 1 3.5-3.5h.44a.75.75 0 0 0 .75-.75v-.65c0-.4-.16-.78-.44-1.06l-.57-.57A4.75 4.75 0 0 1 9.5 2.75Zm2 19.5v.25a1 1 0 0 1-1 1h-2a1 1 0 0 1-1-1v-.25Z" fill="currentColor"></path>
+        </svg>
+    </button>
+
+    <!-- Центр знаний и Википедии -->
+    <aside id="knowledgeDrawer" class="knowledge-drawer knowledge-hidden glass" aria-hidden="true">
+        <div class="knowledge-header">
+            <div class="knowledge-heading">
+                <h3 class="knowledge-title" data-knowledge-key="title">Центр знаний</h3>
+                <p class="knowledge-subtitle" data-knowledge-key="subtitle">Быстрый доступ к Википедии и избранным темам.</p>
+            </div>
+            <div class="knowledge-controls">
+                <label class="sr-only" for="knowledge-language">Язык</label>
+                <select id="knowledge-language" class="knowledge-language-select"></select>
+                <button class="knowledge-close" type="button" data-action="close-knowledge" aria-label="Закрыть">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="m16.5 7.5-9 9m0-9 9 9" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"></path>
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <div class="knowledge-search">
+            <div class="knowledge-search-field">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="m21 21-4.8-4.8a7 7 0 1 0-1.2 1.2L21 21Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path>
+                </svg>
+                <input id="knowledge-search-input" type="search" autocomplete="off" data-knowledge-placeholder="searchPlaceholder" placeholder="Поиск по Википедии...">
+            </div>
+            <button class="ghost-btn" type="button" data-action="open-folder-modal" data-knowledge-key="openFolderSettings">Настроить папку</button>
+        </div>
+
+        <div class="knowledge-folder-preview" id="knowledge-folder-preview" role="presentation">
+            <div class="knowledge-folder-icon">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <use id="knowledge-folder-preview-icon" href="#ui-archive"></use>
+                </svg>
+            </div>
+            <div class="knowledge-folder-meta">
+                <span class="knowledge-folder-label" data-knowledge-key="folder.title">Настройка папки</span>
+                <strong id="knowledge-folder-name" class="knowledge-folder-name">Коллекция</strong>
+            </div>
+        </div>
+
+        <section class="knowledge-section">
+            <button class="knowledge-collapse-trigger" type="button" data-collapsible-trigger data-target="knowledge-summary" aria-expanded="true">
+                <span data-knowledge-key="sections.summary">Ключевые факты</span>
+                <svg viewBox="0 0 24 24" aria-hidden="true" class="knowledge-collapse-icon">
+                    <path d="m8 10 4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path>
+                </svg>
+            </button>
+            <div id="knowledge-summary" class="knowledge-collapse is-open">
+                <div class="knowledge-summary-content" id="knowledge-summary-content" data-knowledge-dynamic="sections.summaryIntro">
+                    Введите запрос, чтобы увидеть основную информацию по теме.
+                </div>
+            </div>
+        </section>
+
+        <section class="knowledge-section">
+            <button class="knowledge-collapse-trigger" type="button" data-collapsible-trigger data-target="knowledge-timeline" aria-expanded="false">
+                <span data-knowledge-key="sections.timeline">История</span>
+                <svg viewBox="0 0 24 24" aria-hidden="true" class="knowledge-collapse-icon">
+                    <path d="m8 10 4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path>
+                </svg>
+            </button>
+            <div id="knowledge-timeline" class="knowledge-collapse" data-knowledge-dynamic="sections.timelineIntro">
+                Основные вехи появятся после выбора темы.
+            </div>
+        </section>
+
+        <section class="knowledge-section">
+            <button class="knowledge-collapse-trigger" type="button" data-collapsible-trigger data-target="knowledge-wiki" aria-expanded="true">
+                <span data-knowledge-key="wiki.title">Сводка из Википедии</span>
+                <svg viewBox="0 0 24 24" aria-hidden="true" class="knowledge-collapse-icon">
+                    <path d="m8 10 4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path>
+                </svg>
+            </button>
+            <div id="knowledge-wiki" class="knowledge-collapse is-open">
+                <div class="knowledge-wiki-scroll" id="knowledge-wiki-content">
+                    <p class="knowledge-empty" data-knowledge-dynamic="wiki.empty">Введите запрос, чтобы увидеть результаты.</p>
+                </div>
+            </div>
+        </section>
+    </aside>
+
+    <!-- Настройки папки коллекции -->
+    <div id="collectionSettingsModal" class="modal-overlay" onclick="closeModal(event)">
+        <div class="modal-content glass knowledge-folder-modal" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <h3 data-knowledge-key="folder.title">Настройка папки</h3>
+                <button class="close-btn" onclick="closeModal(event)" aria-label="Закрыть">&times;</button>
+            </div>
+            <div class="knowledge-folder-body">
+                <div class="knowledge-folder-header">
+                    <div class="knowledge-folder-preview" id="knowledge-folder-modal-preview">
+                        <div class="knowledge-folder-icon">
+                            <svg viewBox="0 0 24 24" aria-hidden="true">
+                                <use id="knowledge-folder-modal-icon" href="#ui-archive"></use>
+                            </svg>
+                        </div>
+                        <div class="knowledge-folder-meta">
+                            <span class="knowledge-folder-label" data-knowledge-key="folder.preview">Предпросмотр</span>
+                            <strong id="knowledge-folder-modal-name" class="knowledge-folder-name">Коллекция</strong>
+                        </div>
+                    </div>
+                    <div class="knowledge-folder-actions">
+                        <button id="knowledge-folder-rename" type="button" class="ghost-btn" data-knowledge-key="folder.rename">Переименовать</button>
+                        <button id="knowledge-folder-delete" type="button" class="ghost-btn danger" data-knowledge-key="folder.delete">Удалить папку</button>
+                    </div>
+                </div>
+                <p class="knowledge-folder-hint" data-knowledge-key="folder.hint">Выберите цвет и иконку, чтобы выделить коллекцию.</p>
+                <div class="knowledge-folder-section">
+                    <h4 data-knowledge-key="folder.color">Изменить цвет</h4>
+                    <div class="folder-color-grid" role="radiogroup" aria-label="Цвет папки">
+                        <button type="button" class="folder-color-option" data-folder-color="#7F8CFE" aria-pressed="false" aria-label="Сиреневый"></button>
+                        <button type="button" class="folder-color-option" data-folder-color="#FF6B81" aria-pressed="false" aria-label="Коралловый"></button>
+                        <button type="button" class="folder-color-option" data-folder-color="#1ABC9C" aria-pressed="false" aria-label="Бирюзовый"></button>
+                        <button type="button" class="folder-color-option" data-folder-color="#FFC048" aria-pressed="false" aria-label="Золотой"></button>
+                        <button type="button" class="folder-color-option" data-folder-color="#FF9FF3" aria-pressed="false" aria-label="Розовый"></button>
+                        <button type="button" class="folder-color-option" data-folder-color="#54A0FF" aria-pressed="false" aria-label="Синий"></button>
+                        <button type="button" class="folder-color-option" data-folder-color="#FFB142" aria-pressed="false" aria-label="Апельсиновый"></button>
+                        <button type="button" class="folder-color-option" data-folder-color="#2ECC71" aria-pressed="false" aria-label="Зелёный"></button>
+                    </div>
+                </div>
+                <div class="knowledge-folder-section">
+                    <h4 data-knowledge-key="folder.icon">Изменить иконку</h4>
+                    <div class="folder-icon-grid" role="radiogroup" aria-label="Иконка папки">
+                        <button type="button" class="folder-icon-option" data-folder-icon="ui-archive" aria-label="Архив" aria-pressed="false">
+                            <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#ui-archive"></use></svg>
+                        </button>
+                        <button type="button" class="folder-icon-option" data-folder-icon="ui-document" aria-label="Документ" aria-pressed="false">
+                            <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#ui-document"></use></svg>
+                        </button>
+                        <button type="button" class="folder-icon-option" data-folder-icon="ui-chart" aria-label="Аналитика" aria-pressed="false">
+                            <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#ui-chart"></use></svg>
+                        </button>
+                        <button type="button" class="folder-icon-option" data-folder-icon="ui-paperclip" aria-label="Материалы" aria-pressed="false">
+                            <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#ui-paperclip"></use></svg>
+                        </button>
+                        <button type="button" class="folder-icon-option" data-folder-icon="ui-whiteboard" aria-label="Доска" aria-pressed="false">
+                            <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#ui-whiteboard"></use></svg>
+                        </button>
+                        <button type="button" class="folder-icon-option" data-folder-icon="ui-file-code" aria-label="Код" aria-pressed="false">
+                            <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#ui-file-code"></use></svg>
+                        </button>
+                        <button type="button" class="folder-icon-option" data-folder-icon="ui-file-slides" aria-label="Презентация" aria-pressed="false">
+                            <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#ui-file-slides"></use></svg>
+                        </button>
+                        <button type="button" class="folder-icon-option" data-folder-icon="ui-bell" aria-label="Уведомления" aria-pressed="false">
+                            <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#ui-bell"></use></svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Telegram-style мобильная навигация -->
     <nav class="telegram-mobile-nav" id="telegram-mobile-nav">
         <div class="telegram-nav-container">
