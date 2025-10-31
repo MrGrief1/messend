@@ -44,6 +44,24 @@ const mediaPreviewDownload = document.getElementById('media-preview-download');
 const mediaPreviewOpen = document.getElementById('media-preview-open');
 const mediaPreviewClose = document.getElementById('media-preview-close');
 const callButtonSplit = document.querySelector('.call-button-split');
+
+const folderEditorModal = document.getElementById('folderEditorModal');
+const folderColorList = document.getElementById('folderColorList');
+const folderIconGrid = document.getElementById('folderIconGrid');
+const renameFolderBtn = document.getElementById('renameFolderBtn');
+const deleteFolderBtn = document.getElementById('deleteFolderBtn');
+const folderEditorSubtitle = document.getElementById('folderEditorSubtitle');
+const knowledgeOverlay = document.getElementById('knowledgeOverlay');
+const knowledgeSearchInput = document.getElementById('knowledgeSearchInput');
+const knowledgeSearchBtn = document.getElementById('knowledgeSearchBtn');
+const knowledgeLanguageSelect = document.getElementById('knowledgeLanguage');
+const knowledgeContent = document.getElementById('knowledgeContent');
+const knowledgeContentScroll = document.getElementById('knowledgeContentScroll');
+const knowledgeTermEl = document.getElementById('knowledgeTerm');
+const knowledgeOpenArticle = document.getElementById('knowledgeOpenArticle');
+const knowledgeCopyLinkBtn = document.getElementById('knowledgeCopyLink');
+const knowledgeSearchWebBtn = document.getElementById('knowledgeSearchWeb');
+
 // Вызовы
 let localStream = null;
 let isMicEnabled = true;
@@ -6344,6 +6362,9 @@ function closeModal(event) {
     const current = event && event.currentTarget;
     const overlay = current && current.classList && current.classList.contains('modal-overlay') ? current : null;
     const overlayId = overlay && overlay.id ? overlay.id : '';
+    if (overlayId === 'folderEditorModal') {
+        resetFolderEditorState();
+    }
     // Клик по крестику
     if (target && target.classList && target.classList.contains('close-btn')) {
         const overlay = target.closest('.modal-overlay');
@@ -9852,11 +9873,700 @@ async function joinGroupCallFromLobby() {
     }
 }
 
+
+const FOLDER_COLOR_PALETTE = [
+    '#7289da', '#5bc0de', '#ff8a80', '#ffd166', '#7bd88f', '#50c2c9',
+    '#ab47bc', '#ff6f61', '#ffa726', '#26a69a', '#7c4dff', '#607d8b'
+];
+
+const FOLDER_ICON_SET = [
+    { icon: '#ui-chat', label: 'Чаты' },
+    { icon: '#ui-archive', label: 'Архив' },
+    { icon: '#ui-search', label: 'Поиск' },
+    { icon: '#ui-paperclip', label: 'Вложения' },
+    { icon: '#ui-whiteboard', label: 'Доски' },
+    { icon: '#ui-copy', label: 'Черновики' },
+    { icon: '#ui-document', label: 'Документы' },
+    { icon: '#ui-chart', label: 'Аналитика' },
+    { icon: '#ui-mic', label: 'Голос' },
+    { icon: '#ui-send', label: 'Отправленные' },
+    { icon: '#ui-file-doc', label: 'Файлы' },
+    { icon: '#ui-file-sheet', label: 'Таблицы' },
+    { icon: '#ui-bell', label: 'Уведомления' },
+    { icon: '#ui-music-note', label: 'Аудио' },
+    { icon: '#ui-paint-brush', label: 'Дизайн' },
+    { icon: '#ui-arrow-path', label: 'Проекты' },
+    { icon: '#ui-sticker-heart', label: 'Избранное' },
+    { icon: '#ui-sticker-fire', label: 'Важно' },
+    { icon: '#ui-sticker-star', label: 'Топ' },
+    { icon: '#ui-sticker-gift', label: 'Подарки' },
+    { icon: '#ui-sticker-rocket', label: 'Запуски' },
+    { icon: '#ui-sticker-ok', label: 'Готово' },
+    { icon: '#ui-sticker-peace', label: 'Команда' },
+    { icon: '#ui-sticker-sun', label: 'Идеи' }
+];
+
+const KNOWLEDGE_LANGUAGES = [
+    { code: 'ru', label: 'Русский' },
+    { code: 'en', label: 'Английский' },
+    { code: 'zh', label: 'Китайский' },
+    { code: 'fr', label: 'Французский' },
+    { code: 'de', label: 'Немецкий' }
+];
+
+const KNOWLEDGE_MESSAGES = {
+    ru: {
+        prompt: 'Введите запрос, чтобы получить краткое описание из Википедии.',
+        loading: (query) => `Ищем статью «${escapeHtml(query)}»...`,
+        notFound: 'Не удалось найти статью. Попробуйте другой запрос или язык.',
+        noSummary: 'Для этой статьи нет краткого описания. Откройте полную версию на Википедии.',
+        copyUnavailable: 'Ссылка недоступна для этой статьи.',
+        copySuccess: 'Скопировано!',
+        copyFallbackAlert: 'Не удалось скопировать ссылку. Скопируйте её вручную: ',
+        searchPlaceholder: 'Найдите статью',
+        copyButton: 'Скопировать ссылку',
+        searchButton: 'Искать в интернете',
+        openButton: 'Читать статью полностью'
+    },
+    en: {
+        prompt: 'Enter a query to get a short summary from Wikipedia.',
+        loading: (query) => `Searching for “${escapeHtml(query)}”…`,
+        notFound: 'Couldn\'t find an article. Try another query or language.',
+        noSummary: 'This article has no short summary yet. Open the full page on Wikipedia.',
+        copyUnavailable: 'The link is not available for this article.',
+        copySuccess: 'Copied!',
+        copyFallbackAlert: 'Couldn\'t copy the link. Copy it manually: ',
+        searchPlaceholder: 'Find an article',
+        copyButton: 'Copy link',
+        searchButton: 'Search the web',
+        openButton: 'Read the full article'
+    },
+    zh: {
+        prompt: '输入查询以获取维基百科的简要介绍。',
+        loading: (query) => `正在搜索“${escapeHtml(query)}”的条目…`,
+        notFound: '未找到条目。请尝试其他查询或语言。',
+        noSummary: '该条目暂无简要摘要。请打开维基百科的完整页面。',
+        copyUnavailable: '此条目没有可用的链接。',
+        copySuccess: '已复制！',
+        copyFallbackAlert: '无法复制链接。请手动复制：',
+        searchPlaceholder: '搜索条目',
+        copyButton: '复制链接',
+        searchButton: '在网上搜索',
+        openButton: '阅读完整条目'
+    },
+    fr: {
+        prompt: 'Saisissez une requête pour obtenir un résumé Wikipédia.',
+        loading: (query) => `Recherche de «\u00A0${escapeHtml(query)}\u00A0»…`,
+        notFound: 'Article introuvable. Essayez une autre requête ou langue.',
+        noSummary: 'Cet article n\'a pas encore de résumé court. Ouvrez la version complète sur Wikipédia.',
+        copyUnavailable: 'Le lien n\'est pas disponible pour cet article.',
+        copySuccess: 'Copié\u00A0!',
+        copyFallbackAlert: 'Impossible de copier le lien. Copiez-le manuellement\u00A0: ',
+        searchPlaceholder: 'Rechercher un article',
+        copyButton: 'Copier le lien',
+        searchButton: 'Rechercher sur le web',
+        openButton: 'Lire l\'article complet'
+    },
+    de: {
+        prompt: 'Geben Sie eine Anfrage ein, um eine kurze Zusammenfassung aus Wikipedia zu erhalten.',
+        loading: (query) => `Suche nach „${escapeHtml(query)}“…`,
+        notFound: 'Artikel nicht gefunden. Versuchen Sie eine andere Anfrage oder Sprache.',
+        noSummary: 'Für diesen Artikel gibt es keine Kurzfassung. Öffnen Sie die vollständige Seite auf Wikipedia.',
+        copyUnavailable: 'Für diesen Artikel ist kein Link verfügbar.',
+        copySuccess: 'Kopiert!',
+        copyFallbackAlert: 'Der Link konnte nicht kopiert werden. Bitte kopieren Sie ihn manuell: ',
+        searchPlaceholder: 'Artikel suchen',
+        copyButton: 'Link kopieren',
+        searchButton: 'Im Web suchen',
+        openButton: 'Gesamten Artikel lesen'
+    }
+};
+
+function getKnowledgeMessages(lang) {
+    return KNOWLEDGE_MESSAGES[lang] || KNOWLEDGE_MESSAGES.ru;
+}
+
+let activeFolderEditor = null;
+let selectedFolderColor = null;
+let selectedFolderIcon = null;
+let activeKnowledgeQuery = '';
+let activeKnowledgeArticleUrl = '';
+let activeKnowledgeLang = 'ru';
+
+function initFolderEditorUI() {
+    if (!folderEditorModal) return;
+
+    if (folderColorList && !folderColorList.dataset.initialized) {
+        const fragment = document.createDocumentFragment();
+        FOLDER_COLOR_PALETTE.forEach(color => {
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.className = 'folder-color-option';
+            button.style.background = color;
+            button.setAttribute('role', 'option');
+            button.setAttribute('aria-label', `Цвет ${color}`);
+            button.addEventListener('click', () => selectFolderColor(color));
+            fragment.appendChild(button);
+        });
+        folderColorList.appendChild(fragment);
+        folderColorList.dataset.initialized = 'true';
+    }
+
+    if (folderIconGrid && !folderIconGrid.dataset.initialized) {
+        const fragment = document.createDocumentFragment();
+        FOLDER_ICON_SET.forEach(({ icon, label }) => {
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.className = 'folder-icon-option';
+            button.setAttribute('role', 'option');
+            button.setAttribute('aria-label', label);
+            button.dataset.icon = icon;
+            const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+            svg.setAttribute('viewBox', '0 0 24 24');
+            svg.setAttribute('fill', 'none');
+            svg.setAttribute('stroke', 'currentColor');
+            const use = document.createElementNS('http://www.w3.org/2000/svg', 'use');
+            use.setAttributeNS('http://www.w3.org/1999/xlink', 'href', icon);
+            svg.appendChild(use);
+            button.appendChild(svg);
+            button.addEventListener('click', () => selectFolderIcon(icon));
+            fragment.appendChild(button);
+        });
+        folderIconGrid.appendChild(fragment);
+        folderIconGrid.dataset.initialized = 'true';
+    }
+
+    folderEditorModal.querySelectorAll('.folder-section').forEach(section => {
+        const toggle = section.querySelector('.folder-section-toggle');
+        const content = section.querySelector('.folder-section-content');
+        const isOpen = section.classList.contains('is-open');
+        if (toggle) {
+            toggle.setAttribute('aria-expanded', String(isOpen));
+        }
+        if (content) {
+            content.setAttribute('aria-hidden', String(!isOpen));
+        }
+        if (toggle && !toggle.dataset.bound) {
+            toggle.addEventListener('click', () => toggleFolderSection(section));
+            toggle.dataset.bound = 'true';
+        }
+    });
+
+    if (renameFolderBtn && !renameFolderBtn.dataset.bound) {
+        renameFolderBtn.addEventListener('click', () => {
+            if (!activeFolderEditor) return;
+            const currentName = activeFolderEditor.name || '';
+            const name = prompt('Новое название папки', currentName);
+            if (name && name.trim()) {
+                activeFolderEditor.name = name.trim();
+                updateFolderSubtitle();
+                emitFolderEvent('rename', { id: activeFolderEditor.id ?? null, name: activeFolderEditor.name });
+            }
+        });
+        renameFolderBtn.dataset.bound = 'true';
+    }
+
+    if (deleteFolderBtn && !deleteFolderBtn.dataset.bound) {
+        deleteFolderBtn.addEventListener('click', () => {
+            if (!activeFolderEditor) return;
+            const confirmed = confirm('Удалить папку и удалить её из бокового меню?');
+            if (confirmed) {
+                emitFolderEvent('delete', { id: activeFolderEditor.id ?? null });
+                closeFolderEditor();
+            }
+        });
+        deleteFolderBtn.dataset.bound = 'true';
+    }
+}
+
+function renderFolderSelections() {
+    if (folderColorList) {
+        folderColorList.querySelectorAll('.folder-color-option').forEach((btn, index) => {
+            const color = FOLDER_COLOR_PALETTE[index];
+            btn.dataset.color = color;
+            btn.classList.toggle('is-active', !!selectedFolderColor && selectedFolderColor === color);
+        });
+    }
+
+    if (folderIconGrid) {
+        folderIconGrid.querySelectorAll('.folder-icon-option').forEach(btn => {
+            btn.classList.toggle('is-active', !!selectedFolderIcon && selectedFolderIcon === btn.dataset.icon);
+        });
+    }
+}
+
+function selectFolderColor(color) {
+    selectedFolderColor = color;
+    if (activeFolderEditor) {
+        activeFolderEditor.color = color;
+        emitFolderEvent('style', { id: activeFolderEditor.id ?? null, color, icon: selectedFolderIcon });
+    }
+    if (folderColorList) {
+        folderColorList.querySelectorAll('.folder-color-option').forEach(btn => {
+            btn.classList.toggle('is-active', btn.dataset.color === color);
+        });
+    }
+}
+
+function selectFolderIcon(icon) {
+    selectedFolderIcon = icon;
+    if (activeFolderEditor) {
+        activeFolderEditor.icon = icon;
+        emitFolderEvent('style', { id: activeFolderEditor.id ?? null, color: selectedFolderColor, icon });
+    }
+    if (folderIconGrid) {
+        folderIconGrid.querySelectorAll('.folder-icon-option').forEach(btn => {
+            btn.classList.toggle('is-active', btn.dataset.icon === icon);
+        });
+    }
+}
+
+function toggleFolderSection(section) {
+    if (!section) return;
+    const content = section.querySelector('.folder-section-content');
+    const toggle = section.querySelector('.folder-section-toggle');
+    if (!content) {
+        section.classList.toggle('is-open');
+        if (toggle) {
+            const expanded = section.classList.contains('is-open');
+            toggle.setAttribute('aria-expanded', String(expanded));
+        }
+        return;
+    }
+
+    if (typeof content.animate !== 'function') {
+        const expanded = !section.classList.contains('is-open');
+        section.classList.toggle('is-open');
+        if (toggle) {
+            toggle.setAttribute('aria-expanded', String(expanded));
+        }
+        content.setAttribute('aria-hidden', String(!expanded));
+        return;
+    }
+
+    const animations = content.getAnimations ? content.getAnimations() : [];
+    animations.forEach(animation => animation.cancel());
+
+    const isOpen = section.classList.contains('is-open');
+    const duration = 280;
+    const easing = 'var(--easing-smooth, ease)';
+
+    const finishAnimation = () => {
+        section.classList.remove('is-animating');
+        content.style.removeProperty('height');
+        content.style.removeProperty('opacity');
+        content.style.removeProperty('transform');
+        content.style.removeProperty('display');
+    };
+
+    section.classList.add('is-animating');
+
+    if (isOpen) {
+        const startHeight = content.scrollHeight;
+        content.style.height = `${startHeight}px`;
+        content.style.display = 'block';
+        content.style.opacity = '1';
+        content.style.transform = 'scaleY(1)';
+        const animation = content.animate([
+            { height: `${startHeight}px`, opacity: 1, transform: 'scaleY(1)' },
+            { height: '0px', opacity: 0, transform: 'scaleY(0.96)' }
+        ], { duration, easing, fill: 'forwards' });
+        animation.onfinish = () => {
+            section.classList.remove('is-open');
+            content.setAttribute('aria-hidden', 'true');
+            finishAnimation();
+        };
+        animation.oncancel = animation.onfinish;
+    } else {
+        const previousDisplay = getComputedStyle(content).display;
+        if (previousDisplay === 'none') {
+            content.style.display = 'block';
+        }
+        const targetHeight = content.scrollHeight;
+        content.style.height = '0px';
+        content.style.opacity = '0';
+        content.style.transform = 'scaleY(0.96)';
+        section.classList.add('is-open');
+        content.setAttribute('aria-hidden', 'false');
+        const animation = content.animate([
+            { height: '0px', opacity: 0, transform: 'scaleY(0.96)' },
+            { height: `${targetHeight}px`, opacity: 1, transform: 'scaleY(1)' }
+        ], { duration, easing, fill: 'forwards' });
+        animation.onfinish = () => {
+            finishAnimation();
+        };
+        animation.oncancel = animation.onfinish;
+    }
+
+    if (toggle) {
+        toggle.setAttribute('aria-expanded', String(!isOpen));
+    }
+}
+
+function emitFolderEvent(type, detail) {
+    try {
+        window.dispatchEvent(new CustomEvent(`folder:${type}`, { detail }));
+    } catch (error) {
+        console.debug('folder:event', type, detail, error);
+    }
+}
+
+function openFolderEditor(data = {}) {
+    if (!folderEditorModal) return;
+    initFolderEditorUI();
+    activeFolderEditor = { ...data };
+    selectedFolderColor = activeFolderEditor.color || FOLDER_COLOR_PALETTE[0];
+    selectedFolderIcon = activeFolderEditor.icon || (FOLDER_ICON_SET[0] && FOLDER_ICON_SET[0].icon);
+    updateFolderSubtitle();
+    if (folderColorList) {
+        folderColorList.querySelectorAll('.folder-color-option').forEach((btn, index) => {
+            btn.dataset.color = FOLDER_COLOR_PALETTE[index];
+        });
+    }
+    renderFolderSelections();
+    folderEditorModal.style.display = 'flex';
+}
+
+function updateFolderSubtitle() {
+    if (!folderEditorSubtitle) return;
+    if (activeFolderEditor && activeFolderEditor.name) {
+        folderEditorSubtitle.textContent = `Настройте папку «${activeFolderEditor.name}»`;
+    } else {
+        folderEditorSubtitle.textContent = 'Настройте цвет и иконку для быстрой навигации';
+    }
+}
+
+function resetFolderEditorState() {
+    activeFolderEditor = null;
+    selectedFolderColor = null;
+    selectedFolderIcon = null;
+    if (folderEditorSubtitle) {
+        folderEditorSubtitle.textContent = 'Настройте цвет и иконку для быстрой навигации';
+    }
+    if (folderColorList) {
+        folderColorList.querySelectorAll('.folder-color-option').forEach(btn => btn.classList.remove('is-active'));
+    }
+    if (folderIconGrid) {
+        folderIconGrid.querySelectorAll('.folder-icon-option').forEach(btn => btn.classList.remove('is-active'));
+    }
+}
+
+function closeFolderEditor() {
+    if (!folderEditorModal) return;
+    folderEditorModal.style.display = 'none';
+    resetFolderEditorState();
+}
+
+function initKnowledgePanel() {
+    if (!knowledgeOverlay) return;
+    populateKnowledgeLanguages();
+    applyKnowledgeLanguage(activeKnowledgeLang);
+
+    if (knowledgeSearchBtn && !knowledgeSearchBtn.dataset.bound) {
+        knowledgeSearchBtn.addEventListener('click', performKnowledgeSearch);
+        knowledgeSearchBtn.dataset.bound = 'true';
+    }
+
+    if (knowledgeSearchInput && !knowledgeSearchInput.dataset.bound) {
+        knowledgeSearchInput.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                performKnowledgeSearch();
+            }
+        });
+        knowledgeSearchInput.dataset.bound = 'true';
+    }
+
+    if (knowledgeLanguageSelect && !knowledgeLanguageSelect.dataset.bound) {
+        knowledgeLanguageSelect.addEventListener('change', () => {
+            activeKnowledgeLang = knowledgeLanguageSelect.value || 'ru';
+            applyKnowledgeLanguage(activeKnowledgeLang, { preserveContent: Boolean(activeKnowledgeQuery) });
+            if (activeKnowledgeQuery) {
+                fetchKnowledgeArticle(activeKnowledgeLang, activeKnowledgeQuery);
+            }
+        });
+        knowledgeLanguageSelect.dataset.bound = 'true';
+    }
+
+    if (knowledgeCopyLinkBtn && !knowledgeCopyLinkBtn.dataset.bound) {
+        knowledgeCopyLinkBtn.addEventListener('click', copyKnowledgeLink);
+        knowledgeCopyLinkBtn.dataset.bound = 'true';
+    }
+
+    if (knowledgeSearchWebBtn && !knowledgeSearchWebBtn.dataset.bound) {
+        knowledgeSearchWebBtn.addEventListener('click', searchKnowledgeOnWeb);
+        knowledgeSearchWebBtn.dataset.bound = 'true';
+    }
+
+    const closeElements = knowledgeOverlay.querySelectorAll('[data-close-knowledge]');
+    closeElements.forEach(el => {
+        if (!el.dataset.bound) {
+            el.addEventListener('click', closeKnowledgeOverlay);
+            el.dataset.bound = 'true';
+        }
+    });
+
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape' && knowledgeOverlay.classList.contains('is-visible')) {
+            closeKnowledgeOverlay();
+        }
+    });
+}
+
+function populateKnowledgeLanguages() {
+    if (!knowledgeLanguageSelect) return;
+    knowledgeLanguageSelect.innerHTML = '';
+    KNOWLEDGE_LANGUAGES.forEach(({ code, label }) => {
+        const option = document.createElement('option');
+        option.value = code;
+        option.textContent = label;
+        knowledgeLanguageSelect.appendChild(option);
+    });
+    knowledgeLanguageSelect.value = activeKnowledgeLang;
+}
+
+function applyKnowledgeLanguage(lang, { preserveContent = false } = {}) {
+    const messages = getKnowledgeMessages(lang);
+    if (knowledgeSearchInput) {
+        knowledgeSearchInput.placeholder = messages.searchPlaceholder;
+    }
+    if (knowledgeCopyLinkBtn) {
+        if (knowledgeCopyLinkBtn.dataset.copyFeedbackActive !== 'true') {
+            knowledgeCopyLinkBtn.textContent = messages.copyButton;
+        }
+        knowledgeCopyLinkBtn.dataset.originalLabel = messages.copyButton;
+    }
+    if (knowledgeSearchWebBtn) {
+        knowledgeSearchWebBtn.textContent = messages.searchButton;
+    }
+    if (knowledgeOpenArticle) {
+        knowledgeOpenArticle.textContent = messages.openButton;
+    }
+    if (!preserveContent && !activeKnowledgeQuery) {
+        showKnowledgePlaceholder(messages.prompt, lang);
+    }
+}
+
+function performKnowledgeSearch() {
+    if (!knowledgeSearchInput) return;
+    const query = knowledgeSearchInput.value.trim();
+    const lang = knowledgeLanguageSelect ? knowledgeLanguageSelect.value || activeKnowledgeLang : activeKnowledgeLang;
+    if (!query) {
+        showKnowledgePlaceholder(getKnowledgeMessages(lang).prompt, lang);
+        activeKnowledgeQuery = '';
+        activeKnowledgeArticleUrl = '';
+        if (knowledgeTermEl) {
+            knowledgeTermEl.textContent = '';
+        }
+        if (knowledgeOpenArticle) {
+            knowledgeOpenArticle.style.display = 'none';
+        }
+        return;
+    }
+    activeKnowledgeQuery = query;
+    activeKnowledgeLang = lang;
+    applyKnowledgeLanguage(lang, { preserveContent: true });
+    if (knowledgeLanguageSelect) {
+        knowledgeLanguageSelect.value = lang;
+    }
+    openKnowledgeOverlay();
+    fetchKnowledgeArticle(lang, query);
+}
+
+function openKnowledgeOverlay(query) {
+    if (!knowledgeOverlay) return;
+    knowledgeOverlay.classList.add('is-visible');
+    knowledgeOverlay.setAttribute('aria-hidden', 'false');
+    const lang = knowledgeLanguageSelect ? knowledgeLanguageSelect.value || activeKnowledgeLang : activeKnowledgeLang;
+    applyKnowledgeLanguage(lang, { preserveContent: Boolean(activeKnowledgeQuery) });
+    if (typeof query === 'string' && query.trim()) {
+        activeKnowledgeQuery = query.trim();
+        if (knowledgeSearchInput) {
+            knowledgeSearchInput.value = activeKnowledgeQuery;
+        }
+        activeKnowledgeLang = lang;
+        fetchKnowledgeArticle(lang, activeKnowledgeQuery);
+    }
+    setTimeout(() => {
+        if (knowledgeSearchInput) {
+            knowledgeSearchInput.focus();
+            knowledgeSearchInput.select();
+        }
+    }, 160);
+}
+
+function closeKnowledgeOverlay() {
+    if (!knowledgeOverlay) return;
+    knowledgeOverlay.classList.remove('is-visible');
+    knowledgeOverlay.setAttribute('aria-hidden', 'true');
+}
+
+async function fetchKnowledgeArticle(lang, query) {
+    if (!knowledgeContent) return;
+    const safeLang = (lang || 'ru').toLowerCase();
+    const encodedQuery = encodeURIComponent(query.replace(/\s+/g, '_'));
+    activeKnowledgeLang = safeLang;
+    setKnowledgeLoading(query, safeLang);
+    try {
+        const response = await fetch(`https://${safeLang}.wikipedia.org/api/rest_v1/page/summary/${encodedQuery}`);
+        if (!response.ok) {
+            throw new Error('not_found');
+        }
+        const data = await response.json();
+        updateKnowledgeContent(data, safeLang, query);
+    } catch (error) {
+        console.warn('Knowledge fetch error', error);
+        const fallbackLang = safeLang === 'ru' ? 'en' : 'ru';
+        if (fallbackLang !== safeLang) {
+            try {
+                const response = await fetch(`https://${fallbackLang}.wikipedia.org/api/rest_v1/page/summary/${encodedQuery}`);
+                if (response.ok) {
+                    const data = await response.json();
+                    updateKnowledgeContent(data, fallbackLang, query);
+                    if (knowledgeLanguageSelect) {
+                        knowledgeLanguageSelect.value = fallbackLang;
+                    }
+                    activeKnowledgeLang = fallbackLang;
+                    applyKnowledgeLanguage(fallbackLang, { preserveContent: true });
+                    return;
+                }
+            } catch (fallbackError) {
+                console.warn('Fallback knowledge error', fallbackError);
+            }
+        }
+        applyKnowledgeLanguage(safeLang, { preserveContent: true });
+        showKnowledgePlaceholder(getKnowledgeMessages(safeLang).notFound, safeLang);
+        if (knowledgeOpenArticle) knowledgeOpenArticle.style.display = 'none';
+        activeKnowledgeArticleUrl = '';
+    }
+}
+
+function resetKnowledgeScroll() {
+    if (knowledgeContentScroll) {
+        knowledgeContentScroll.scrollTop = 0;
+    } else if (knowledgeContent) {
+        knowledgeContent.scrollTop = 0;
+    }
+}
+
+function setKnowledgeLoading(query, lang = activeKnowledgeLang) {
+    if (!knowledgeContent) return;
+    const messages = getKnowledgeMessages(lang);
+    const loadingMessage = typeof messages.loading === 'function' ? messages.loading(query) : messages.loading;
+    knowledgeContent.innerHTML = `<p class="knowledge-placeholder">${loadingMessage}</p>`;
+    if (knowledgeTermEl) knowledgeTermEl.textContent = query;
+    resetKnowledgeScroll();
+}
+
+function showKnowledgePlaceholder(message, lang = activeKnowledgeLang) {
+    if (!knowledgeContent) return;
+    const text = message !== undefined && message !== null ? message : getKnowledgeMessages(lang).prompt;
+    knowledgeContent.innerHTML = `<p class="knowledge-placeholder">${escapeHtml(text)}</p>`;
+    resetKnowledgeScroll();
+}
+
+function updateKnowledgeContent(data, lang, query) {
+    if (!knowledgeContent) return;
+    applyKnowledgeLanguage(lang, { preserveContent: true });
+    const title = data.displaytitle || data.title || query;
+    const summaryHtml = data.extract_html || (data.extract ? `<p>${escapeHtml(data.extract)}</p>` : '');
+    const description = data.description ? `<p class="knowledge-placeholder">${escapeHtml(data.description)}</p>` : '';
+    const messages = getKnowledgeMessages(lang);
+    if (summaryHtml && summaryHtml.trim().length > 0) {
+        knowledgeContent.innerHTML = summaryHtml + description;
+    } else if (description) {
+        knowledgeContent.innerHTML = `${description}<p class="knowledge-placeholder">${escapeHtml(messages.noSummary)}</p>`;
+    } else {
+        showKnowledgePlaceholder(messages.noSummary, lang);
+    }
+    if (knowledgeTermEl) knowledgeTermEl.textContent = title;
+    const pageUrl = (data.content_urls && (data.content_urls.desktop?.page || data.content_urls.mobile?.page)) || '';
+    activeKnowledgeArticleUrl = pageUrl;
+    if (knowledgeOpenArticle) {
+        if (pageUrl) {
+            knowledgeOpenArticle.href = pageUrl;
+            knowledgeOpenArticle.style.display = 'inline-flex';
+        } else {
+            knowledgeOpenArticle.style.display = 'none';
+        }
+    }
+    if (knowledgeSearchWebBtn) {
+        knowledgeSearchWebBtn.dataset.query = query;
+    }
+    resetKnowledgeScroll();
+}
+
+async function copyKnowledgeLink() {
+    if (!activeKnowledgeArticleUrl) {
+        showKnowledgePlaceholder(getKnowledgeMessages(activeKnowledgeLang).copyUnavailable, activeKnowledgeLang);
+        return;
+    }
+    try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            await navigator.clipboard.writeText(activeKnowledgeArticleUrl);
+        } else {
+            const temp = document.createElement('textarea');
+            temp.value = activeKnowledgeArticleUrl;
+            temp.setAttribute('readonly', '');
+            temp.style.position = 'absolute';
+            temp.style.left = '-9999px';
+            document.body.appendChild(temp);
+            temp.select();
+            document.execCommand('copy');
+            document.body.removeChild(temp);
+        }
+        showKnowledgeCopyFeedback(knowledgeCopyLinkBtn);
+    } catch (error) {
+        console.error('Clipboard error', error);
+        alert(getKnowledgeMessages(activeKnowledgeLang).copyFallbackAlert + activeKnowledgeArticleUrl);
+    }
+}
+
+function showKnowledgeCopyFeedback(button) {
+    if (!button) return;
+    const original = button.dataset.originalLabel || button.textContent;
+    button.dataset.originalLabel = original;
+    button.dataset.copyFeedbackActive = 'true';
+    button.textContent = getKnowledgeMessages(activeKnowledgeLang).copySuccess;
+    setTimeout(() => {
+        button.dataset.copyFeedbackActive = 'false';
+        button.textContent = button.dataset.originalLabel;
+    }, 2000);
+}
+
+function searchKnowledgeOnWeb() {
+    const query = activeKnowledgeQuery || (knowledgeSearchInput ? knowledgeSearchInput.value.trim() : '');
+    if (!query) {
+        if (knowledgeSearchInput) knowledgeSearchInput.focus();
+        return;
+    }
+    const url = `https://www.google.com/search?q=${encodeURIComponent(query)}`;
+    window.open(url, '_blank', 'noopener');
+}
+
+function escapeHtml(text) {
+    if (text === undefined || text === null) return '';
+    const div = document.createElement('div');
+    div.textContent = String(text);
+    return div.innerHTML;
+}
+
+if (typeof document !== 'undefined') {
+    document.addEventListener('DOMContentLoaded', () => {
+        initFolderEditorUI();
+        initKnowledgePanel();
+    });
+}
+
 // Ensure functions used by inline HTML are accessible globally
 try {
     if (typeof window !== 'undefined') {
         if (typeof selectRoom === 'function') window.selectRoom = selectRoom;
         if (typeof closeReactionPicker === 'function') window.closeReactionPicker = closeReactionPicker;
+        if (typeof openFolderEditor === 'function') window.openFolderEditor = openFolderEditor;
+        if (typeof closeFolderEditor === 'function') window.closeFolderEditor = closeFolderEditor;
+        if (typeof openKnowledgeOverlay === 'function') window.openKnowledgePanel = openKnowledgeOverlay;
+        if (typeof closeKnowledgeOverlay === 'function') window.closeKnowledgePanel = closeKnowledgeOverlay;
     }
 } catch (e) {
     // no-op
